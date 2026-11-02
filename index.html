@@ -46,6 +46,7 @@
     <div class="container">
         <h1>Мультитул оператора</h1>
 
+        <!-- ===== БЛОК 1: Короба в слое ===== -->
         <div class="section-title">Короба в слое</div>
         <div class="card">
             <label for="boxL">Длина коробки (см)</label>
@@ -66,6 +67,7 @@
             <div class="pallet-size">Паллета 120 × 80 см</div>
         </div>
 
+        <!-- ===== БЛОК 2: Сроки годности ===== -->
         <div class="section-title">Сроки годности</div>
         <div class="card">
             <label>Дата производства</label>
@@ -124,8 +126,7 @@
         function rowsBest(zw, zh, bl, bw) {
             const o = [{ w: bl, h: bw }, { w: bw, h: bl }];
             let best = 0;
-            for (const r of o) for (const r2 of o)
-                best = Math.max(best, cnt(zw, zh, r.w, r.h));
+            for (const r of o) best = Math.max(best, cnt(zw, zh, r.w, r.h));
             for (const ry of cuts(zh, bl, bw))
                 for (const r1 of o) for (const r2 of o)
                     best = Math.max(best, cnt(zw, ry, r1.w, r1.h) + cnt(zw, zh - ry, r2.w, r2.h));
@@ -265,14 +266,10 @@
             return Math.round((ms2 - ms1) / (1000 * 60 * 60 * 24));
         }
 
-        // Календарная разница "до даты" (не включая конечный день)
         function fmtCalendar(fromDate, toDate) {
             let y = toDate.getFullYear() - fromDate.getFullYear();
             let m = toDate.getMonth() - fromDate.getMonth();
             let d = toDate.getDate() - fromDate.getDate();
-
-            // Считаем разницу "до даты": вычитаем 1 день из интервала
-            d -= 1;
 
             if (d < 0) {
                 m--;
@@ -348,13 +345,13 @@
             const leftEl = document.getElementById("daysLeft");
             leftEl.className = "left-out";
 
-            const totalDaysDiff = daysBetween(prodDate, expDate) - 1;
+            const totalDaysDiff = daysBetween(prodDate, expDate);
 
             if (daysBetween(expDate, today) > 0) {
                 leftEl.textContent = `Просрочено на ${fmtCalendar(expDate, today)}`;
                 leftEl.classList.add("red");
             } else {
-                const diffDays = daysBetween(today, expDate) - 1;
+                const diffDays = daysBetween(today, expDate);
                 const pct = totalDaysDiff > 0 ? Math.round(Math.max(0, diffDays) / totalDaysDiff * 100) : 100;
                 leftEl.textContent = `Осталось ${fmtCalendar(today, expDate)} (${pct}%)`;
                 leftEl.classList.add(pct <= 20 ? "orange" : "green");
@@ -379,7 +376,6 @@
             const el = document.getElementById(id);
             el.addEventListener("focus", function () {
                 this.dataset.old = this.value;
-                // Плавная прокрутка через задержку — чтобы клавиатура успела открыться
                 setTimeout(() => {
                     this.scrollIntoView({ behavior: "smooth", block: "center" });
                 }, 300);
