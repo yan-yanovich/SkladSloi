@@ -5,200 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Коробов в слое</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f0f2f5;
-            min-height: 100vh;
-            padding: 16px;
-        }
-
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        h1 {
-            text-align: center;
-            font-size: 22px;
-            color: #1a1a2e;
-            margin-bottom: 20px;
-        }
-
-        .card {
-            background: #fff;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 16px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-        }
-
-        label {
-            display: block;
-            font-size: 15px;
-            color: #555;
-            margin-bottom: 6px;
-            font-weight: 500;
-        }
-
-        input {
-            width: 100%;
-            padding: 14px;
-            font-size: 18px;
-            border: 2px solid #e0e0e0;
-            border-radius: 12px;
-            outline: none;
-            transition: border-color 0.2s;
-            margin-bottom: 16px;
-        }
-
-        input:focus {
-            border-color: #4a90d9;
-        }
-
-        .btn {
-            width: 100%;
-            padding: 16px;
-            font-size: 18px;
-            font-weight: 600;
-            color: #fff;
-            background: #4a90d9;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .btn:hover {
-            background: #357abd;
-        }
-
-        .result {
-            display: none;
-        }
-
-        .result.show {
-            display: block;
-        }
-
-        .result-count {
-            text-align: center;
-            font-size: 48px;
-            font-weight: 700;
-            color: #4a90d9;
-        }
-
-        .result-label {
-            text-align: center;
-            font-size: 16px;
-            color: #888;
-            margin-bottom: 8px;
-        }
-
-        .pallet-wrapper {
-            position: relative;
-            background: #8B6914;
-            border-radius: 2px;
-            margin: 16px 0 8px;
-            width: 100%;
-            padding-bottom: 66.67%;
-        }
-
-        .pallet-grid {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-        }
-
-        .box-cell {
-            position: absolute;
-            background: #f5e6c8;
-            border: 1px solid #c4953a;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            font-weight: 600;
-            color: #8B6914;
-            overflow: hidden;
-        }
-
-        .dimensions {
-            text-align: center;
-            font-size: 13px;
-            color: #888;
-            margin-top: 4px;
-        }
-
-        .pallet-label {
-            text-align: center;
-            font-size: 13px;
-            color: #aaa;
-            margin-top: 4px;
-        }
-
-        .error {
-            color: #e74c3c;
-            text-align: center;
-            font-size: 14px;
-            margin-top: 8px;
-            display: none;
-        }
-
-        .error.show {
-            display: block;
-        }
-
-        .layout-type {
-            text-align: center;
-            font-size: 14px;
-            color: #4a90d9;
-            font-weight: 600;
-            margin-top: 8px;
-        }
-
-        .fill-row {
-            display: flex;
-            justify-content: center;
-            align-items: baseline;
-            gap: 8px;
-            margin-top: 8px;
-        }
-
-        .fill-key {
-            font-size: 14px;
-            color: #888;
-        }
-
-        .fill-val {
-            font-size: 20px;
-            font-weight: 700;
-            color: #2e7d32;
-        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;min-height:100vh;padding:16px}
+        .container{max-width:600px;margin:0 auto}
+        h1{text-align:center;font-size:22px;color:#1a1a2e;margin-bottom:20px}
+        .card{background:#fff;border-radius:16px;padding:24px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,0.08)}
+        label{display:block;font-size:15px;color:#555;margin-bottom:6px;font-weight:500}
+        input{width:100%;padding:14px;font-size:18px;border:2px solid #e0e0e0;border-radius:12px;outline:none;margin-bottom:16px}
+        input:focus{border-color:#4a90d9}
+        .btn{width:100%;padding:16px;font-size:18px;font-weight:600;color:#fff;background:#4a90d9;border:none;border-radius:12px;cursor:pointer}
+        .btn:hover{background:#357abd}
+        .result{display:none}
+        .result.show{display:block}
+        .result-count{text-align:center;font-size:48px;font-weight:700;color:#4a90d9}
+        .result-label{text-align:center;font-size:16px;color:#888;margin-bottom:8px}
+        .pallet-wrapper{position:relative;background:#8B6914;border-radius:2px;margin:16px 0 8px;width:100%;padding-bottom:66.67%}
+        .pallet-grid{position:absolute;top:0;left:0;right:0;bottom:0}
+        .box-cell{position:absolute;background:#f5e6c8;border:1px solid #c4953a;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#8B6914;overflow:hidden}
+        .dimensions{text-align:center;font-size:13px;color:#888;margin-top:4px}
+        .pallet-label{text-align:center;font-size:13px;color:#aaa;margin-top:4px}
+        .error{color:#e74c3c;text-align:center;font-size:14px;margin-top:8px;display:none}
+        .error.show{display:block}
+        .layout-type{text-align:center;font-size:14px;color:#4a90d9;font-weight:600;margin-top:8px}
+        .fill-row{display:flex;justify-content:center;align-items:baseline;gap:8px;margin-top:8px}
+        .fill-key{font-size:14px;color:#888}
+        .fill-val{font-size:20px;font-weight:700;color:#2e7d32}
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Коробов в слое</h1>
-
         <div class="card">
             <label for="boxL">Длина коробки (см)</label>
             <input type="number" id="boxL" placeholder="например, 40" min="1" step="any">
-
             <label for="boxW">Ширина коробки (см)</label>
             <input type="number" id="boxW" placeholder="например, 26" min="1" step="any">
-
             <button class="btn" onclick="calculate()">Рассчитать</button>
             <div class="error" id="error"></div>
         </div>
-
         <div class="card result" id="result">
             <div class="result-label">Коробов в слое</div>
             <div class="result-count" id="count">0</div>
@@ -208,225 +52,72 @@
                 <span class="fill-val" id="fillPct">0%</span>
             </div>
             <div class="dimensions" id="dims"></div>
-
             <div class="pallet-wrapper">
                 <div class="pallet-grid" id="pallet"></div>
             </div>
-
-            <div class="pallet-label">
-                <span id="palletInfo"></span>
-            </div>
+            <div class="pallet-label"><span id="palletInfo"></span></div>
         </div>
     </div>
-
     <script>
-        const PALLET_L = 120;
-        const PALLET_W = 80;
-
-        /* Подсчёт количества в зоне (без создания объектов) */
-        function countInZone(zw, zh, bw, bh) {
-            return Math.floor(zw / bw) * Math.floor(zh / bh);
+        const PL=120,PW=80;
+        function cnt(zw,zh,bw,bh){return Math.floor(zw/bw)*Math.floor(zh/bh)}
+        function fill(x0,y0,zw,zh,bw,bh){
+            const c=Math.floor(zw/bw),r=Math.floor(zh/bh),a=[];
+            for(let j=0;j<r;j++)for(let i=0;i<c;i++)a.push({x:x0+i*bw,y:y0+j*bh,w:bw,h:bh});
+            return a
         }
-
-        /* Координаты коробок в зоне */
-        function fillZone(x0, y0, zw, zh, bw, bh) {
-            const cols = Math.floor(zw / bw);
-            const rows = Math.floor(zh / bh);
-            const boxes = [];
-            for (let r = 0; r < rows; r++) {
-                for (let c = 0; c < cols; c++) {
-                    boxes.push({
-                        x: x0 + c * bw,
-                        y: y0 + r * bh,
-                        w: bw,
-                        h: bh
-                    });
-                }
-            }
-            return boxes;
+        function findBest(bl,bw2){
+            const o=[{w:bl,h:bw2},{w:bw2,h:bl}];
+            let bc=0,bcfg=null;
+            function t(c,cfg){if(c>bc){bc=c;bcfg=cfg}}
+            /* 1 ориентация */
+            for(let i=0;i<2;i++)t(cnt(PL,PW,o[i].w,o[i].h),{type:'s',o:[i]});
+            /* верт 2 зоны */
+            for(let s=1;s<PL;s++)for(let i=0;i<2;i++)for(let j=0;j<2;j++)
+                t(cnt(s,PW,o[i].w,o[i].h)+cnt(PL-s,PW,o[j].w,o[j].h),{type:'v2',s:[s],o:[i,j]});
+            /* гориз 2 зоны */
+            for(let s=1;s<PW;s++)for(let i=0;i<2;i++)for(let j=0;j<2;j++)
+                t(cnt(PL,s,o[i].w,o[i].h)+cnt(PL,PW-s,o[j].w,o[j].h),{type:'h2',s:[s],o:[i,j]});
+            /* крест 2×2 */
+            for(let xs=1;xs<PL;xs++)for(let ys=1;ys<PW;ys++)for(let i=0;i<2;i++)for(let j=0;j<2;j++)for(let k=0;k<2;k++)for(let l=0;l<2;l++)
+                t(cnt(xs,ys,o[i].w,o[i].h)+cnt(PL-xs,ys,o[j].w,o[j].h)+cnt(xs,PW-ys,o[k].w,o[k].h)+cnt(PL-xs,PW-ys,o[l].w,o[l].h),{type:'x',s:[xs,ys],o:[i,j,k,l]});
+            const boxes=build(bcfg,o);
+            const tn={s:'Обычная',v2:'Смешанная (верт.)',h2:'Смешанная (гориз.)',x:'Смешанная'};
+            return{total:bc,boxes:boxes,type:tn[bcfg.type]}
         }
-
-        /* Поиск лучшей раскладки */
-        function findBestLayout(boxL, boxW) {
-            const orients = [
-                { w: boxL, h: boxW },
-                { w: boxW, h: boxL }
-            ];
-
-            let bestCount = 0;
-            let bestConfig = null;
-
-            function tryConfig(count, config) {
-                if (count > bestCount) {
-                    bestCount = count;
-                    bestConfig = config;
-                }
-            }
-
-            /* 1. Одна ориентация */
-            for (let i = 0; i < 2; i++) {
-                tryConfig(
-                    countInZone(PALLET_L, PALLET_W, orients[i].w, orients[i].h),
-                    { type: 'single', o: [i] }
-                );
-            }
-
-            /* 2. Вертикальная 2-зонная */
-            for (let s = 1; s < PALLET_L; s++) {
-                for (let i = 0; i < 2; i++) {
-                    for (let j = 0; j < 2; j++) {
-                        tryConfig(
-                            countInZone(s, PALLET_W, orients[i].w, orients[i].h) +
-                            countInZone(PALLET_L - s, PALLET_W, orients[j].w, orients[j].h),
-                            { type: 'v2', splits: [s], o: [i, j] }
-                        );
-                    }
-                }
-            }
-
-            /* 3. Горизонтальная 2-zonная */
-            for (let s = 1; s < PALLET_W; s++) {
-                for (let i = 0; i < 2; i++) {
-                    for (let j = 0; j < 2; j++) {
-                        tryConfig(
-                            countInZone(PALLET_L, s, orients[i].w, orients[i].h) +
-                            countInZone(PALLET_L, PALLET_W - s, orients[j].w, orients[j].h),
-                            { type: 'h2', splits: [s], o: [i, j] }
-                        );
-                    }
-                }
-            }
-
-            /* 4. Крест 2×2 (4 зоны) */
-            for (let xs = 1; xs < PALLET_L; xs++) {
-                for (let ys = 1; ys < PALLET_W; ys++) {
-                    for (let i = 0; i < 2; i++) {
-                        for (let j = 0; j < 2; j++) {
-                            for (let k = 0; k < 2; k++) {
-                                for (let l = 0; l < 2; l++) {
-                                    tryConfig(
-                                        countInZone(xs, ys, orients[i].w, orients[i].h) +
-                                        countInZone(PALLET_L - xs, ys, orients[j].w, orients[j].h) +
-                                        countInZone(xs, PALLET_W - ys, orients[k].w, orients[k].h) +
-                                        countInZone(PALLET_L - xs, PALLET_W - ys, orients[l].w, orients[l].h),
-                                        { type: 'cross', splits: [xs, ys], o: [i, j, k, l] }
-                                    );
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            const boxes = buildBoxes(bestConfig, orients);
-
-            const typeNames = {
-                single: 'Обычная',
-                v2: 'Смешанная (верт.)',
-                h2: 'Смешанная (гориз.)',
-                text: 'Смешанная'
-            };
-
-            return {
-                total: bestCount,
-                boxes: boxes,
-                type: typeNames[bestConfig.type] || 'Смешанная'
-            };
+        function build(cfg,o){
+            const b=[];
+            function f(x0,y0,zw,zh,i){b.push(...fill(x0,y0,zw,zh,o[i].w,o[i].h))}
+            if(cfg.type==='s')f(0,0,PL,PW,cfg.o[0]);
+            else if(cfg.type==='v2'){f(0,0,cfg.s[0],PW,cfg.o[0]);f(cfg.s[0],0,PL-cfg.s[0],PW,cfg.o[1])}
+            else if(cfg.type==='h2'){f(0,0,PL,cfg.s[0],cfg.o[0]);f(0,cfg.s[0],PL,PW-cfg.s[0],cfg.o[1])}
+            else if(cfg.type==='x'){const[xs,ys]=cfg.s;f(0,0,xs,ys,cfg.o[0]);f(xs,0,PL-xs,ys,cfg.o[1]);f(0,ys,xs,PW-ys,cfg.o[2]);f(xs,ys,PL-xs,PW-ys,cfg.o[3])}
+            return b
         }
-
-        /* Построение координат из конфигурации */
-        function buildBoxes(config, orients) {
-            const boxes = [];
-
-            function fill(x0, y0, zw, zh, oIdx) {
-                const o = orients[oIdx];
-                boxes.push(...fillZone(x0, y0, zw, zh, o.w, o.h));
-            }
-
-            switch (config.type) {
-                case 'single':
-                    fill(0, 0, PALLET_L, PALLET_W, config.o[0]);
-                    break;
-                case 'v2':
-                    fill(0, 0, config.splits[0], PALLET_W, config.o[0]);
-                    fill(config.splits[0], 0, PALLET_L - config.splits[0], PALLET_W, config.o[1]);
-                    break;
-                case 'h2':
-                    fill(0, 0, PALLET_L, config.splits[0], config.o[0]);
-                    fill(0, config.splits[0], PALLET_L, PALLET_W - config.splits[0], config.o[1]);
-                    break;
-                case 'cross': {
-                    const xs = config.splits[0];
-                    const ys = config.splits[1];
-                    fill(0, 0, xs, ys, config.o[0]);
-                    fill(xs, 0, PALLET_L - xs, ys, config.o[1]);
-                    fill(0, ys, xs, PALLET_W - ys, config.o[2]);
-                    fill(xs, ys, PALLET_L - xs, PALLET_W - ys, config.o[3]);
-                    break;
-                }
-            }
-
-            return boxes;
+        function draw(boxes){
+            const el=document.getElementById('pallet');el.innerHTML='';
+            for(let i=0;i<boxes.length;i++){const b=boxes[i],d=document.createElement('div');d.className='box-cell';d.textContent=i+1;
+                d.style.left=(b.x/PL*100)+'%';d.style.top=(b.y/PW*100)+'%';d.style.width=(b.w/PL*100)+'%';d.style.height=(b.h/PW*100)+'%';
+                el.appendChild(d)}
         }
-
-        /* Отрисовка схемы */
-        function drawScheme(boxes) {
-            const pallet = document.getElementById('pallet');
-            pallet.innerHTML = '';
-            for (let i = 0; i < boxes.length; i++) {
-                const b = boxes[i];
-                const div = document.createElement('div');
-                div.className = 'box-cell';
-                div.textContent = i + 1;
-                div.style.left   = (b.x / PALLET_L * 100) + '%';
-                div.style.top    = (b.y / PALLET_W * 100) + '%';
-                div.style.width  = (b.w / PALLET_L * 100) + '%';
-                div.style.height = (b.h / PALLET_W * 100) + '%';
-                pallet.appendChild(div);
-            }
-        }
-
-        /* Основная функция */
-        function calculate() {
-            const boxL = parseFloat(document.getElementById('boxL').value);
-            const boxW = parseFloat(document.getElementById('boxW').value);
-
-            if (!boxL || !boxW || boxL <= 0 || boxW <= 0) {
-                showError('Введите размеры коробки');
-                return;
-            }
-
-            const best = findBestLayout(boxL, boxW);
-
-            if (best.total === 0) {
-                showError('Коробка не помещается на паллету');
-                return;
-            }
-
+        function calculate(){
+            const bl=parseFloat(document.getElementById('boxL').value),bw2=parseFloat(document.getElementById('boxW').value);
+            if(!bl||!bw2||bl<=0||bw2<=0){err('Введите размеры коробки');return}
+            const best=findBest(bl,bw2);
+            if(!best.total){err('Коробка не помещается на паллету');return}
             document.getElementById('error').classList.remove('show');
-            document.getElementById('result').classList.add('show');
-            document.getElementById('count').textContent = best.total;
-            document.getElementById('layoutType').textContent = best.type;
-            document.getElementById('dims').textContent = `Коробка ${boxL} × ${boxW} см`;
-
-            /* Процент заполняемости */
-            const fillPct = (best.total * boxL * boxW) / (PALLET_L * PALLET_W) * 100;
-            document.getElementById('fillPct').textContent = fillPct.toFixed(1) + '%';
-
-            drawScheme(best.boxes);
-            document.getElementById('palletInfo').textContent = `Паллета ${PALLET_L} × ${PALLET_W} см`;
-            document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+            const r=document.getElementById('result');r.classList.add('show');
+            document.getElementById('count').textContent=best.total;
+            document.getElementById('layoutType').textContent=best.type;
+            document.getElementById('dims').textContent='Коробка '+bl+' × '+bw2+' см';
+            const fp=(best.total*bl*bw2)/(PL*PW)*100;
+            document.getElementById('fillPct').textContent=fp.toFixed(1)+'%';
+            draw(best.boxes);
+            document.getElementById('palletInfo').textContent='Паллета '+PL+' × '+PW+' см';
+            r.scrollIntoView({behavior:'smooth'})
         }
-
-        function showError(msg) {
-            document.getElementById('error').textContent = msg;
-            document.getElementById('error').classList.add('show');
-            document.getElementById('result').classList.remove('show');
-        }
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') calculate();
-        });
+        function err(m){document.getElementById('error').textContent=m;document.getElementById('error').classList.add('show');document.getElementById('result').classList.remove('show')}
+        document.addEventListener('keydown',function(e){if(e.key==='Enter')calculate()});
     </script>
 </body>
 </html>
