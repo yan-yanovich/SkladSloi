@@ -55,7 +55,6 @@
         const a = document.getElementById("boxL");
         const b = document.getElementById("boxW");
 
-        // Восстановление сохранённых значений
         if (localStorage.getItem("bl")) a.value = localStorage.getItem("bl");
         if (localStorage.getItem("bw")) b.value = localStorage.getItem("bw");
 
@@ -73,21 +72,18 @@
             return [...s].filter(v => v > 0 && v < total).sort((x, y) => x - y);
         }
 
-        // Лучшая раскладка в прямоугольнике с учётом разных поворотов по рядам
         function rowsBest(zw, zh, bl, bw) {
             const o = [{ w: bl, h: bw }, { w: bw, h: bl }];
             let best = 0;
 
             for (const r of o) best = Math.max(best, cnt(zw, zh, r.w, r.h));
 
-            // ряды по высоте, в каждом ряду своя ориентация
             for (const ry of cuts(zh, bl, bw)) {
                 for (const r1 of o) for (const r2 of o)
                     best = Math.max(best,
                         cnt(zw, ry, r1.w, r1.h) + cnt(zw, zh - ry, r2.w, r2.h));
             }
 
-            // столбцы по ширине, в каждом столбце своя ориентация
             for (const rx of cuts(zw, bl, bw)) {
                 for (const r1 of o) for (const r2 of o)
                     best = Math.max(best,
@@ -100,20 +96,16 @@
         function best(bl, bw) {
             let best = 0;
 
-            // одна зона
             best = Math.max(best, rowsBest(L, W, bl, bw));
 
-            // вертикальный разрез
             for (const x of cuts(L, bl, bw))
                 best = Math.max(best,
                     rowsBest(x, W, bl, bw) + rowsBest(L - x, W, bl, bw));
 
-            // горизонтальный разрез
             for (const y of cuts(W, bl, bw))
                 best = Math.max(best,
                     rowsBest(L, y, bl, bw) + rowsBest(L, W - y, bl, bw));
 
-            // оба разреза
             for (const x of cuts(L, bl, bw))
                 for (const y of cuts(W, bl, bw))
                     best = Math.max(best,
@@ -146,7 +138,6 @@
                 return;
             }
 
-            // Сохраняем введённые значения
             localStorage.setItem("bl", a.value);
             localStorage.setItem("bw", b.value);
 
@@ -164,7 +155,6 @@
             document.getElementById("fill").textContent =
                 (total * bl * bw / (L * W) * 100).toFixed(1) + "%";
             document.getElementById("dims").textContent = `Коробка ${bl} × ${bw} см`;
-            el.scrollIntoView({ behavior: "smooth" });
         }
 
         a.oninput = b.oninput = function () { this.classList.remove("err"); };
@@ -173,3 +163,4 @@
     </script>
 </body>
 </html>
+
