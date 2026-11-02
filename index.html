@@ -144,26 +144,6 @@
             margin-top: 4px;
         }
 
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px solid #f0f0f0;
-        }
-
-        .info-row:last-child {
-            border-bottom: none;
-        }
-
-        .info-key {
-            color: #888;
-        }
-
-        .info-val {
-            font-weight: 600;
-            color: #333;
-        }
-
         .error {
             color: #e74c3c;
             text-align: center;
@@ -183,18 +163,30 @@
             font-weight: 600;
             margin-top: 8px;
         }
+
+        .fill-row {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .fill-key {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .fill-val {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2e7d32;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Коробов в слое</h1>
-
-        <div class="card">
-            <div class="info-row">
-                <span class="info-key">Паллета</span>
-                <span class="info-val">120 × 80 см</span>
-            </div>
-        </div>
 
         <div class="card">
             <label for="boxL">Длина коробки (см)</label>
@@ -211,6 +203,10 @@
             <div class="result-label">Коробов в слое</div>
             <div class="result-count" id="count">0</div>
             <div class="layout-type" id="layoutType"></div>
+            <div class="fill-row">
+                <span class="fill-key">Заполняемость</span>
+                <span class="fill-val" id="fillPct">0%</span>
+            </div>
             <div class="dimensions" id="dims"></div>
 
             <div class="pallet-wrapper">
@@ -288,7 +284,7 @@
                 }
             }
 
-            /* 3. Горизонтальная 2-зонная */
+            /* 3. Горизонтальная 2-zonная */
             for (let s = 1; s < PALLET_W; s++) {
                 for (let i = 0; i < 2; i++) {
                     for (let j = 0; j < 2; j++) {
@@ -322,20 +318,19 @@
                 }
             }
 
-            /* Координаты для лучшей раскладки */
             const boxes = buildBoxes(bestConfig, orients);
 
             const typeNames = {
                 single: 'Обычная',
                 v2: 'Смешанная (верт.)',
                 h2: 'Смешанная (гориз.)',
-                cross: 'Смешанная'
+                text: 'Смешанная'
             };
 
             return {
                 total: bestCount,
                 boxes: boxes,
-                type: typeNames[bestConfig.type]
+                type: typeNames[bestConfig.type] || 'Смешанная'
             };
         }
 
@@ -413,6 +408,11 @@
             document.getElementById('count').textContent = best.total;
             document.getElementById('layoutType').textContent = best.type;
             document.getElementById('dims').textContent = `Коробка ${boxL} × ${boxW} см`;
+
+            /* Процент заполняемости */
+            const fillPct = (best.total * boxL * boxW) / (PALLET_L * PALLET_W) * 100;
+            document.getElementById('fillPct').textContent = fillPct.toFixed(1) + '%';
+
             drawScheme(best.boxes);
             document.getElementById('palletInfo').textContent = `Паллета ${PALLET_L} × ${PALLET_W} см`;
             document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
