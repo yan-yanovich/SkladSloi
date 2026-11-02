@@ -76,20 +76,7 @@
                     <input type="text" inputmode="numeric" id="mfgDay" placeholder="День" maxlength="2">
                 </div>
                 <div>
-                    <select id="mfgMonth">
-                        <option value="1">Январь</option>
-                        <option value="2">Февраль</option>
-                        <option value="3">Март</option>
-                        <option value="4">Апрель</option>
-                        <option value="5">Май</option>
-                        <option value="6">Июнь</option>
-                        <option value="7">Июль</option>
-                        <option value="8">Август</option>
-                        <option value="9">Сентябрь</option>
-                        <option value="10">Октябрь</option>
-                        <option value="11">Ноябрь</option>
-                        <option value="12">Декабрь</option>
-                    </select>
+                    <input type="text" inputmode="numeric" id="mfgMonth" placeholder="Месяц" maxlength="2">
                 </div>
                 <div>
                     <select id="mfgYear">
@@ -244,7 +231,7 @@
             return "дней";
         }
 
-        // Календарное разбиение остатка: годы -> месяцы -> дни
+        // Календарное разбиение: годы -> месяцы -> дни
         function fmtCalendar(fromDate, toDate) {
             let y = toDate.getFullYear() - fromDate.getFullYear();
             let m = toDate.getMonth() - fromDate.getMonth();
@@ -320,47 +307,50 @@
             leftEl.className = "left-out";
 
             if (today >= expDate) {
-                const parts = fmtCalendar(expDate, today);
-                leftEl.textContent = `Просрочено на ${parts}`;
+                leftEl.textContent = `Просрочено на ${fmtCalendar(expDate, today)}`;
                 leftEl.classList.add("red");
             } else {
-                const parts = fmtCalendar(today, expDate);
                 const diffDays = Math.round((expDate - today) / (1000 * 60 * 60 * 24));
                 const pct = Math.round(diffDays / totalDays * 100);
-                leftEl.textContent = `Осталось ${parts} (${pct}%)`;
+                leftEl.textContent = `Осталось ${fmtCalendar(today, expDate)} (${pct}%)`;
                 leftEl.classList.add("green");
             }
 
             document.getElementById("shelfResult").classList.add("show");
         }
 
-        // Автоматический расчёт при изменении любого поля срока годности
+        // Автоматический расчёт при изменении любого поля
         ["mfgDay", "mfgMonth", "mfgYear", "shelfLife", "shelfUnit"].forEach(id => {
-            document.getElementById(id).oninput = document.getElementById(id).onchange = function () {
+            const el = document.getElementById(id);
+            const handler = function () {
                 if (document.getElementById("mfgDay").value && document.getElementById("mfgMonth").value &&
                     document.getElementById("mfgYear").value && document.getElementById("shelfLife").value) {
                     calcShelf();
                 }
             };
+            if (el.tagName === "SELECT") {
+                el.onchange = handler;
+            } else {
+                el.oninput = handler;
+            }
         });
 
-        // При клике на ячейку с текстом — выделить весь текст
-        // При вводе — сбросить старое значение
-        ["boxL", "boxW", "mfgDay", "shelfLife"].forEach(id => {
+        // Клик по ячейке: выделить текст, при вводе — стереть старое
+        ["boxL", "boxW", "mfgDay", "mfgMonth", "shelfLife"].forEach(id => {
             const el = document.getElementById(id);
             el.addEventListener("focus", function () {
                 this.dataset.old = this.value;
                 this.select();
             });
             el.addEventListener("keydown", function (e) {
-                if (e.key !== "Tab" && e.key !== "Shift" && e.key !== "Control" && e.key !== "Alt") {
-                    if (this.dataset.old === this.value && e.key !== "Backspace" && e.key !== "Delete" && e.key !== "ArrowLeft" && e.key !== "ArrowRight") {
-                        this.value = "";
-                    }
+                const keys = ["Tab","Shift","Control","Alt","Backspace","Delete","ArrowLeft","ArrowRight","ArrowUp","ArrowDown"];
+                if (!keys.includes(e.key) && this.dataset.old === this.value) {
+                    this.value = "";
                 }
             });
         });
 
+        // Enter
         ["mfgDay", "mfgMonth", "shelfLife"].forEach(id => {
             document.getElementById(id).onkeydown = e => {
                 if (e.key === "Enter") { e.preventDefault(); calcShelf(); }
