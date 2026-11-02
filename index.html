@@ -119,8 +119,9 @@
         .error {
             color: #e74c3c;
             text-align: center;
-            font-size: 14px;
-            margin-top: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            margin-top: 12px;
             display: none;
         }
         .error.show {
@@ -203,4 +204,74 @@
                             for (var k = 0; k < 2; k++)
                                 for (var l = 0; l < 2; l++)
                                     t(n(xs, ys, o[i].w, o[i].h) + n(L - xs, ys, o[j].w, o[j].h) +
-                                      n(xs, W - ys, o[k].w, o[k].h) + n(L - xs, W - ys, o[l
+                                      n(xs, W - ys, o[k].w, o[k].h) + n(L - xs, W - ys, o[l].w, o[l].h),
+                                      { t: "x", s: [xs, ys], o: [i, j, k, l] });
+
+            var names = {
+                s: "Обычная",
+                v2: "Смешанная (верт.)",
+                h2: "Смешанная (гориз.)",
+                x: "Смешанная"
+            };
+            return { total: bc, type: names[cfg.t] };
+        }
+
+        function showErr(msg) {
+            var e = document.getElementById("err");
+            e.textContent = msg;
+            e.classList.add("show");
+            document.getElementById("result").classList.remove("show");
+        }
+
+        function calc() {
+            var bl = parseNum(a.value);
+            var bw = parseNum(b.value);
+            a.classList.remove("err");
+            b.classList.remove("err");
+            document.getElementById("err").classList.remove("show");
+
+            if (!isFinite(bl) || bl <= 0) {
+                a.classList.add("err");
+                a.focus();
+                showErr("7 раз отмерь — 1 раз введи");
+                return;
+            }
+            if (!isFinite(bw) || bw <= 0) {
+                b.classList.add("err");
+                b.focus();
+                showErr("7 раз отмерь — 1 раз введи");
+                return;
+            }
+
+            if (Math.min(bl, bw) > W || Math.max(bl, bw) > L) {
+                a.classList.add("err");
+                b.classList.add("err");
+                showErr("Коробка " + bl + " × " + bw + " не влезает на паллету 120 × 80 см");
+                return;
+            }
+
+            var r = best(bl, bw);
+
+            if (!r.total) {
+                a.classList.add("err");
+                b.classList.add("err");
+                showErr("Коробка " + bl + " × " + bw + " не влезает на паллету 120 × 80 см");
+                return;
+            }
+
+            document.getElementById("err").classList.remove("show");
+            var el = document.getElementById("result");
+            el.classList.add("show");
+            document.getElementById("count").textContent = r.total;
+            document.getElementById("fill").textContent =
+                ((r.total * bl * bw) / (L * W) * 100).toFixed(1) + "%";
+            document.getElementById("dims").textContent = "Коробка " + bl + " × " + bw + " см";
+            el.scrollIntoView({ behavior: "smooth" });
+        }
+
+        a.oninput = b.oninput = function () { this.classList.remove("err"); };
+        a.onkeydown = function (e) { if (e.key === "Enter") { e.preventDefault(); b.focus(); } };
+        b.onkeydown = function (e) { if (e.key === "Enter") { e.preventDefault(); calc(); } };
+    </script>
+</body>
+</html>
