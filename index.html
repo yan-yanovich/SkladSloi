@@ -264,9 +264,33 @@
             return Math.round((ms2 - ms1) / (1000 * 60 * 60 * 24));
         }
 
-        function fmtCalendar(fromDate, toDate) {
-            if (fromDate > toDate) return "0 дней";
+        // Календарная разница «осталось» — минус 1 день (день производства не считается)
+        function fmtRemaining(fromDate, toDate) {
+            let y = toDate.getFullYear() - fromDate.getFullYear();
+            let m = toDate.getMonth() - fromDate.getMonth();
+            let d = toDate.getDate() - fromDate.getDate();
 
+            d -= 1;
+            if (d < 0) {
+                m--;
+                const prevMonth = new Date(toDate.getFullYear(), toDate.getMonth(), 0);
+                d += prevMonth.getDate();
+            }
+            if (m < 0) {
+                y--;
+                m += 12;
+            }
+
+            const parts = [];
+            if (y) parts.push(`${y} ${y === 1 ? "год" : (y >= 2 && y <= 4 ? "года" : "лет")}`);
+            if (m) parts.push(`${m} ${m === 1 ? "месяц" : (m >= 2 && m <= 4 ? "месяца" : "месяцев")}`);
+            if (d) parts.push(`${d} ${pluralDays(d)}`);
+            if (!parts.length) parts.push("0 дней");
+            return parts.join(" ");
+        }
+
+        // Календарная разница «просрочено» — без вычитания
+        function fmtOverdue(fromDate, toDate) {
             let y = toDate.getFullYear() - fromDate.getFullYear();
             let m = toDate.getMonth() - fromDate.getMonth();
             let d = toDate.getDate() - fromDate.getDate();
@@ -345,16 +369,21 @@
             const leftEl = document.getElementById("daysLeft");
             leftEl.className = "left-out";
 
-            const totalDaysDiff = daysBetween(prodDate, expDate);
+            const totalDays = daysBetween(prodDate, expDate);
 
             if (today.getTime() > expDate.getTime()) {
-                leftEl.textContent = `Просрочено на ${fmtCalendar(expDate, today)}`;
+                leftEl.textContent = `Просрочено на ${fmtOverdue(expDate, today)}`;
                 leftEl.classList.add("red");
             } else {
-                const diffDays = daysBetween(today, expDate);
-                const pct = totalDaysDiff > 0 ? Math.round(Math.max(0, diffDays) / totalDaysDiff * 100) : 100;
-                leftEl.textContent = `Осталось ${fmtCalendar(today, expDate)} (${pct}%)`;
-                leftEl.classList.add(pct <= 20 ? "orange" : "green");
+                const remaining = Math.max(0, daysBetween(today, expDate) - 1);
+                const pct = totalDays > 0 ? Math.round(remaining / totalDays * 100) : 100;
+                if (remaining <= 0) {
+                    leftEl.textContent = `Осталось 0 дней (0%)`;
+                    leftEl.classList.add("orange");
+                } else {
+                    leftEl.textContent = `Осталось ${fmtRemaining(today, expDate)} (${pct}%)`;
+                    leftEl.classList.add(pct <= 20 ? "orange" : "green");
+                }
             }
 
             document.getElementById("shelfResult").classList.add("show");
@@ -390,8 +419,13 @@
         });
 
         document.getElementById("shelfLife").onkeydown = e => {
-            if (e.key === "Enter") { e.preventDefault(); calcShelf(); }
+            if (e.key === "Enter") {
+                e.preventDefault();
+                calcShelf();
+                document.getElementById("shelfLife").blur();
+            }
         };
     </script>
 </body>
 </html>
+ 
