@@ -198,10 +198,10 @@
 
         <div class="card">
             <label for="boxL">Длина коробки (см)</label>
-            <input type="number" id="boxL" placeholder="например, 30" min="1" step="any">
+            <input type="number" id="boxL" placeholder="например, 40" min="1" step="any">
 
             <label for="boxW">Ширина коробки (см)</label>
-            <input type="number" id="boxW" placeholder="например, 16" min="1" step="any">
+            <input type="number" id="boxW" placeholder="например, 26" min="1" step="any">
 
             <button class="btn" onclick="calculate()">Рассчитать</button>
             <div class="error" id="error"></div>
@@ -227,12 +227,12 @@
         const PALLET_L = 120;
         const PALLET_W = 80;
 
-        /* Подсчёт количества коробок в зоне без создания объектов */
+        /* Подсчёт количества в зоне (без создания объектов) */
         function countInZone(zw, zh, bw, bh) {
             return Math.floor(zw / bw) * Math.floor(zh / bh);
         }
 
-        /* Построение координат коробок в зоне */
+        /* Координаты коробок в зоне */
         function fillZone(x0, y0, zw, zh, bw, bh) {
             const cols = Math.floor(zw / bw);
             const rows = Math.floor(zh / bh);
@@ -267,7 +267,7 @@
                 }
             }
 
-            /* 1. Одна ориентация на весь паллет */
+            /* 1. Одна ориентация */
             for (let i = 0; i < 2; i++) {
                 tryConfig(
                     countInZone(PALLET_L, PALLET_W, orients[i].w, orients[i].h),
@@ -275,7 +275,7 @@
                 );
             }
 
-            /* 2. Две зоны: вертикальное разделение */
+            /* 2. Вертикальная 2-зонная */
             for (let s = 1; s < PALLET_L; s++) {
                 for (let i = 0; i < 2; i++) {
                     for (let j = 0; j < 2; j++) {
@@ -288,7 +288,7 @@
                 }
             }
 
-            /* 3. Две зоны: горизонтальное разделение */
+            /* 3. Горизонтальная 2-зонная */
             for (let s = 1; s < PALLET_W; s++) {
                 for (let i = 0; i < 2; i++) {
                     for (let j = 0; j < 2; j++) {
@@ -301,7 +301,7 @@
                 }
             }
 
-            /* 4. Крест: 4 зоны (2×2) */
+            /* 4. Крест 2×2 (4 зоны) */
             for (let xs = 1; xs < PALLET_L; xs++) {
                 for (let ys = 1; ys < PALLET_W; ys++) {
                     for (let i = 0; i < 2; i++) {
@@ -322,14 +322,14 @@
                 }
             }
 
-            /* Построить координаты для лучшей раскладки */
+            /* Координаты для лучшей раскладки */
             const boxes = buildBoxes(bestConfig, orients);
 
             const typeNames = {
                 single: 'Обычная',
-                v2: 'Комбинированная (верт.)',
-                h2: 'Комбинированная (гориз.)',
-                cross: 'Комбинированная'
+                v2: 'Смешанная (верт.)',
+                h2: 'Смешанная (гориз.)',
+                cross: 'Смешанная'
             };
 
             return {
@@ -339,7 +339,7 @@
             };
         }
 
-        /* Построение координат коробок из конфигурации */
+        /* Построение координат из конфигурации */
         function buildBoxes(config, orients) {
             const boxes = [];
 
@@ -361,7 +361,8 @@
                     fill(0, config.splits[0], PALLET_L, PALLET_W - config.splits[0], config.o[1]);
                     break;
                 case 'cross': {
-                    const [xs, ys] = config.splits;
+                    const xs = config.splits[0];
+                    const ys = config.splits[1];
                     fill(0, 0, xs, ys, config.o[0]);
                     fill(xs, 0, PALLET_L - xs, ys, config.o[1]);
                     fill(0, ys, xs, PALLET_W - ys, config.o[2]);
