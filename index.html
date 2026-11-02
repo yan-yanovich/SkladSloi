@@ -46,7 +46,6 @@
     <div class="container">
         <h1>Мультитул оператора</h1>
 
-        <!-- ===== БЛОК 1: Короба в слое ===== -->
         <div class="section-title">Короба в слое</div>
         <div class="card">
             <label for="boxL">Длина коробки (см)</label>
@@ -67,7 +66,6 @@
             <div class="pallet-size">Паллета 120 × 80 см</div>
         </div>
 
-        <!-- ===== БЛОК 2: Сроки годности ===== -->
         <div class="section-title">Сроки годности</div>
         <div class="card">
             <label>Дата производства</label>
@@ -267,6 +265,8 @@
         }
 
         function fmtCalendar(fromDate, toDate) {
+            if (fromDate > toDate) return "0 дней";
+
             let y = toDate.getFullYear() - fromDate.getFullYear();
             let m = toDate.getMonth() - fromDate.getMonth();
             let d = toDate.getDate() - fromDate.getDate();
@@ -347,7 +347,7 @@
 
             const totalDaysDiff = daysBetween(prodDate, expDate);
 
-            if (daysBetween(expDate, today) > 0) {
+            if (today.getTime() > expDate.getTime()) {
                 leftEl.textContent = `Просрочено на ${fmtCalendar(expDate, today)}`;
                 leftEl.classList.add("red");
             } else {
