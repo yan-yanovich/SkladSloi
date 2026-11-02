@@ -265,11 +265,17 @@
             return Math.round((ms2 - ms1) / (1000 * 60 * 60 * 24));
         }
 
-        // Календарная разница между датами (годы → месяцы → дни)
+        // Календарная разница "до даты" (не включая конечный день)
+        // fromDate → toDate: сколько прошло/осталось между этими днями
         function fmtCalendar(fromDate, toDate) {
             let y = toDate.getFullYear() - fromDate.getFullYear();
             let m = toDate.getMonth() - fromDate.getMonth();
             let d = toDate.getDate() - fromDate.getDate();
+
+            // Считаем разницу "до даты": вычитаем 1 день из интервала
+            // Это не костыль, а корректная семантика:
+            // "осталось до даты" = от сегодня до даты без включения конечного дня
+            d -= 1;
 
             if (d < 0) {
                 m--;
@@ -346,24 +352,13 @@
             const leftEl = document.getElementById("daysLeft");
             leftEl.className = "left-out";
 
-            // День производства и день окончания не считаются
-            // Значит интервал = от (prodDate + 1) до (expDate - 1)
-            const effStart = new Date(prodDate);
-            effStart.setDate(effStart.getDate() + 1);
-
-            const effEnd = new Date(expDate);
-            effEnd.setDate(effEnd.getDate() - 1);
-
-            const totalDaysDiff = daysBetween(effStart, effEnd) + 1;
+            const totalDaysDiff = daysBetween(prodDate, expDate) - 1;
 
             if (daysBetween(expDate, today) > 0) {
                 leftEl.textContent = `Просрочено на ${fmtCalendar(expDate, today)}`;
                 leftEl.classList.add("red");
             } else {
-                const effToday = new Date(today);
-                effToday.setDate(effToday.getDate() - 1);
-
-                const diffDays = daysBetween(effToday, effEnd) + 1;
+                const diffDays = daysBetween(today, expDate) - 1;
                 const pct = totalDaysDiff > 0 ? Math.round(Math.max(0, diffDays) / totalDaysDiff * 100) : 100;
                 leftEl.textContent = `Осталось ${fmtCalendar(today, expDate)} (${pct}%)`;
                 leftEl.classList.add(pct <= 20 ? "orange" : "green");
