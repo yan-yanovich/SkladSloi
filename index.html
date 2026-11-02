@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <title>Мультитул оператора</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
@@ -12,10 +12,10 @@
         .section-title{text-align:center;font-size:18px;color:#4a90d9;font-weight:700;margin:28px 0 16px}
         .card{background:#fff;border-radius:16px;padding:24px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
         label{display:block;font-size:15px;color:#555;margin-bottom:6px;font-weight:500}
-        input{width:100%;padding:14px;font-size:18px;border:2px solid #e0e0e0;border-radius:12px;outline:none;margin-bottom:16px}
+        input{width:100%;padding:14px;font-size:18px;border:2px solid #e0e0e0;border-radius:12px;outline:none;margin-bottom:16px;scroll-margin-bottom:220px}
         input:focus{border-color:#4a90d9}
         input.err{border-color:#e74c3c;background:#fff0f0}
-        select{width:100%;padding:14px;font-size:18px;border:2px solid #e0e0e0;border-radius:12px;outline:none;margin-bottom:16px;background:#fff}
+        select{width:100%;padding:14px;font-size:18px;border:2px solid #e0e0e0;border-radius:12px;outline:none;margin-bottom:16px;background:#fff;scroll-margin-bottom:220px}
         select:focus{border-color:#4a90d9}
         .btn{width:100%;padding:16px;font-size:18px;font-weight:600;color:#fff;background:#4a90d9;border:none;border-radius:12px;cursor:pointer}
         .btn:hover{background:#357abd}
@@ -124,7 +124,8 @@
         function rowsBest(zw, zh, bl, bw) {
             const o = [{ w: bl, h: bw }, { w: bw, h: bl }];
             let best = 0;
-            for (const r of o) best = Math.max(best, cnt(zw, zh, r.w, r.h));
+            for (const r of o) for (const r2 of o)
+                best = Math.max(best, cnt(zw, zh, r.w, r.h));
             for (const ry of cuts(zh, bl, bw))
                 for (const r1 of o) for (const r2 of o)
                     best = Math.max(best, cnt(zw, ry, r1.w, r1.h) + cnt(zw, zh - ry, r2.w, r2.h));
@@ -258,7 +259,6 @@
             return "дней";
         }
 
-        // Разница дат в целых днях, без учёта часов
         function daysBetween(d1, d2) {
             const ms1 = Date.UTC(d1.getFullYear(), d1.getMonth(), d1.getDate());
             const ms2 = Date.UTC(d2.getFullYear(), d2.getMonth(), d2.getDate());
@@ -266,15 +266,12 @@
         }
 
         // Календарная разница "до даты" (не включая конечный день)
-        // fromDate → toDate: сколько прошло/осталось между этими днями
         function fmtCalendar(fromDate, toDate) {
             let y = toDate.getFullYear() - fromDate.getFullYear();
             let m = toDate.getMonth() - fromDate.getMonth();
             let d = toDate.getDate() - fromDate.getDate();
 
             // Считаем разницу "до даты": вычитаем 1 день из интервала
-            // Это не костыль, а корректная семантика:
-            // "осталось до даты" = от сегодня до даты без включения конечного дня
             d -= 1;
 
             if (d < 0) {
@@ -332,7 +329,6 @@
             localStorage.setItem("sLife", document.getElementById("shelfLife").value);
             localStorage.setItem("sUnit", unit);
 
-            // Календарный расчёт даты окончания
             const expDate = new Date(y, m - 1, d);
             if (unit === 30) {
                 expDate.setMonth(expDate.getMonth() + life);
@@ -383,6 +379,10 @@
             const el = document.getElementById(id);
             el.addEventListener("focus", function () {
                 this.dataset.old = this.value;
+                // Плавная прокрутка через задержку — чтобы клавиатура успела открыться
+                setTimeout(() => {
+                    this.scrollIntoView({ behavior: "smooth", block: "center" });
+                }, 300);
             });
             el.addEventListener("keydown", function (e) {
                 const keys = ["Tab","Shift","Control","Alt","Backspace","Delete","ArrowLeft","ArrowRight","ArrowUp","ArrowDown"];
