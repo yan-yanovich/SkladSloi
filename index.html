@@ -5,128 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Коробов в слое</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f0f2f5;
-            min-height: 100vh;
-            padding: 16px;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        h1 {
-            text-align: center;
-            font-size: 22px;
-            color: #1a1a2e;
-            margin-bottom: 20px;
-        }
-        .card {
-            background: #fff;
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 16px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-        }
-        label {
-            display: block;
-            font-size: 15px;
-            color: #555;
-            margin-bottom: 6px;
-            font-weight: 500;
-        }
-        input {
-            width: 100%;
-            padding: 14px;
-            font-size: 18px;
-            border: 2px solid #e0e0e0;
-            border-radius: 12px;
-            outline: none;
-            margin-bottom: 16px;
-        }
-        input:focus {
-            border-color: #4a90d9;
-        }
-        input.err {
-            border-color: #e74c3c;
-            background: #fff0f0;
-        }
-        .btn {
-            width: 100%;
-            padding: 16px;
-            font-size: 18px;
-            font-weight: 600;
-            color: #fff;
-            background: #4a90d9;
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-        }
-        .btn:hover {
-            background: #357abd;
-        }
-        .result {
-            display: none;
-        }
-        .result.show {
-            display: block;
-        }
-        .result-label {
-            text-align: center;
-            font-size: 16px;
-            color: #888;
-            margin-bottom: 8px;
-        }
-        .result-count {
-            text-align: center;
-            font-size: 48px;
-            font-weight: 700;
-            color: #4a90d9;
-        }
-        .fill-row {
-            display: flex;
-            justify-content: center;
-            align-items: baseline;
-            gap: 8px;
-            margin-top: 8px;
-        }
-        .fill-key {
-            font-size: 14px;
-            color: #888;
-        }
-        .fill-val {
-            font-size: 20px;
-            font-weight: 700;
-            color: #2e7d32;
-        }
-        .dimensions {
-            text-align: center;
-            font-size: 13px;
-            color: #888;
-            margin-top: 8px;
-        }
-        .pallet-size {
-            text-align: center;
-            font-size: 13px;
-            color: #888;
-            margin-top: 4px;
-        }
-        .error {
-            color: #e74c3c;
-            text-align: center;
-            font-size: 15px;
-            font-weight: 600;
-            margin-top: 12px;
-            display: none;
-        }
-        .error.show {
-            display: block;
-        }
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;min-height:100vh;padding:16px}
+        .container{max-width:600px;margin:0 auto}
+        h1{text-align:center;font-size:22px;color:#1a1a2e;margin-bottom:20px}
+        .card{background:#fff;border-radius:16px;padding:24px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+        label{display:block;font-size:15px;color:#555;margin-bottom:6px;font-weight:500}
+        input{width:100%;padding:14px;font-size:18px;border:2px solid #e0e0e0;border-radius:12px;outline:none;margin-bottom:16px}
+        input:focus{border-color:#4a90d9}
+        input.err{border-color:#e74c3c;background:#fff0f0}
+        .btn{width:100%;padding:16px;font-size:18px;font-weight:600;color:#fff;background:#4a90d9;border:none;border-radius:12px;cursor:pointer}
+        .btn:hover{background:#357abd}
+        .result{display:none}.result.show{display:block}
+        .result-label{text-align:center;font-size:16px;color:#888;margin-bottom:8px}
+        .result-count{text-align:center;font-size:48px;font-weight:700;color:#4a90d9}
+        .fill-row{display:flex;justify-content:center;align-items:baseline;gap:8px;margin-top:8px}
+        .fill-key{font-size:14px;color:#888}
+        .fill-val{font-size:20px;font-weight:700;color:#2e7d32}
+        .dimensions{text-align:center;font-size:13px;color:#888;margin-top:8px}
+        .pallet-size{text-align:center;font-size:13px;color:#888;margin-top:4px}
+        .error{color:#e74c3c;text-align:center;font-size:15px;font-weight:600;margin-top:12px;display:none}
+        .error.show{display:block}
     </style>
 </head>
 <body>
@@ -152,126 +51,125 @@
         </div>
     </div>
     <script>
-        var L = 120;
-        var W = 80;
-        var a = document.getElementById("boxL");
-        var b = document.getElementById("boxW");
+        const L = 120, W = 80;
+        const a = document.getElementById("boxL");
+        const b = document.getElementById("boxW");
 
-        function parseNum(str) {
-            return parseFloat(String(str).trim().replace(',', '.'));
+        // Восстановление сохранённых значений
+        if (localStorage.getItem("bl")) a.value = localStorage.getItem("bl");
+        if (localStorage.getItem("bw")) b.value = localStorage.getItem("bw");
+
+        const num = v => parseFloat(String(v).trim().replace(',', '.'));
+        const cnt = (zw, zh, bw, bh) => Math.floor(zw / bw) * Math.floor(zh / bh);
+
+        function cuts(total, d1, d2) {
+            const s = new Set();
+            for (const d of [d1, d2]) {
+                for (let k = 1; k * d < total; k++) {
+                    s.add(+(k * d).toFixed(6));
+                    s.add(+(total - k * d).toFixed(6));
+                }
+            }
+            return [...s].filter(v => v > 0 && v < total).sort((x, y) => x - y);
         }
 
-        function n(zw, zh, bw, bh) {
-            return Math.floor(zw / bw) * Math.floor(zh / bh);
-        }
+        // Лучшая раскладка в прямоугольнике с учётом разных поворотов по рядам
+        function rowsBest(zw, zh, bl, bw) {
+            const o = [{ w: bl, h: bw }, { w: bw, h: bl }];
+            let best = 0;
 
-        function pts(total, d1, d2) {
-            var set = new Set();
-            for (var k = 1; k * d1 < total; k++) set.add(+(k * d1).toFixed(6));
-            for (var k = 1; k * d2 < total; k++) set.add(+(k * d2).toFixed(6));
-            for (var k = 1; k * d1 < total; k++) set.add(+(total - k * d1).toFixed(6));
-            for (var k = 1; k * d2 < total; k++) set.add(+(total - k * d2).toFixed(6));
-            return Array.from(set).filter(function (v) { return v > 0 && v < total; })
-                .sort(function (x, y) { return x - y; });
+            for (const r of o) best = Math.max(best, cnt(zw, zh, r.w, r.h));
+
+            // ряды по высоте, в каждом ряду своя ориентация
+            for (const ry of cuts(zh, bl, bw)) {
+                for (const r1 of o) for (const r2 of o)
+                    best = Math.max(best,
+                        cnt(zw, ry, r1.w, r1.h) + cnt(zw, zh - ry, r2.w, r2.h));
+            }
+
+            // столбцы по ширине, в каждом столбце своя ориентация
+            for (const rx of cuts(zw, bl, bw)) {
+                for (const r1 of o) for (const r2 of o)
+                    best = Math.max(best,
+                        cnt(rx, zh, r1.w, r1.h) + cnt(zw - rx, zh, r2.w, r2.h));
+            }
+
+            return best;
         }
 
         function best(bl, bw) {
-            var o = [{ w: bl, h: bw }, { w: bw, h: bl }];
-            var bc = 0;
-            var cfg = { t: "s", o: [0] };
-            function t(c, x) { if (c > bc) { bc = c; cfg = x; } }
+            let best = 0;
 
-            for (var i = 0; i < 2; i++)
-                t(n(L, W, o[i].w, o[i].h), { t: "s", o: [i] });
+            // одна зона
+            best = Math.max(best, rowsBest(L, W, bl, bw));
 
-            var xp = pts(L, bl, bw);
-            var yp = pts(W, bl, bw);
+            // вертикальный разрез
+            for (const x of cuts(L, bl, bw))
+                best = Math.max(best,
+                    rowsBest(x, W, bl, bw) + rowsBest(L - x, W, bl, bw));
 
-            for (var s of xp)
-                for (var i = 0; i < 2; i++)
-                    for (var j = 0; j < 2; j++)
-                        t(n(s, W, o[i].w, o[i].h) + n(L - s, W, o[j].w, o[j].h), { t: "v2", s: [s], o: [i, j] });
+            // горизонтальный разрез
+            for (const y of cuts(W, bl, bw))
+                best = Math.max(best,
+                    rowsBest(L, y, bl, bw) + rowsBest(L, W - y, bl, bw));
 
-            for (var s of yp)
-                for (var i = 0; i < 2; i++)
-                    for (var j = 0; j < 2; j++)
-                        t(n(L, s, o[i].w, o[i].h) + n(L, W - s, o[j].w, o[j].h), { t: "h2", s: [s], o: [i, j] });
+            // оба разреза
+            for (const x of cuts(L, bl, bw))
+                for (const y of cuts(W, bl, bw))
+                    best = Math.max(best,
+                        rowsBest(x, y, bl, bw) + rowsBest(L - x, y, bl, bw) +
+                        rowsBest(x, W - y, bl, bw) + rowsBest(L - x, W - y, bl, bw));
 
-            for (var xs of xp)
-                for (var ys of yp)
-                    for (var i = 0; i < 2; i++)
-                        for (var j = 0; j < 2; j++)
-                            for (var k = 0; k < 2; k++)
-                                for (var l = 0; l < 2; l++)
-                                    t(n(xs, ys, o[i].w, o[i].h) + n(L - xs, ys, o[j].w, o[j].h) +
-                                      n(xs, W - ys, o[k].w, o[k].h) + n(L - xs, W - ys, o[l].w, o[l].h),
-                                      { t: "x", s: [xs, ys], o: [i, j, k, l] });
-
-            var names = {
-                s: "Обычная",
-                v2: "Смешанная (верт.)",
-                h2: "Смешанная (гориз.)",
-                x: "Смешанная"
-            };
-            return { total: bc, type: names[cfg.t] };
+            return best;
         }
 
         function showErr(msg) {
-            var e = document.getElementById("err");
-            e.textContent = msg;
-            e.classList.add("show");
+            document.getElementById("err").textContent = msg;
+            document.getElementById("err").classList.add("show");
             document.getElementById("result").classList.remove("show");
         }
 
         function calc() {
-            var bl = parseNum(a.value);
-            var bw = parseNum(b.value);
+            const bl = num(a.value), bw = num(b.value);
             a.classList.remove("err");
             b.classList.remove("err");
             document.getElementById("err").classList.remove("show");
 
             if (!isFinite(bl) || bl <= 0) {
-                a.classList.add("err");
-                a.focus();
+                a.classList.add("err"); a.focus();
                 showErr("7 раз отмерь — 1 раз введи");
                 return;
             }
             if (!isFinite(bw) || bw <= 0) {
-                b.classList.add("err");
-                b.focus();
+                b.classList.add("err"); b.focus();
                 showErr("7 раз отмерь — 1 раз введи");
                 return;
             }
 
-            if (Math.min(bl, bw) > W || Math.max(bl, bw) > L) {
+            // Сохраняем введённые значения
+            localStorage.setItem("bl", a.value);
+            localStorage.setItem("bw", b.value);
+
+            const total = best(bl, bw);
+            if (!total) {
                 a.classList.add("err");
                 b.classList.add("err");
-                showErr("Коробка " + bl + " × " + bw + " не влезает на паллету 120 × 80 см");
+                showErr(`Коробка ${bl} × ${bw} см не влезает на паллету ${L} × ${W} см`);
                 return;
             }
 
-            var r = best(bl, bw);
-
-            if (!r.total) {
-                a.classList.add("err");
-                b.classList.add("err");
-                showErr("Коробка " + bl + " × " + bw + " не влезает на паллету 120 × 80 см");
-                return;
-            }
-
-            document.getElementById("err").classList.remove("show");
-            var el = document.getElementById("result");
+            const el = document.getElementById("result");
             el.classList.add("show");
-            document.getElementById("count").textContent = r.total;
+            document.getElementById("count").textContent = total;
             document.getElementById("fill").textContent =
-                ((r.total * bl * bw) / (L * W) * 100).toFixed(1) + "%";
-            document.getElementById("dims").textContent = "Коробка " + bl + " × " + bw + " см";
+                (total * bl * bw / (L * W) * 100).toFixed(1) + "%";
+            document.getElementById("dims").textContent = `Коробка ${bl} × ${bw} см`;
             el.scrollIntoView({ behavior: "smooth" });
         }
 
         a.oninput = b.oninput = function () { this.classList.remove("err"); };
-        a.onkeydown = function (e) { if (e.key === "Enter") { e.preventDefault(); b.focus(); } };
-        b.onkeydown = function (e) { if (e.key === "Enter") { e.preventDefault(); calc(); } };
+        a.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); b.focus(); } };
+        b.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); calc(); } };
     </script>
 </body>
 </html>
