@@ -11,7 +11,7 @@
             box-sizing: border-box;
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #f0f2f5;
             min-height: 100vh;
             padding: 16px;
@@ -133,9 +133,9 @@
         <h1>Коробов в слое</h1>
         <div class="card">
             <label for="boxL">Длина коробки (см)</label>
-            <input type="number" id="boxL" placeholder="например, 40" min="1" step="any">
+            <input type="text" inputmode="decimal" id="boxL" placeholder="например, 40 или 12,5">
             <label for="boxW">Ширина коробки (см)</label>
-            <input type="number" id="boxW" placeholder="например, 26" min="1" step="any">
+            <input type="text" inputmode="decimal" id="boxW" placeholder="например, 26 или 12,5">
             <button class="btn" onclick="calc()">Рассчитать</button>
             <div class="error" id="err"></div>
         </div>
@@ -156,28 +156,28 @@
         var a = document.getElementById("boxL");
         var b = document.getElementById("boxW");
 
+        function parseNum(str) {
+            return parseFloat(String(str).trim().replace(',', '.'));
+        }
+
         function n(zw, zh, bw, bh) {
             return Math.floor(zw / bw) * Math.floor(zh / bh);
         }
 
         function pts(total, d1, d2) {
-            var s = {};
-            var o = [];
-            for (var k = 1; k * d1 <= total; k++) s[k * d1] = 1;
-            for (var k = 1; k * d2 <= total; k++) s[k * d2] = 1;
-            for (var k = 0; k * d1 < total; k++) s[total - k * d1] = 1;
-            for (var k = 0; k * d2 < total; k++) s[total - k * d2] = 1;
-            for (var p in s) {
-                var v = +p;
-                if (v > 0 && v < total) o.push(v);
-            }
-            return o.sort(function (x, y) { return x - y; });
+            var set = new Set();
+            for (var k = 1; k * d1 < total; k++) set.add(+(k * d1).toFixed(6));
+            for (var k = 1; k * d2 < total; k++) set.add(+(k * d2).toFixed(6));
+            for (var k = 1; k * d1 < total; k++) set.add(+(total - k * d1).toFixed(6));
+            for (var k = 1; k * d2 < total; k++) set.add(+(total - k * d2).toFixed(6));
+            return Array.from(set).filter(function (v) { return v > 0 && v < total; })
+                .sort(function (x, y) { return x - y; });
         }
 
         function best(bl, bw) {
             var o = [{ w: bl, h: bw }, { w: bw, h: bl }];
             var bc = 0;
-            var cfg;
+            var cfg = { t: "s", o: [0] };
             function t(c, x) { if (c > bc) { bc = c; cfg = x; } }
 
             for (var i = 0; i < 2; i++)
@@ -203,65 +203,4 @@
                             for (var k = 0; k < 2; k++)
                                 for (var l = 0; l < 2; l++)
                                     t(n(xs, ys, o[i].w, o[i].h) + n(L - xs, ys, o[j].w, o[j].h) +
-                                      n(xs, W - ys, o[k].w, o[k].h) + n(L - xs, W - ys, o[l].w, o[l].h),
-                                      { t: "x", s: [xs, ys], o: [i, j, k, l] });
-
-            var names = {
-                s: "Обычная",
-                v2: "Смешанная (верт.)",
-                h2: "Смешанная (гориз.)",
-                x: "Смешанная"
-            };
-            return { total: bc, type: names[cfg.t] };
-        }
-
-        function calc() {
-            var bl = +a.value;
-            var bw = +b.value;
-            a.classList.remove("err");
-            b.classList.remove("err");
-
-            if (!bl || bl <= 0) {
-                a.classList.add("err");
-                a.focus();
-                fail();
-                return;
-            }
-            if (!bw || bw <= 0) {
-                b.classList.add("err");
-                b.focus();
-                fail();
-                return;
-            }
-
-            var r = best(bl, bw);
-
-            if (!r.total) {
-                a.classList.add("err");
-                b.classList.add("err");
-                fail();
-                return;
-            }
-
-            document.getElementById("err").classList.remove("show");
-            var el = document.getElementById("result");
-            el.classList.add("show");
-            document.getElementById("count").textContent = r.total;
-            document.getElementById("fill").textContent =
-                ((r.total * bl * bw) / (L * W) * 100).toFixed(1) + "%";
-            document.getElementById("dims").textContent = "Коробка " + bl + " × " + bw + " см";
-            el.scrollIntoView({ behavior: "smooth" });
-        }
-
-        function fail() {
-            document.getElementById("err").textContent = "7 раз отмерь — 1 раз введи";
-            document.getElementById("err").classList.add("show");
-            document.getElementById("result").classList.remove("show");
-        }
-
-        a.oninput = b.oninput = function () { this.classList.remove("err"); };
-        a.onkeydown = function (e) { if (e.key === "Enter") { e.preventDefault(); b.focus(); } };
-        b.onkeydown = function (e) { if (e.key === "Enter") { e.preventDefault(); calc(); } };
-    </script>
-</body>
-</html>
+                                      n(xs, W - ys, o[k].w, o[k].h) + n(L - xs, W - ys, o[l
