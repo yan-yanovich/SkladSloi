@@ -52,36 +52,66 @@
     </div>
     <script>
         const PL=120,PW=80;
+
+        /* Подсчёт коробок в зоне */
         function cnt(zw,zh,bw,bh){return Math.floor(zw/bw)*Math.floor(zh/bh)}
+
+        /* Поиск лучшей раскладки */
         function findBest(bl,bw2){
             const o=[{w:bl,h:bw2},{w:bw2,h:bl}];
             let bc=0,bcfg=null;
             function t(c,cfg){if(c>bc){bc=c;bcfg=cfg}}
-            for(let i=0;i<2;i++)t(cnt(PL,PW,o[i].w,o[i].h),{type:'s',o:[i]});
+
+            /* 1 ориентация */
+            for(let i=0;i<2;i++)
+                t(cnt(PL,PW,o[i].w,o[i].h),{type:'s',o:[i]});
+
+            /* верт 2 зоны */
             for(let s=1;s<PL;s++)for(let i=0;i<2;i++)for(let j=0;j<2;j++)
                 t(cnt(s,PW,o[i].w,o[i].h)+cnt(PL-s,PW,o[j].w,o[j].h),{type:'v2',s:[s],o:[i,j]});
+
+            /* гориз 2 зоны */
             for(let s=1;s<PW;s++)for(let i=0;i<2;i++)for(let j=0;j<2;j++)
                 t(cnt(PL,s,o[i].w,o[i].h)+cnt(PL,PW-s,o[j].w,o[j].h),{type:'h2',s:[s],o:[i,j]});
+
+            /* крест 2×2 */
             for(let xs=1;xs<PL;xs++)for(let ys=1;ys<PW;ys++)for(let i=0;i<2;i++)for(let j=0;j<2;j++)for(let k=0;k<2;k++)for(let l=0;l<2;l++)
                 t(cnt(xs,ys,o[i].w,o[i].h)+cnt(PL-xs,ys,o[j].w,o[j].h)+cnt(xs,PW-ys,o[k].w,o[k].h)+cnt(PL-xs,PW-ys,o[l].w,o[l].h),{type:'x',s:[xs,ys],o:[i,j,k,l]});
+
             const tn={s:'Обычная',v2:'Смешанная (верт.)',h2:'Смешанная (гориз.)',x:'Смешанная'};
             return{total:bc,type:tn[bcfg.type]}
         }
+
+        /* Расчёт */
         function calculate(){
-            const bl=parseFloat(document.getElementById('boxL').value),bw2=parseFloat(document.getElementById('boxW').value);
+            const bl=parseFloat(document.getElementById('boxL').value),
+                  bw2=parseFloat(document.getElementById('boxW').value);
             if(!bl||!bw2||bl<=0||bw2<=0){err('Введите размеры коробки');return}
             const best=findBest(bl,bw2);
             if(!best.total){err('Коробка не помещается на паллету');return}
             document.getElementById('error').classList.remove('show');
-            const r=document.getElementById('result');r.classList.add('show');
+            const r=document.getElementById('result');
+            r.classList.add('show');
             document.getElementById('count').textContent=best.total;
             document.getElementById('layoutType').textContent=best.type;
             document.getElementById('dims').textContent='Коробка '+bl+' × '+bw2+' см';
             document.getElementById('fillPct').textContent=((best.total*bl*bw2)/(PL*PW)*100).toFixed(1)+'%';
             r.scrollIntoView({behavior:'smooth'})
         }
-        function err(m){document.getElementById('error').textContent=m;document.getElementById('error').classList.add('show');document.getElementById('result').classList.remove('show')}
-        document.addEventListener('keydown',function(e){if(e.key==='Enter')calculate()});
+
+        function err(m){
+            document.getElementById('error').textContent=m;
+            document.getElementById('error').classList.add('show');
+            document.getElementById('result').classList.remove('show')
+        }
+
+        /* Enter: поле 1 → поле 2, поле 2 → расчёт */
+        document.getElementById('boxL').addEventListener('keydown',function(e){
+            if(e.key==='Enter'){e.preventDefault();document.getElementById('boxW').focus()}
+        });
+        document.getElementById('boxW').addEventListener('keydown',function(e){
+            if(e.key==='Enter'){e.preventDefault();calculate()}
+        });
     </script>
 </body>
 </html>
