@@ -19,17 +19,13 @@
         .result.show{display:block}
         .result-count{text-align:center;font-size:48px;font-weight:700;color:#4a90d9}
         .result-label{text-align:center;font-size:16px;color:#888;margin-bottom:8px}
-        .pallet-wrapper{position:relative;background:#8B6914;border-radius:2px;margin:16px 0 8px;width:100%;padding-bottom:66.67%}
-        .pallet-grid{position:absolute;top:0;left:0;right:0;bottom:0}
-        .box-cell{position:absolute;background:#f5e6c8;border:1px solid #c4953a;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#8B6914;overflow:hidden}
-        .dimensions{text-align:center;font-size:13px;color:#888;margin-top:4px}
-        .pallet-label{text-align:center;font-size:13px;color:#aaa;margin-top:4px}
-        .error{color:#e74c3c;text-align:center;font-size:14px;margin-top:8px;display:none}
-        .error.show{display:block}
         .layout-type{text-align:center;font-size:14px;color:#4a90d9;font-weight:600;margin-top:8px}
         .fill-row{display:flex;justify-content:center;align-items:baseline;gap:8px;margin-top:8px}
         .fill-key{font-size:14px;color:#888}
         .fill-val{font-size:20px;font-weight:700;color:#2e7d32}
+        .dimensions{text-align:center;font-size:13px;color:#888;margin-top:8px}
+        .error{color:#e74c3c;text-align:center;font-size:14px;margin-top:8px;display:none}
+        .error.show{display:block}
     </style>
 </head>
 <body>
@@ -52,53 +48,24 @@
                 <span class="fill-val" id="fillPct">0%</span>
             </div>
             <div class="dimensions" id="dims"></div>
-            <div class="pallet-wrapper">
-                <div class="pallet-grid" id="pallet"></div>
-            </div>
-            <div class="pallet-label"><span id="palletInfo"></span></div>
         </div>
     </div>
     <script>
         const PL=120,PW=80;
         function cnt(zw,zh,bw,bh){return Math.floor(zw/bw)*Math.floor(zh/bh)}
-        function fill(x0,y0,zw,zh,bw,bh){
-            const c=Math.floor(zw/bw),r=Math.floor(zh/bh),a=[];
-            for(let j=0;j<r;j++)for(let i=0;i<c;i++)a.push({x:x0+i*bw,y:y0+j*bh,w:bw,h:bh});
-            return a
-        }
         function findBest(bl,bw2){
             const o=[{w:bl,h:bw2},{w:bw2,h:bl}];
             let bc=0,bcfg=null;
             function t(c,cfg){if(c>bc){bc=c;bcfg=cfg}}
-            /* 1 ориентация */
             for(let i=0;i<2;i++)t(cnt(PL,PW,o[i].w,o[i].h),{type:'s',o:[i]});
-            /* верт 2 зоны */
             for(let s=1;s<PL;s++)for(let i=0;i<2;i++)for(let j=0;j<2;j++)
                 t(cnt(s,PW,o[i].w,o[i].h)+cnt(PL-s,PW,o[j].w,o[j].h),{type:'v2',s:[s],o:[i,j]});
-            /* гориз 2 зоны */
             for(let s=1;s<PW;s++)for(let i=0;i<2;i++)for(let j=0;j<2;j++)
                 t(cnt(PL,s,o[i].w,o[i].h)+cnt(PL,PW-s,o[j].w,o[j].h),{type:'h2',s:[s],o:[i,j]});
-            /* крест 2×2 */
             for(let xs=1;xs<PL;xs++)for(let ys=1;ys<PW;ys++)for(let i=0;i<2;i++)for(let j=0;j<2;j++)for(let k=0;k<2;k++)for(let l=0;l<2;l++)
                 t(cnt(xs,ys,o[i].w,o[i].h)+cnt(PL-xs,ys,o[j].w,o[j].h)+cnt(xs,PW-ys,o[k].w,o[k].h)+cnt(PL-xs,PW-ys,o[l].w,o[l].h),{type:'x',s:[xs,ys],o:[i,j,k,l]});
-            const boxes=build(bcfg,o);
             const tn={s:'Обычная',v2:'Смешанная (верт.)',h2:'Смешанная (гориз.)',x:'Смешанная'};
-            return{total:bc,boxes:boxes,type:tn[bcfg.type]}
-        }
-        function build(cfg,o){
-            const b=[];
-            function f(x0,y0,zw,zh,i){b.push(...fill(x0,y0,zw,zh,o[i].w,o[i].h))}
-            if(cfg.type==='s')f(0,0,PL,PW,cfg.o[0]);
-            else if(cfg.type==='v2'){f(0,0,cfg.s[0],PW,cfg.o[0]);f(cfg.s[0],0,PL-cfg.s[0],PW,cfg.o[1])}
-            else if(cfg.type==='h2'){f(0,0,PL,cfg.s[0],cfg.o[0]);f(0,cfg.s[0],PL,PW-cfg.s[0],cfg.o[1])}
-            else if(cfg.type==='x'){const[xs,ys]=cfg.s;f(0,0,xs,ys,cfg.o[0]);f(xs,0,PL-xs,ys,cfg.o[1]);f(0,ys,xs,PW-ys,cfg.o[2]);f(xs,ys,PL-xs,PW-ys,cfg.o[3])}
-            return b
-        }
-        function draw(boxes){
-            const el=document.getElementById('pallet');el.innerHTML='';
-            for(let i=0;i<boxes.length;i++){const b=boxes[i],d=document.createElement('div');d.className='box-cell';d.textContent=i+1;
-                d.style.left=(b.x/PL*100)+'%';d.style.top=(b.y/PW*100)+'%';d.style.width=(b.w/PL*100)+'%';d.style.height=(b.h/PW*100)+'%';
-                el.appendChild(d)}
+            return{total:bc,type:tn[bcfg.type]}
         }
         function calculate(){
             const bl=parseFloat(document.getElementById('boxL').value),bw2=parseFloat(document.getElementById('boxW').value);
@@ -110,10 +77,7 @@
             document.getElementById('count').textContent=best.total;
             document.getElementById('layoutType').textContent=best.type;
             document.getElementById('dims').textContent='Коробка '+bl+' × '+bw2+' см';
-            const fp=(best.total*bl*bw2)/(PL*PW)*100;
-            document.getElementById('fillPct').textContent=fp.toFixed(1)+'%';
-            draw(best.boxes);
-            document.getElementById('palletInfo').textContent='Паллета '+PL+' × '+PW+' см';
+            document.getElementById('fillPct').textContent=((best.total*bl*bw2)/(PL*PW)*100).toFixed(1)+'%';
             r.scrollIntoView({behavior:'smooth'})
         }
         function err(m){document.getElementById('error').textContent=m;document.getElementById('error').classList.add('show');document.getElementById('result').classList.remove('show')}
