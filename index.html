@@ -46,7 +46,6 @@
     <div class="container">
         <h1>Мультитул оператора</h1>
 
-        <!-- ===== БЛОК 1: Короба в слое ===== -->
         <div class="section-title">Короба в слое</div>
         <div class="card">
             <label for="boxL">Длина коробки (см)</label>
@@ -67,27 +66,18 @@
             <div class="pallet-size">Паллета 120 × 80 см</div>
         </div>
 
-        <!-- ===== БЛОК 2: Сроки годности ===== -->
         <div class="section-title">Сроки годности</div>
         <div class="card">
             <label>Дата производства</label>
             <div class="row3">
-                <div>
-                    <select id="mfgDay"></select>
-                </div>
-                <div>
-                    <select id="mfgMonth"></select>
-                </div>
-                <div>
-                    <select id="mfgYear"></select>
-                </div>
+                <div><select id="mfgDay"></select></div>
+                <div><select id="mfgMonth"></select></div>
+                <div><select id="mfgYear"></select></div>
             </div>
 
             <label for="shelfLife">Срок годности</label>
             <div class="row2">
-                <div>
-                    <input type="text" inputmode="numeric" id="shelfLife" placeholder="Кол-во" maxlength="5">
-                </div>
+                <div><input type="text" inputmode="numeric" id="shelfLife" placeholder="Кол-во" maxlength="5"></div>
                 <div>
                     <select id="shelfUnit">
                         <option value="1">Сутки</option>
@@ -189,7 +179,7 @@
             if (!total) {
                 a.classList.add("err");
                 b.classList.add("err");
-                showErr(`Коробка ${bl} × ${bw} см не влезает на паллет ${L} × ${W} см`);
+                showErr(`Коробка ${bl} × ${bw} см не влезает на паллету ${L} × ${W} см`);
                 return;
             }
 
@@ -205,13 +195,10 @@
         b.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); calc(); } };
 
         /* ===== Блок 2: Сроки годности ===== */
-
-        // Заполнение даты производства (все свайпом)
         const mfgDayEl = document.getElementById("mfgDay");
         const mfgMonthEl = document.getElementById("mfgMonth");
         const mfgYearEl = document.getElementById("mfgYear");
 
-        // День: 1–31
         for (let i = 1; i <= 31; i++) {
             const opt = document.createElement("option");
             opt.value = i;
@@ -219,7 +206,6 @@
             mfgDayEl.appendChild(opt);
         }
 
-        // Месяц: с номером в скобках
         const months = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
         months.forEach((name, idx) => {
             const opt = document.createElement("option");
@@ -228,7 +214,6 @@
             mfgMonthEl.appendChild(opt);
         });
 
-        // Год: последние 10 лет (от текущего -9 до текущего)
         const curYear = new Date().getFullYear();
         for (let i = curYear; i >= curYear - 9; i--) {
             const opt = document.createElement("option");
@@ -237,12 +222,34 @@
             mfgYearEl.appendChild(opt);
         }
 
-        // Восстановление
-        if (localStorage.getItem("sDay")) mfgDayEl.value = localStorage.getItem("sDay");
+        function daysInMonth(m, y) {
+            return new Date(y, m, 0).getDate();
+        }
+
+        function updateDayLimit() {
+            const m = parseInt(mfgMonthEl.value) || 1;
+            const y = parseInt(mfgYearEl.value) || curYear;
+            const maxDay = daysInMonth(m, y);
+            const prev = parseInt(mfgDayEl.value) || 1;
+            mfgDayEl.innerHTML = "";
+            for (let i = 1; i <= maxDay; i++) {
+                const opt = document.createElement("option");
+                opt.value = i;
+                opt.textContent = i;
+                mfgDayEl.appendChild(opt);
+            }
+            mfgDayEl.value = Math.min(prev, maxDay);
+        }
+
         if (localStorage.getItem("sMonth")) mfgMonthEl.value = localStorage.getItem("sMonth");
         if (localStorage.getItem("sYear")) mfgYearEl.value = localStorage.getItem("sYear");
+        updateDayLimit();
+        if (localStorage.getItem("sDay")) mfgDayEl.value = localStorage.getItem("sDay");
         if (localStorage.getItem("sLife")) document.getElementById("shelfLife").value = localStorage.getItem("sLife");
         if (localStorage.getItem("sUnit")) document.getElementById("shelfUnit").value = localStorage.getItem("sUnit");
+
+        mfgMonthEl.addEventListener("change", () => { updateDayLimit(); autoCalcShelf(); });
+        mfgYearEl.addEventListener("change", () => { updateDayLimit(); autoCalcShelf(); });
 
         function pluralDays(n) {
             const a = n % 10, b = n % 100;
@@ -251,7 +258,6 @@
             return "дней";
         }
 
-        // Календарное разбиение: годы -> месяцы -> дни
         function fmtCalendar(fromDate, toDate) {
             let y = toDate.getFullYear() - fromDate.getFullYear();
             let m = toDate.getMonth() - fromDate.getMonth();
@@ -285,7 +291,7 @@
             const errEl = document.getElementById("shelfErr");
             errEl.classList.remove("show");
 
-            if (!d || d < 1 || d > 31 || !m || m < 1 || m > 12 || !y || y < 2000 || y > 2100) {
+            if (!d || d < 1 || !m || m < 1 || m > 12 || !y || y < 2000 || y > 2100) {
                 errEl.textContent = "Проверьте дату производства";
                 errEl.classList.add("show");
                 document.getElementById("shelfResult").classList.remove("show");
@@ -312,49 +318,53 @@
             localStorage.setItem("sLife", document.getElementById("shelfLife").value);
             localStorage.setItem("sUnit", unit);
 
-            const totalDays = life * unit;
+            // Календарный расчёт даты окончания
             const expDate = new Date(prodDate);
-            expDate.setDate(expDate.getDate() + totalDays);
+            if (unit === 30) {
+                expDate.setMonth(expDate.getMonth() + life);
+            } else if (unit === 365) {
+                expDate.setFullYear(expDate.getFullYear() + life);
+            } else {
+                expDate.setDate(expDate.getDate() + life * unit);
+            }
 
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
             const pad = n => String(n).padStart(2, "0");
-            const fmt = `${pad(expDate.getDate())}/${pad(expDate.getMonth() + 1)}/${expDate.getFullYear()}`;
+            const fmt = `${pad(expDate.getDate())}.${pad(expDate.getMonth() + 1)}.${expDate.getFullYear()}`;
             document.getElementById("expiryDate").textContent = fmt;
 
             const leftEl = document.getElementById("daysLeft");
             leftEl.className = "left-out";
+
+            const totalDaysDiff = Math.round((expDate - prodDate) / (1000 * 60 * 60 * 24));
 
             if (today >= expDate) {
                 leftEl.textContent = `Просрочено на ${fmtCalendar(expDate, today)}`;
                 leftEl.classList.add("red");
             } else {
                 const diffDays = Math.round((expDate - today) / (1000 * 60 * 60 * 24));
-                const pct = Math.round(diffDays / totalDays * 100);
+                const pct = totalDaysDiff > 0 ? Math.round(diffDays / totalDaysDiff * 100) : 100;
                 leftEl.textContent = `Осталось ${fmtCalendar(today, expDate)} (${pct}%)`;
-                leftEl.classList.add("green");
+                leftEl.classList.add(pct <= 20 ? "orange" : "green");
             }
 
             document.getElementById("shelfResult").classList.add("show");
         }
 
-        // Автоматический расчёт при изменении любого поля
-        [mfgDayEl, mfgMonthEl, mfgYearEl, document.getElementById("shelfUnit")].forEach(el => {
-            el.onchange = function () {
-                if (mfgDayEl.value && mfgMonthEl.value && mfgYearEl.value && document.getElementById("shelfLife").value) {
-                    calcShelf();
-                }
-            };
-        });
-
-        document.getElementById("shelfLife").oninput = function () {
-            if (mfgDayEl.value && mfgMonthEl.value && mfgYearEl.value && this.value) {
+        function autoCalcShelf() {
+            if (mfgDayEl.value && mfgMonthEl.value && mfgYearEl.value && document.getElementById("shelfLife").value) {
                 calcShelf();
             }
-        };
+        }
 
-        // Клик по ячейке: без выделения, при вводе — стереть старое
+        [mfgDayEl, document.getElementById("shelfUnit")].forEach(el => {
+            el.onchange = autoCalcShelf;
+        });
+
+        document.getElementById("shelfLife").oninput = autoCalcShelf;
+
         ["boxL", "boxW", "shelfLife"].forEach(id => {
             const el = document.getElementById(id);
             el.addEventListener("focus", function () {
@@ -369,12 +379,9 @@
             });
         });
 
-        // Enter
-        ["shelfLife"].forEach(id => {
-            document.getElementById(id).onkeydown = e => {
-                if (e.key === "Enter") { e.preventDefault(); calcShelf(); }
-            };
-        });
+        document.getElementById("shelfLife").onkeydown = e => {
+            if (e.key === "Enter") { e.preventDefault(); calcShelf(); }
+        };
     </script>
 </body>
 </html>
