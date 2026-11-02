@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор укладки на паллету</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 22px;
+            color: #1a1a2e;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+
+        label {
+            display: block;
+            font-size: 15px;
+            color: #555;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px;
+            font-size: 18px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            outline: none;
+            transition: border-color 0.2s;
+            margin-bottom: 16px;
+        }
+
+        input:focus {
+            border-color: #4a90d9;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            background: #4a90d9;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #357abd;
+        }
+
+        .result {
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result-count {
+            text-align: center;
+            font-size: 48px;
+            font-weight: 700;
+            color: #4a90d9;
+        }
+
+        .result-label {
+            text-align: center;
+            font-size: 16px;
+            color: #888;
+            margin-bottom: 16px;
+        }
+
+        .pallet {
+            background: #d4a056;
+            border-radius: 8px;
+            padding: 8px;
+            display: grid;
+            gap: 3px;
+            margin: 16px 0;
+        }
+
+        .box {
+            background: #f5e6c8;
+            border: 1.5px solid #c4953a;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: 600;
+            color: #8B6914;
+            aspect-ratio: 1;
+            min-height: 40px;
+        }
+
+        .dimensions {
+            text-align: center;
+            font-size: 14px;
+            color: #888;
+            margin-top: 8px;
+        }
+
+        .pallet-label {
+            text-align: center;
+            font-size: 13px;
+            color: #aaa;
+            margin-top: 8px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-key {
+            color: #888;
+        }
+
+        .info-val {
+            font-weight: 600;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📦 Укладка на паллету</h1>
+
+        <div class="card">
+            <div class="info-row">
+                <span class="info-key">Паллета</span>
+                <span class="info-val">120 × 80 см</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <label for="boxL">Длина коробки (см)</label>
+            <input type="number" id="boxL" placeholder="например, 30" min="1" step="any">
+
+            <label for="boxW">Ширина коробки (см)</label>
+            <input type="number" id="boxW" placeholder="например, 20" min="1" step="any">
+
+            <button class="btn" onclick="calculate()">Рассчитать</button>
+        </div>
+
+        <div class="card result" id="result">
+            <div class="result-label">Коробок в слое</div>
+            <div class="result-count" id="count">0</div>
+            <div class="dimensions" id="dims"></div>
+
+            <div class="pallet" id="pallet"></div>
+
+            <div class="pallet-label">
+                <span id="palletInfo"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PALLET_L = 120;
+        const PALLET_W = 80;
+
+        function calculate() {
+            const boxL = parseFloat(document.getElementById('boxL').value);
+            const boxW = parseFloat(document.getElementById('boxW').value);
+
+            if (!boxL || !boxW || boxL <= 0 || boxW <= 0) {
+                alert('Введите размеры коробки');
+                return;
+            }
+
+            // Вариант 1
+            const cols1 = Math.floor(PALLET_L / boxL);
+            const rows1 = Math.floor(PALLET_W / boxW);
+            const total1 = cols1 * rows1;
+
+            // Вариант 2 (поворот)
+            const cols2 = Math.floor(PALLET_L / boxW);
+            const rows2 = Math.floor(PALLET_W / boxL);
+            const total2 = cols2 * rows2;
+
+            let total, cols, rows, dimX, dimY;
+
+            if (total1 >= total2) {
+                total = total1;
+                cols = cols1;
+                rows = rows1;
+                dimX = boxL;
+                dimY = boxW;
+            } else {
+                total = total2;
+                cols = cols2;
+                rows = rows2;
+                dimX = boxW;
+                dimY = boxL;
+            }
+
+            // Показать результат
+            document.getElementById('result').classList.add('show');
+            document.getElementById('count').textContent = total;
+            document.getElementById('dims').textContent =
+                `${dimX.toFixed(1)} см (по длине) × ${dimY.toFixed(1)} см (по ширине)`;
+
+            // Схема
+            const pallet = document.getElementById('pallet');
+            pallet.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            pallet.innerHTML = '';
+
+            for (let i = 1; i <= total; i++) {
+                const div = document.createElement('div');
+                div.className = 'box';
+                div.textContent = i;
+                pallet.appendChild(div);
+            }
+
+            document.getElementById('palletInfo').textContent =
+                `Паллета 120 × 80 см · ${cols} × ${rows} · ${boxL.toFixed(1)}×${boxW.toFixed(1)} см`;
+
+            // Прокрутка к результату
+            document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Enter — расчёт
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') calculate();
+        });
+    </script>
+</body>
+</html>
