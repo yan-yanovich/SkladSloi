@@ -3,17 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Коробов в слое</title>
+    <title>Калькуляторы</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;min-height:100vh;padding:16px}
         .container{max-width:600px;margin:0 auto}
         h1{text-align:center;font-size:22px;color:#1a1a2e;margin-bottom:20px}
+        .section-title{text-align:center;font-size:18px;color:#4a90d9;font-weight:700;margin:28px 0 16px}
         .card{background:#fff;border-radius:16px;padding:24px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
         label{display:block;font-size:15px;color:#555;margin-bottom:6px;font-weight:500}
         input{width:100%;padding:14px;font-size:18px;border:2px solid #e0e0e0;border-radius:12px;outline:none;margin-bottom:16px}
         input:focus{border-color:#4a90d9}
         input.err{border-color:#e74c3c;background:#fff0f0}
+        select{width:100%;padding:14px;font-size:18px;border:2px solid #e0e0e0;border-radius:12px;outline:none;margin-bottom:16px;background:#fff}
+        select:focus{border-color:#4a90d9}
         .btn{width:100%;padding:16px;font-size:18px;font-weight:600;color:#fff;background:#4a90d9;border:none;border-radius:12px;cursor:pointer}
         .btn:hover{background:#357abd}
         .result{display:none}.result.show{display:block}
@@ -26,11 +29,25 @@
         .pallet-size{text-align:center;font-size:13px;color:#888;margin-top:4px}
         .error{color:#e74c3c;text-align:center;font-size:15px;font-weight:600;margin-top:12px;display:none}
         .error.show{display:block}
+        .row3{display:flex;gap:10px;margin-bottom:0}
+        .row3>div{flex:1}
+        .row3 select,.row3 input{margin-bottom:16px}
+        .row2{display:flex;gap:10px}
+        .row2>div{flex:1}
+        .row2 select,.row2 input{margin-bottom:16px}
+        .expiry-out{text-align:center;font-size:22px;font-weight:700;color:#333;margin-bottom:12px}
+        .left-out{text-align:center;font-size:22px;font-weight:700;margin-bottom:4px}
+        .left-out.red{color:#e74c3c}
+        .left-out.green{color:#2e7d32}
+        .left-out.orange{color:#e67e22}
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Коробов в слое</h1>
+        <h1>Калькуляторы</h1>
+
+        <!-- ===== БЛОК 1: Короба в слое ===== -->
+        <div class="section-title">Короба в слое</div>
         <div class="card">
             <label for="boxL">Длина коробки (см)</label>
             <input type="text" inputmode="decimal" id="boxL" placeholder="например, 40 или 12,5">
@@ -49,8 +66,65 @@
             <div class="dimensions" id="dims"></div>
             <div class="pallet-size">Паллета 120 × 80 см</div>
         </div>
+
+        <!-- ===== БЛОК 2: Сроки годности ===== -->
+        <div class="section-title">Сроки годности</div>
+        <div class="card">
+            <label>Дата производства</label>
+            <div class="row3">
+                <div>
+                    <input type="text" inputmode="numeric" id="mfgDay" placeholder="День" maxlength="2">
+                </div>
+                <div>
+                    <select id="mfgMonth">
+                        <option value="1">Январь</option>
+                        <option value="2">Февраль</option>
+                        <option value="3">Март</option>
+                        <option value="4">Апрель</option>
+                        <option value="5">Май</option>
+                        <option value="6">Июнь</option>
+                        <option value="7">Июль</option>
+                        <option value="8">Август</option>
+                        <option value="9">Сентябрь</option>
+                        <option value="10">Октябрь</option>
+                        <option value="11">Ноябрь</option>
+                        <option value="12">Декабрь</option>
+                    </select>
+                </div>
+                <div>
+                    <input type="text" inputmode="numeric" id="mfgYear" placeholder="Год" maxlength="4">
+                </div>
+            </div>
+
+            <label for="shelfLife">Срок годности</label>
+            <div class="row2">
+                <div>
+                    <input type="text" inputmode="numeric" id="shelfLife" placeholder="Кол-во" maxlength="5">
+                </div>
+                <div>
+                    <select id="shelfUnit">
+                        <option value="1">Сутки</option>
+                        <option value="7">Недели</option>
+                        <option value="30">Месяцы</option>
+                        <option value="365">Годы</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="btn" onclick="calcShelf()">Рассчитать</button>
+            <div class="error" id="shelfErr"></div>
+        </div>
+        <div class="card result" id="shelfResult">
+            <div class="result-label">Годен до</div>
+            <div class="expiry-out" id="expiryDate"></div>
+            <div class="left-out" id="daysLeft"></div>
+        </div>
     </div>
+
     <script>
+        /* ===== Переключение не нужно — оба блока на одной странице ===== */
+
+        /* ===== Блок 1: Короба ===== */
         const L = 120, W = 80;
         const a = document.getElementById("boxL");
         const b = document.getElementById("boxW");
@@ -75,43 +149,28 @@
         function rowsBest(zw, zh, bl, bw) {
             const o = [{ w: bl, h: bw }, { w: bw, h: bl }];
             let best = 0;
-
             for (const r of o) best = Math.max(best, cnt(zw, zh, r.w, r.h));
-
-            for (const ry of cuts(zh, bl, bw)) {
+            for (const ry of cuts(zh, bl, bw))
                 for (const r1 of o) for (const r2 of o)
-                    best = Math.max(best,
-                        cnt(zw, ry, r1.w, r1.h) + cnt(zw, zh - ry, r2.w, r2.h));
-            }
-
-            for (const rx of cuts(zw, bl, bw)) {
+                    best = Math.max(best, cnt(zw, ry, r1.w, r1.h) + cnt(zw, zh - ry, r2.w, r2.h));
+            for (const rx of cuts(zw, bl, bw))
                 for (const r1 of o) for (const r2 of o)
-                    best = Math.max(best,
-                        cnt(rx, zh, r1.w, r1.h) + cnt(zw - rx, zh, r2.w, r2.h));
-            }
-
+                    best = Math.max(best, cnt(rx, zh, r1.w, r1.h) + cnt(zw - rx, zh, r2.w, r2.h));
             return best;
         }
 
         function best(bl, bw) {
             let best = 0;
-
             best = Math.max(best, rowsBest(L, W, bl, bw));
-
             for (const x of cuts(L, bl, bw))
-                best = Math.max(best,
-                    rowsBest(x, W, bl, bw) + rowsBest(L - x, W, bl, bw));
-
+                best = Math.max(best, rowsBest(x, W, bl, bw) + rowsBest(L - x, W, bl, bw));
             for (const y of cuts(W, bl, bw))
-                best = Math.max(best,
-                    rowsBest(L, y, bl, bw) + rowsBest(L, W - y, bl, bw));
-
+                best = Math.max(best, rowsBest(L, y, bl, bw) + rowsBest(L, W - y, bl, bw));
             for (const x of cuts(L, bl, bw))
                 for (const y of cuts(W, bl, bw))
                     best = Math.max(best,
                         rowsBest(x, y, bl, bw) + rowsBest(L - x, y, bl, bw) +
                         rowsBest(x, W - y, bl, bw) + rowsBest(L - x, W - y, bl, bw));
-
             return best;
         }
 
@@ -149,8 +208,7 @@
                 return;
             }
 
-            const el = document.getElementById("result");
-            el.classList.add("show");
+            document.getElementById("result").classList.add("show");
             document.getElementById("count").textContent = total;
             document.getElementById("fill").textContent =
                 (total * bl * bw / (L * W) * 100).toFixed(1) + "%";
@@ -160,7 +218,110 @@
         a.oninput = b.oninput = function () { this.classList.remove("err"); };
         a.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); b.focus(); } };
         b.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); calc(); } };
+
+        /* ===== Блок 2: Сроки годности ===== */
+
+        // Восстановление
+        if (localStorage.getItem("sDay")) document.getElementById("mfgDay").value = localStorage.getItem("sDay");
+        if (localStorage.getItem("sMonth")) document.getElementById("mfgMonth").value = localStorage.getItem("sMonth");
+        if (localStorage.getItem("sYear")) document.getElementById("mfgYear").value = localStorage.getItem("sYear");
+        if (localStorage.getItem("sLife")) document.getElementById("shelfLife").value = localStorage.getItem("sLife");
+        if (localStorage.getItem("sUnit")) document.getElementById("shelfUnit").value = localStorage.getItem("sUnit");
+
+        function pluralDays(n) {
+            const a = n % 10, b = n % 100;
+            if (a === 1 && b !== 11) return "день";
+            if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return "дня";
+            return "дней";
+        }
+
+        function fmtParts(totalDays) {
+            const years = Math.floor(totalDays / 365);
+            let rest = totalDays % 365;
+            const months = Math.floor(rest / 30);
+            const days = rest % 30;
+            const parts = [];
+            if (years) parts.push(`${years} ${years === 1 ? "год" : (years >= 2 && years <= 4 ? "года" : "лет")}`);
+            if (months) parts.push(`${months} ${months === 1 ? "месяц" : (months >= 2 && months <= 4 ? "месяца" : "месяцев")}`);
+            if (days) parts.push(`${days} ${pluralDays(days)}`);
+            if (!parts.length) parts.push(`0 дней`);
+            return parts.join(" ");
+        }
+
+        function calcShelf() {
+            const d = parseInt(document.getElementById("mfgDay").value);
+            const m = parseInt(document.getElementById("mfgMonth").value);
+            const y = parseInt(document.getElementById("mfgYear").value);
+            const life = parseInt(document.getElementById("shelfLife").value);
+            const unit = parseInt(document.getElementById("shelfUnit").value);
+
+            const errEl = document.getElementById("shelfErr");
+            errEl.classList.remove("show");
+
+            if (!d || d < 1 || d > 31 || !y || y < 2000 || y > 2100) {
+                errEl.textContent = "Проверьте дату производства";
+                errEl.classList.add("show");
+                document.getElementById("shelfResult").classList.remove("show");
+                return;
+            }
+            if (!life || life <= 0) {
+                errEl.textContent = "Укажите срок годности";
+                errEl.classList.add("show");
+                document.getElementById("shelfResult").classList.remove("show");
+                return;
+            }
+
+            const prodDate = new Date(y, m - 1, d);
+            if (prodDate.getDate() !== d) {
+                errEl.textContent = "Неверная дата (проверьте день)";
+                errEl.classList.add("show");
+                document.getElementById("shelfResult").classList.remove("show");
+                return;
+            }
+
+            localStorage.setItem("sDay", document.getElementById("mfgDay").value);
+            localStorage.setItem("sMonth", m);
+            localStorage.setItem("sYear", document.getElementById("mfgYear").value);
+            localStorage.setItem("sLife", document.getElementById("shelfLife").value);
+            localStorage.setItem("sUnit", unit);
+
+            const totalDays = life * unit;
+            const expDate = new Date(prodDate);
+            expDate.setDate(expDate.getDate() + totalDays);
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const diffMs = expDate - today;
+            const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+            const pad = n => String(n).padStart(2, "0");
+            const fmt = `${pad(expDate.getDate())}/${pad(expDate.getMonth() + 1)}/${expDate.getFullYear()}`;
+
+            document.getElementById("expiryDate").textContent = fmt;
+
+            const leftEl = document.getElementById("daysLeft");
+            leftEl.className = "left-out";
+
+            if (diffDays < 0) {
+                leftEl.textContent = `Просрочено на ${fmtParts(-diffDays)}`;
+                leftEl.classList.add("red");
+            } else if (diffDays === 0) {
+                leftEl.textContent = "Истекает сегодня";
+                leftEl.classList.add("orange");
+            } else {
+                const pct = Math.round(diffDays / totalDays * 100);
+                leftEl.textContent = `Осталось ${fmtParts(diffDays)} (${pct}%)`;
+                leftEl.classList.add("green");
+            }
+
+            document.getElementById("shelfResult").classList.add("show");
+        }
+
+        ["mfgDay", "mfgYear", "shelfLife"].forEach(id => {
+            document.getElementById(id).onkeydown = e => {
+                if (e.key === "Enter") { e.preventDefault(); calcShelf(); }
+            };
+        });
     </script>
 </body>
 </html>
-
