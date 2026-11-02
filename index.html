@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Калькулятор укладки на паллет</title>
+    <title>Калькулятор укладки на паллету</title>
     <style>
         * {
             margin: 0;
@@ -48,7 +48,7 @@
 
         input {
             width: 100%;
-            padding: 10px 14px;
+            padding: 14px;
             font-size: 18px;
             border: 2px solid #e0e0e0;
             border-radius: 12px;
@@ -62,13 +62,11 @@
         }
 
         .btn {
-            width: 120%;
-            padding: 14px;
+            width: 100%;
+            padding: 16px;
             font-size: 18px;
-            guida: 600;
             font-weight: 600;
             color: #fff;
-            background: #4a90 guida;
             background: #4a90d9;
             border: none;
             border-radius: 12px;
@@ -117,11 +115,11 @@
             left: 0;
             right: 0;
             bottom: 0;
-            display: grid;
-            gap: 0;
+            display: block;
         }
 
         .box-cell {
+            position: absolute;
             background: #f5e6c8;
             border: 1px solid #c4953a;
             display: flex;
@@ -203,4 +201,201 @@
             <label for="boxL">Длина коробки (см)</label>
             <input type="number" id="boxL" placeholder="например, 30" min="1" step="any">
 
-            <label for="boxW">
+            <label for="boxW">Ширина коробки (см)</label>
+            <input type="number" id="boxW" placeholder="например, 16" min="1" step="any">
+
+            <button class="btn" onclick="calculate()">Рассчитать</button>
+            <div class="error" id="error"></div>
+        </div>
+
+        <div class="card result" id="result">
+            <div class="result-label">Коробок в слое</div>
+            <div class="result-count" id="count">0</div>
+            <div class="layout-type" id="layoutType"></div>
+            <div class="dimensions" id="dims"></div>
+
+            <div class="pallet-wrapper">
+                <div class="pallet-grid" id="pallet"></div>
+            </div>
+
+            <div class="pallet-label">
+                <span id="palletInfo"></span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PALLET_L = 120;
+        const PALLET_W = 80;
+
+        /* ========================================
+           ФУНКЦИЯ: заполнить зону одинаковыми коробками
+           Зона: (zoneX, zoneY, zoneW, zoneH)
+           boxW, boxH — реальные размеры коробки
+           Возвращает массив {x, y, w, h} для каждой коробки
+        ======================================== */
+        function fillZone(zoneX, zoneY, zoneW, zoneH, boxW, boxH) {
+            const cols = Math.floor(zoneW / boxW);
+            const rows = Math.floor(zoneH / boxH);
+            const total = cols * rows;
+
+            const boxes = [];
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    boxes.push({
+                        x: zoneX + c * boxW,
+                        y: zoneY + r * boxH,
+                        w: boxW,
+                        h: boxH
+                    });
+                }
+            }
+            return boxes;
+        }
+
+        /* ========================================
+           ФУНКЦИЯ: перебор комбинированных раскладок
+           Разбивает паллету на 2 зоны (по вертикали
+           или горизонтали), каждую заполняет своей
+           ориентацией коробок.
+        ======================================== */
+        function findBestLayout(boxL, boxW) {
+            let best = { total: 0, boxes: [], type: '' };
+
+            // Варианты ориентации коробки
+            const orientations = [
+                { w: boxL, h: boxW },
+                { w: boxW, h: boxL }
+            ];
+
+            // 1) Одна зона — одна ориентация
+            for (const o of orientations) {
+                const boxes = fillZone(0, 0, PALLET_L, PALLET_W, o.w, o.h);
+                if (boxes.length > best.total) {
+                    best = {
+                        total: boxes.length,
+                        boxes: boxes,
+                        type: 'Обычная'
+                    };
+                }
+            }
+
+            // 2) Две зоны: вертикальная линия разделения (по X)
+            for (const o1 of orientations) {
+                for (const o2 of orientations) {
+                    // Перебираем точку разделения
+                    for (let split = 1; split < PALLET_L; split++) {
+                        // Зона 1 (левая): (0, 0, split, PALLET_W)
+                        const b1 = fillZone(0, 0, split, PALLET_W, o1.w, o1.h);
+                        // Зона 2 (правая): (split, 0, PALLET_L-split, PALLET_W)
+                        const b2 = fillZone(split, 0, PALLET_L - split, PALLET_W, o2.w, o2.h);
+                        const total = b1.length + b2.length;
+
+                        if (total > best.total) {
+                            best = {
+                                total: total,
+                                boxes: [...b1, ...b2],
+                                type: 'Комбинированная (верт. разделение)'
+                            };
+                        }
+                    }
+                }
+            }
+
+            // 3) Две зоны: горизонтальная линия разделения (по Y)
+            for (const o1 of orientations) {
+                for (const o2 of orientations) {
+                    for (let split = 1; split < PALLET_W; split++) {
+                        // Зона 1 (верхняя): (0, 0, PALLET_L, split)
+                        const b1 = fillZone(0, 0, PALLET_L, split, o1.w, o1.h);
+                        // Зона 2 (нижняя): (0, split, PALLET_L, PALLET_W-split)
+                        const b2 = fillZone(0, split, PALLET_L, PALLET_W - split, o2.w, o2.h);
+                        const total = b1.length + b2.length;
+
+                        if (total > best.total) {
+                            best = {
+                                total: total,
+                                boxes: [...b1, ...b2],
+                                type: 'Комбинированная (гориз. разделение)'
+                            };
+                        }
+                    }
+                }
+            }
+
+            return best;
+        }
+
+        /* ========================================
+           ФУНКЦИЯ: отрисовка схемы
+        ======================================== */
+        function drawScheme(boxes) {
+            const pallet = document.getElementById('pallet');
+            pallet.innerHTML = '';
+
+            for (let i = 0; i < boxes.length; i++) {
+                const b = boxes[i];
+                const div = document.createElement('div');
+                div.className = 'box-cell';
+                div.textContent = i + 1;
+
+                // Позиция и размер в процентах от паллеты
+                div.style.left   = (b.x / PALLET_L * 100) + '%';
+                div.style.top    = (b.y / PALLET_W * 100) + '%';
+                div.style.width  = (b.w / PALLET_L * 100) + '%';
+                div.style.height = (b.h / PALLET_W * 100) + '%';
+
+                pallet.appendChild(div);
+            }
+        }
+
+        /* ========================================
+           ОСНОВНАЯ ФУНКЦИЯ РАСЧЁТА
+        ======================================== */
+        function calculate() {
+            const boxL = parseFloat(document.getElementById('boxL').value);
+            const boxW = parseFloat(document.getElementById('boxW').value);
+
+            if (!boxL || !boxW || boxL <= 0 || boxW <= 0) {
+                showError('Введите размеры коробки');
+                return;
+            }
+
+            const best = findBestLayout(boxL, boxW);
+
+            if (best.total === 0) {
+                showError('Коробка не помещается на паллету');
+                return;
+            }
+
+            // Показать результат
+            document.getElementById('error').classList.remove('show');
+            document.getElementById('result').classList.add('show');
+            document.getElementById('count').textContent = best.total;
+            document.getElementById('layoutType').textContent = best.type;
+
+            // Определяем средний размер коробки в схеме
+            const b0 = best.boxes[0];
+            document.getElementById('dims').textContent =
+                `Коробка ${boxL} × ${boxW} см`;
+
+            drawScheme(best.boxes);
+
+            document.getElementById('palletInfo').textContent =
+                `Паллета ${PALLET_L} × ${PALLET_W} см`;
+
+            document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showError(msg) {
+            document.getElementById('error').textContent = msg;
+            document.getElementById('error').classList.add('show');
+            document.getElementById('result').classList.remove('show');
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') calculate();
+        });
+    </script>
+</body>
+</html>
