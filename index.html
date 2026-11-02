@@ -35,7 +35,7 @@
             border-radius: 16px;
             padding: 24px;
             margin-bottom: 16px;
-            box-box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
         }
 
         label {
@@ -48,7 +48,7 @@
 
         input {
             width: 100%;
-            padding: 14px;
+            padding: 10px 14px;
             font-size: 18px;
             border: 2px solid #e0e0e0;
             border-radius: 12px;
@@ -62,11 +62,13 @@
         }
 
         .btn {
-            width: 100%;
-            padding: 16px;
+            width: 120%;
+            padding: 14px;
             font-size: 18px;
+            guida: 600;
             font-weight: 600;
             color: #fff;
+            background: #4a90 guida;
             background: #4a90d9;
             border: none;
             border-radius: 12px;
@@ -97,14 +99,14 @@
             text-align: center;
             font-size: 16px;
             color: #888;
-            margin-bottom: 16px;
+            margin-bottom: 8px;
         }
 
         .pallet-wrapper {
             position: relative;
             background: #8B6914;
             border-radius: 2px;
-            margin: 20px 0;
+            margin: 16px 0 8px;
             width: 100%;
             padding-bottom: 66.67%;
         }
@@ -125,7 +127,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             color: #8B6914;
             overflow: hidden;
@@ -133,16 +135,16 @@
 
         .dimensions {
             text-align: center;
-            font-size: 14px;
+            font-size: 13px;
             color: #888;
-            margin-top: 8px;
+            margin-top: 4px;
         }
 
         .pallet-label {
             text-align: center;
             font-size: 13px;
             color: #aaa;
-            margin-top: 8px;
+            margin-top: 4px;
         }
 
         .info-row {
@@ -177,14 +179,12 @@
             display: block;
         }
 
-        .warning {
-            background: #fff3cd;
-            color: #856404;
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-size: 13px;
+        .layout-type {
             text-align: center;
-            margin-top: 12px;
+            font-size: 14px;
+            color: #4a90d9;
+            font-weight: 600;
+            margin-top: 8px;
         }
     </style>
 </head>
@@ -203,102 +203,4 @@
             <label for="boxL">Длина коробки (см)</label>
             <input type="number" id="boxL" placeholder="например, 30" min="1" step="any">
 
-            <label for="boxW">Ширина коробки (см)</label>
-            <input type="number" id="boxW" placeholder="например, 16" min="1" step="any">
-
-            <button class="btn" onclick="calculate()">Рассчитать</button>
-            <div class="error" id="error"></div>
-        </div>
-
-        <div class="card result" id="result">
-            <div class="result-label">Коробок в слое</div>
-            <div class="result-count" id="count">0</div>
-            <div class="dimensions" id="dims"></div>
-
-            <div class="pallet-wrapper">
-                <div class="pallet-grid" id="pallet"></div>
-            </div>
-
-            <div class="pallet-label">
-                <span id="palletInfo"></span>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const PALLET_L = 120;
-        const PALLET_W = 80;
-
-        function calculate() {
-            const boxL = parseFloat(document.getElementById('boxL').value);
-            const boxW = parseFloat(document.getElementById('boxW').value);
-
-            if (!boxL || !boxW || boxL <= 0 || boxW <= 0) {
-                showError('Введите размеры коробки');
-                return;
-            }
-
-            // Собираем варианты: только те, где коробка хотя бы 1 раз влезает
-            const variants = [];
-
-            // Вариант 1: boxL вдоль 120, boxW вдоль 80
-            const cols1 = Math.floor(PALLET_L / boxL);
-            const rows1 = Math.floor(PALLET_W / boxW);
-            const total1 = cols1 * rows1;
-            if (cols1 >= 1 && rows1 >= 1) {
-                variants.push({ total: total1, cols: cols1, rows: rows1, dimX: boxL, dimY: boxW });
-            }
-
-            // Вариант 2 (поворот): boxW вдоль 120, boxL вдоль 80
-            const cols2 = Math.floor(PALLET_L / boxW);
-            const rows2 = Math.floor(PALLET_W / boxL);
-            const total2 = cols2 * rows2;
-            if (cols2 >= 1 && rows2 >= 1) {
-                variants.push({ total: total2, cols: cols2, rows: rows2, dimX: boxW, dimY: boxL });
-            }
-
-            if (variants.length === 0) {
-                showError('Коробка не помещается на паллету ни в одной ориентации');
-                return;
-            }
-
-            // Берём лучший вариант
-            const best = variants.reduce((a, b) => a.total >= b.total ? a : b);
-
-            // Показать результат
-            document.getElementById('result').classList.add('show');
-            document.getElementById('count').textContent = best.total;
-            document.getElementById('dims').textContent =
-                `${best.dimX} см (по длине) × ${best.dimY} см (по ширине)`;
-
-            // Схема — пропорциональная, без отступов
-            const pallet = document.getElementById('pallet');
-            pallet.style.gridTemplateColumns = `repeat(${best.cols}, 1fr)`;
-            pallet.style.gridTemplateRows = `repeat(${best.rows}, 1fr)`;
-            pallet.innerHTML = '';
-
-            for (let i = 1; i <= best.total; i++) {
-                const div = document.createElement('div');
-                div.className = 'box-cell';
-                div.textContent = i;
-                pallet.appendChild(div);
-            }
-
-            document.getElementById('palletInfo').textContent =
-                `Паллета ${PALLET_L} × ${PALLET_W} см · ${best.cols} × ${best.rows}`;
-
-            document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
-        }
-
-        function showError(msg) {
-            document.getElementById('error').textContent = msg;
-            document.getElementById('error').classList.add('show');
-            document.getElementById('result').classList.remove('show');
-        }
-
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') calculate();
-        });
-    </script>
-</body>
-</html>
+            <label for="boxW">
