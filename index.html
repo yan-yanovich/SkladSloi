@@ -258,6 +258,13 @@
             return "дней";
         }
 
+        // Разница дат в целых днях, без учёта часов
+        function daysBetween(d1, d2) {
+            const ms1 = Date.UTC(d1.getFullYear(), d1.getMonth(), d1.getDate());
+            const ms2 = Date.UTC(d2.getFullYear(), d2.getMonth(), d2.getDate());
+            return Math.round((ms2 - ms1) / (1000 * 60 * 60 * 24));
+        }
+
         function fmtCalendar(fromDate, toDate) {
             let y = toDate.getFullYear() - fromDate.getFullYear();
             let m = toDate.getMonth() - fromDate.getMonth();
@@ -319,7 +326,7 @@
             localStorage.setItem("sUnit", unit);
 
             // Календарный расчёт даты окончания
-            const expDate = new Date(prodDate);
+            const expDate = new Date(y, m - 1, d);
             if (unit === 30) {
                 expDate.setMonth(expDate.getMonth() + life);
             } else if (unit === 365) {
@@ -338,13 +345,13 @@
             const leftEl = document.getElementById("daysLeft");
             leftEl.className = "left-out";
 
-            const totalDaysDiff = Math.round((expDate - prodDate) / (1000 * 60 * 60 * 24));
+            const totalDaysDiff = daysBetween(prodDate, expDate);
 
-            if (today >= expDate) {
+            if (daysBetween(expDate, today) >= 0) {
                 leftEl.textContent = `Просрочено на ${fmtCalendar(expDate, today)}`;
                 leftEl.classList.add("red");
             } else {
-                const diffDays = Math.round((expDate - today) / (1000 * 60 * 60 * 24));
+                const diffDays = daysBetween(today, expDate);
                 const pct = totalDaysDiff > 0 ? Math.round(diffDays / totalDaysDiff * 100) : 100;
                 leftEl.textContent = `Осталось ${fmtCalendar(today, expDate)} (${pct}%)`;
                 leftEl.classList.add(pct <= 20 ? "orange" : "green");
