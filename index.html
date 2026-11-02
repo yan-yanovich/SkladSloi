@@ -13,6 +13,7 @@
         label{display:block;font-size:15px;color:#555;margin-bottom:6px;font-weight:500}
         input{width:100%;padding:14px;font-size:18px;border:2px solid #e0e0e0;border-radius:12px;outline:none;margin-bottom:16px}
         input:focus{border-color:#4a90d9}
+        input.err{border-color:#e74c3c;background:#fff0f0}
         .btn{width:100%;padding:16px;font-size:18px;font-weight:600;color:#fff;background:#4a90d9;border:none;border-radius:12px;cursor:pointer}
         .btn:hover{background:#357abd}
         .result{display:none}
@@ -53,9 +54,28 @@
     <script>
         var PL = 120;
         var PW = 80;
+        var inpL = document.getElementById('boxL');
+        var inpW = document.getElementById('boxW');
 
         function cnt(zw, zh, bw, bh) {
             return Math.floor(zw / bw) * Math.floor(zh / bh);
+        }
+
+        function getSplits(total, bw1, bw2) {
+            var pts = {};
+            pts[0] = 1;
+            pts[total] = 1;
+            for (var k = 1; k * bw1 <= total; k++) pts[k * bw1] = 1;
+            for (var k = 1; k * bw2 <= total; k++) pts[k * bw2] = 1;
+            for (var k = 0; k * bw1 < total; k++) pts[total - k * bw1] = 1;
+            for (var k = 0; k * bw2 < total; k++) pts[total - k * bw2] = 1;
+            var arr = [];
+            for (var p in pts) {
+                var v = parseInt(p);
+                if (v > 0 && v < total) arr.push(v);
+            }
+            arr.sort(function(a, b) { return a - b; });
+            return arr;
         }
 
         function findBest(bl, bw2) {
@@ -67,13 +87,15 @@
                 if (c > bc) { bc = c; bcfg = cfg; }
             }
 
-            // 1 orientation
             for (var i = 0; i < 2; i++) {
                 t(cnt(PL, PW, o[i].w, o[i].h), { type: 's', o: [i] });
             }
 
-            // vertical 2-zone
-            for (var s = 1; s < PL; s++) {
+            var xPts = getSplits(PL, bl, bw2);
+            var yPts = getSplits(PW, bl, bw2);
+
+            for (var si = 0; si < xPts.length; si++) {
+                var s = xPts[si];
                 for (var i = 0; i < 2; i++) {
                     for (var j = 0; j < 2; j++) {
                         t(cnt(s, PW, o[i].w, o[i].h) + cnt(PL - s, PW, o[j].w, o[j].h),
@@ -82,8 +104,8 @@
                 }
             }
 
-            // horizontal 2-zone
-            for (var s = 1; s < PW; s++) {
+            for (var si = 0; si < yPts.length; si++) {
+                var s = yPts[si];
                 for (var i = 0; i < 2; i++) {
                     for (var j = 0; j < 2; j++) {
                         t(cnt(PL, s, o[i].w, o[i].h) + cnt(PL, PW - s, o[j].w, o[j].h),
@@ -92,9 +114,10 @@
                 }
             }
 
-            // cross 2x2
-            for (var xs = 1; xs < PL; xs++) {
-                for (var ys = 1; ys < PW; ys++) {
+            for (var xi = 0; xi < xPts.length; xi++) {
+                for (var yi = 0; yi < yPts.length; yi++) {
+                    var xs = xPts[xi];
+                    var ys = yPts[yi];
                     for (var i = 0; i < 2; i++) {
                         for (var j = 0; j < 2; j++) {
                             for (var k = 0; k < 2; k++) {
@@ -111,23 +134,49 @@
                 }
             }
 
-            var tn = { s: 'Обычная', v2: 'Смешанная (верт.)', h2: 'Смешанная (гориз.)', x: 'Смешанная' };
+            var tn = {
+                s: 'Обычная',
+                v2: 'Смешанная (верт.)',
+                h2: 'Смешанная (гориз.)',
+                x: 'Смешанная'
+            };
+
             return { total: bc, type: tn[bcfg.type] };
         }
 
-        function calculate() {
-            var bl = parseFloat(document.getElementById('boxL').value);
-            var bw2 = parseFloat(document.getElementById('boxW').value);
+        function showErr() {
+            document.getElementById('error').textContent = '7 раз отмерь — 1 раз введи';
+            document.getElementById('error').classList.add('show');
+            document.getElementById('result').classList.remove('show');
+        }
 
-            if (!bl || !bw2 || bl <= 0 || bw2 <= 0) {
-                err('Введите размеры коробки');
+        function calculate() {
+            var bl = parseFloat(inpL.value);
+            var bw2 = parseFloat(inpW.value);
+
+            inpL.classList.remove('err');
+            inpW.classList.remove('err');
+
+            if (!bl || bl <= 0) {
+                inpL.classList.add('err');
+                inpL.focus();
+                showErr();
+                return;
+            }
+
+            if (!bw2 || bw2 <= 0) {
+                inpW.classList.add('err');
+                inpW.focus();
+                showErr();
                 return;
             }
 
             var best = findBest(bl, bw2);
 
             if (!best.total) {
-                err('Коробка не помещается на паллету');
+                inpL.classList.add('err');
+                inpW.classList.add('err');
+                showErr();
                 return;
             }
 
@@ -141,20 +190,22 @@
             r.scrollIntoView({ behavior: 'smooth' });
         }
 
-        function err(m) {
-            document.getElementById('error').textContent = m;
-            document.getElementById('error').classList.add('show');
-            document.getElementById('result').classList.remove('show');
-        }
+        inpL.addEventListener('input', function() {
+            this.classList.remove('err');
+        });
 
-        document.getElementById('boxL').addEventListener('keydown', function (e) {
+        inpW.addEventListener('input', function() {
+            this.classList.remove('err');
+        });
+
+        inpL.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                document.getElementById('boxW').focus();
+                inpW.focus();
             }
         });
 
-        document.getElementById('boxW').addEventListener('keydown', function (e) {
+        inpW.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 calculate();
