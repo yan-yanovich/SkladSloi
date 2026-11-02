@@ -6,7 +6,7 @@
     <title>Коробов в слое</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;min-height:100vh;padding:16px}
+        body{font-family:...;background:#f0f2f5;min-height:100vh;padding:16px}
         .container{max-width:600px;margin:0 auto}
         h1{text-align:center;font-size:22px;color:#1a1a2e;margin-bottom:20px}
         .card{background:#fff;border-radius:16px;padding:24px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,0.08)}
@@ -37,180 +37,84 @@
             <input type="number" id="boxL" placeholder="например, 40" min="1" step="any">
             <label for="boxW">Ширина коробки (см)</label>
             <input type="number" id="boxW" placeholder="например, 26" min="1" step="any">
-            <button class="btn" onclick="calculate()">Рассчитать</button>
-            <div class="error" id="error"></div>
+            <button class="btn" onclick="calc()">Рассчитать</button>
+            <div class="error" id="err"></div>
         </div>
         <div class="card result" id="result">
             <div class="result-label">Коробов в слое</div>
             <div class="result-count" id="count">0</div>
             <div class="fill-row">
                 <span class="fill-key">Заполняемость</span>
-                <span class="fill-val" id="fillPct">0%</span>
+                <span class="fill-val" id="fill">0%</span>
             </div>
             <div class="dimensions" id="dims"></div>
             <div class="pallet-size">Паллета 120 × 80 см</div>
         </div>
     </div>
     <script>
-        var PL = 120;
-        var PW = 80;
-        var inpL = document.getElementById('boxL');
-        var inpW = document.getElementById('boxW');
+        var L=120,W=80,a=document.getElementById('boxL'),b=document.getElementById('boxW');
 
-        function cnt(zw, zh, bw, bh) {
-            return Math.floor(zw / bw) * Math.floor(zh / bh);
+        function n(zw,zh,bw,bh){return Math.floor(zw/bw)*Math.floor(zh/bh)}
+
+        function pts(total,d1,d2){
+            var s={},o=[];
+            for(var k=1;k*d1<=total;k++)s[k*d1]=1;
+            for(var k=1;k*d2<=total;k++)s[k*d2]=1;
+            for(var k=0;k*d1<total;k++)s[total-k*d1]=1;
+            for(var k=0;k*d2<total;k++)s[total-k*d2]=1;
+            for(var p in s){var v=+p;if(v>0&&v<total)o.push(v)}
+            return o.sort(function(x,y){return x-y})
         }
 
-        function getSplits(total, bw1, bw2) {
-            var pts = {};
-            pts[0] = 1;
-            pts[total] = 1;
-            for (var k = 1; k * bw1 <= total; k++) pts[k * bw1] = 1;
-            for (var k = 1; k * bw2 <= total; k++) pts[k * bw2] = 1;
-            for (var k = 0; k * bw1 < total; k++) pts[total - k * bw1] = 1;
-            for (var k = 0; k * bw2 < total; k++) pts[total - k * bw2] = 1;
-            var arr = [];
-            for (var p in pts) {
-                var v = parseInt(p);
-                if (v > 0 && v < total) arr.push(v);
-            }
-            arr.sort(function(a, b) { return a - b; });
-            return arr;
+        function best(bl,bw){
+            var o=[{w:bl,h:bw},{w:bw,h:bl}],bc=0,cfg;
+            function t(c,x){if(c>bc){bc=c;cfg=x}}
+
+            for(var i=0;i<2;i++)t(n(L,W,o[i].w,o[i].h),{t:'s',o:[i]});
+
+            var xp=pts(L,bl,bw),yp=pts(W,bl,bw);
+
+            for(var s of xp)for(var i=0;i<2;i++)for(var j=0;j<2;j++)
+                t(n(s,W,o[i].w,o[i].h)+n(L-s,W,o[j].w,o[j].h),{t:'v2',s:[s],o:[i,j]});
+
+            for(var s of yp)for(var i=0;i<2;i++)for(var j=0;j<2;j++)
+                t(n(L,s,o[i].w,o[i].h)+n(L,W-s,o[j].w,o[j].h),{t:'h2',s:[s],o:[i,j]});
+
+            for(var xs of xp)for(var ys of yp)for(var i=0;i<2;i++)for(var j=0;j<2;j++)for(var k=0;k<2;k++)for(var l=0;l<2;l++)
+                t(n(xs,ys,o[i].w,o[i].h)+n(L-xs,ys,o[j].w,o[j].h)+n(xs,W-ys,o[k].w,o[k].h)+n(L-xs,W-ys,o[l].w,o[l].h),{t:'x',s:[xs,ys],o:[i,j,k,l]});
+
+            var names={s:'Обычная',v2:'Смешанная (верт.)',h2:'Смешанная (гориз.)',x:'Смешанная'};
+            return{total:bc,type:names[cfg.t]}
         }
 
-        function findBest(bl, bw2) {
-            var o = [{ w: bl, h: bw2 }, { w: bw2, h: bl }];
-            var bc = 0;
-            var bcfg = null;
+        function calc(){
+            var bl=+a.value,bw=+b.value;
+            a.classList.remove('err');b.classList.remove('err');
 
-            function t(c, cfg) {
-                if (c > bc) { bc = c; bcfg = cfg; }
-            }
+            if(!bl||bl<=0){a.classList.add('err');a.focus();fail();return}
+            if(!bw||bw<=0){b.classList.add('err');b.focus();fail();return}
 
-            for (var i = 0; i < 2; i++) {
-                t(cnt(PL, PW, o[i].w, o[i].h), { type: 's', o: [i] });
-            }
+            var r=best(bl,bw);
 
-            var xPts = getSplits(PL, bl, bw2);
-            var yPts = getSplits(PW, bl, bw2);
+            if(!r.total){a.classList.add('err');b.classList.add('err');fail();return}
 
-            for (var si = 0; si < xPts.length; si++) {
-                var s = xPts[si];
-                for (var i = 0; i < 2; i++) {
-                    for (var j = 0; j < 2; j++) {
-                        t(cnt(s, PW, o[i].w, o[i].h) + cnt(PL - s, PW, o[j].w, o[j].h),
-                          { type: 'v2', s: [s], o: [i, j] });
-                    }
-                }
-            }
-
-            for (var si = 0; si < yPts.length; si++) {
-                var s = yPts[si];
-                for (var i = 0; i < 2; i++) {
-                    for (var j = 0; j < 2; j++) {
-                        t(cnt(PL, s, o[i].w, o[i].h) + cnt(PL, PW - s, o[j].w, o[j].h),
-                          { type: 'h2', s: [s], o: [i, j] });
-                    }
-                }
-            }
-
-            for (var xi = 0; xi < xPts.length; xi++) {
-                for (var yi = 0; yi < yPts.length; yi++) {
-                    var xs = xPts[xi];
-                    var ys = yPts[yi];
-                    for (var i = 0; i < 2; i++) {
-                        for (var j = 0; j < 2; j++) {
-                            for (var k = 0; k < 2; k++) {
-                                for (var l = 0; l < 2; l++) {
-                                    t(cnt(xs, ys, o[i].w, o[i].h) +
-                                      cnt(PL - xs, ys, o[j].w, o[j].h) +
-                                      cnt(xs, PW - ys, o[k].w, o[k].h) +
-                                      cnt(PL - xs, PW - ys, o[l].w, o[l].h),
-                                      { type: 'x', s: [xs, ys], o: [i, j, k, l] });
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            var tn = {
-                s: 'Обычная',
-                v2: 'Смешанная (верт.)',
-                h2: 'Смешанная (гориз.)',
-                x: 'Смешанная'
-            };
-
-            return { total: bc, type: tn[bcfg.type] };
+            document.getElementById('err').classList.remove('show');
+            var el=document.getElementById('result');el.classList.add('show');
+            document.getElementById('count').textContent=r.total;
+            document.getElementById('fill').textContent=((r.total*bl*bw)/(L*W)*100).toFixed(1)+'%';
+            document.getElementById('dims').textContent='Коробка '+bl+' × '+bw+' см';
+            el.scrollIntoView({behavior:'smooth'})
         }
 
-        function showErr() {
-            document.getElementById('error').textContent = '7 раз отмерь — 1 раз введи';
-            document.getElementById('error').classList.add('show');
-            document.getElementById('result').classList.remove('show');
+        function fail(){
+            document.getElementById('err').textContent='7 раз отмерь — 1 раз введи';
+            document.getElementById('err').classList.add('show');
+            document.getElementById('result').classList.remove('show')
         }
 
-        function calculate() {
-            var bl = parseFloat(inpL.value);
-            var bw2 = parseFloat(inpW.value);
-
-            inpL.classList.remove('err');
-            inpW.classList.remove('err');
-
-            if (!bl || bl <= 0) {
-                inpL.classList.add('err');
-                inpL.focus();
-                showErr();
-                return;
-            }
-
-            if (!bw2 || bw2 <= 0) {
-                inpW.classList.add('err');
-                inpW.focus();
-                showErr();
-                return;
-            }
-
-            var best = findBest(bl, bw2);
-
-            if (!best.total) {
-                inpL.classList.add('err');
-                inpW.classList.add('err');
-                showErr();
-                return;
-            }
-
-            document.getElementById('error').classList.remove('show');
-            var r = document.getElementById('result');
-            r.classList.add('show');
-            document.getElementById('count').textContent = best.total;
-            document.getElementById('fillPct').textContent =
-                ((best.total * bl * bw2) / (PL * PW) * 100).toFixed(1) + '%';
-            document.getElementById('dims').textContent = 'Коробка ' + bl + ' × ' + bw2 + ' см';
-            r.scrollIntoView({ behavior: 'smooth' });
-        }
-
-        inpL.addEventListener('input', function() {
-            this.classList.remove('err');
-        });
-
-        inpW.addEventListener('input', function() {
-            this.classList.remove('err');
-        });
-
-        inpL.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                inpW.focus();
-            }
-        });
-
-        inpW.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                calculate();
-            }
-        });
+        a.oninput=b.oninput=function(){this.classList.remove('err')};
+        a.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();b.focus()}};
+        b.onkeydown=function(e){if(e.key==='Enter'){e.preventDefault();calc()}};
     </script>
 </body>
 </html>
