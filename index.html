@@ -19,11 +19,11 @@
         .result.show{display:block}
         .result-count{text-align:center;font-size:48px;font-weight:700;color:#4a90d9}
         .result-label{text-align:center;font-size:16px;color:#888;margin-bottom:8px}
-        .layout-type{text-align:center;font-size:14px;color:#4a90d9;font-weight:600;margin-top:8px}
         .fill-row{display:flex;justify-content:center;align-items:baseline;gap:8px;margin-top:8px}
         .fill-key{font-size:14px;color:#888}
         .fill-val{font-size:20px;font-weight:700;color:#2e7d32}
         .dimensions{text-align:center;font-size:13px;color:#888;margin-top:8px}
+        .pallet-size{text-align:center;font-size:13px;color:#888;margin-top:4px}
         .error{color:#e74c3c;text-align:center;font-size:14px;margin-top:8px;display:none}
         .error.show{display:block}
     </style>
@@ -47,6 +47,7 @@
                 <span class="fill-val" id="fillPct">0%</span>
             </div>
             <div class="dimensions" id="dims"></div>
+            <div class="pallet-size">Паллета 120 × 80 см</div>
         </div>
     </div>
     <script>
@@ -64,7 +65,7 @@
                 t(cnt(s,PW,o[i].w,o[i].h)+cnt(PL-s,PW,o[j].w,o[j].h),{type:'v2',s:[s],o:[i,j]});
             for(let s=1;s<PW;s++)for(let i=0;i<2;i++)for(let j=0;j<2;j++)
                 t(cnt(PL,s,o[i].w,o[i].h)+cnt(PL,PW-s,o[j].w,o[j].h),{type:'h2',s:[s],o:[i,j]});
-            for(let xs=1;xs<PL;xs++)for(let ys=1;ys<PW;ys++)for(let i=0;i<2;i++)for(let j=0;j<2;j++)for(let k=0;k<2;k++)for(let l=0;l<2;l++)
+            for(let xs=1;xs<PL;xs++)for(let ys=1;ys<PW;ys())for(let i=0;i<2;i++)for(let j=0;j<2;j++)for(let k=0;k<2;k++)for(let l=0;l<2;l++)
                 t(cnt(xs,ys,o[i].w,o[i].h)+cnt(PL-xs,ys,o[j].w,o[j].h)+cnt(xs,PW-ys,o[k].w,o[k].h)+cnt(PL-xs,PW-ys,o[l].w,o[l].h),{type:'x',s:[xs,ys],o:[i,j,k,l]});
             const tn={s:'Обычная',v2:'Смешанная (верт.)',h2:'Смешанная (гориз.)',x:'Смешанная'};
             return{total:bc,type:tn[bcfg.type]}
