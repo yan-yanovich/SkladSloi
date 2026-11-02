@@ -270,6 +270,8 @@
             let m = toDate.getMonth() - fromDate.getMonth();
             let d = toDate.getDate() - fromDate.getDate();
 
+            // Костыль: -1 день
+            d -= 1;
             if (d < 0) {
                 m--;
                 const prevMonth = new Date(toDate.getFullYear(), toDate.getMonth(), 0);
@@ -325,7 +327,6 @@
             localStorage.setItem("sLife", document.getElementById("shelfLife").value);
             localStorage.setItem("sUnit", unit);
 
-            // Календарный расчёт даты окончания
             const expDate = new Date(y, m - 1, d);
             if (unit === 30) {
                 expDate.setMonth(expDate.getMonth() + life);
