@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Калькуляторы</title>
+    <title>Мультитул оператора</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
         body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;min-height:100vh;padding:16px}
@@ -29,9 +29,9 @@
         .pallet-size{text-align:center;font-size:13px;color:#888;margin-top:4px}
         .error{color:#e74c3c;text-align:center;font-size:15px;font-weight:600;margin-top:12px;display:none}
         .error.show{display:block}
-        .row3{display:flex;gap:10px;margin-bottom:0}
+        .row3{display:flex;gap:10px}
         .row3>div{flex:1}
-        .row3 select,.row3 input{margin-bottom:16px}
+        .row3 input{margin-bottom:16px}
         .row2{display:flex;gap:10px}
         .row2>div{flex:1}
         .row2 select,.row2 input{margin-bottom:16px}
@@ -44,7 +44,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Калькуляторы</h1>
+        <h1>Мультитул оператора</h1>
 
         <!-- ===== БЛОК 1: Короба в слое ===== -->
         <div class="section-title">Короба в слое</div>
@@ -76,20 +76,7 @@
                     <input type="text" inputmode="numeric" id="mfgDay" placeholder="День" maxlength="2">
                 </div>
                 <div>
-                    <select id="mfgMonth">
-                        <option value="1">Январь</option>
-                        <option value="2">Февраль</option>
-                        <option value="3">Март</option>
-                        <option value="4">Апрель</option>
-                        <option value="5">Май</option>
-                        <option value="6">Июнь</option>
-                        <option value="7">Июль</option>
-                        <option value="8">Август</option>
-                        <option value="9">Сентябрь</option>
-                        <option value="10">Октябрь</option>
-                        <option value="11">Ноябрь</option>
-                        <option value="12">Декабрь</option>
-                    </select>
+                    <input type="text" inputmode="numeric" id="mfgMonth" placeholder="Месяц" maxlength="2">
                 </div>
                 <div>
                     <input type="text" inputmode="numeric" id="mfgYear" placeholder="Год" maxlength="4">
@@ -122,8 +109,6 @@
     </div>
 
     <script>
-        /* ===== Переключение не нужно — оба блока на одной странице ===== */
-
         /* ===== Блок 1: Короба ===== */
         const L = 120, W = 80;
         const a = document.getElementById("boxL");
@@ -221,7 +206,6 @@
 
         /* ===== Блок 2: Сроки годности ===== */
 
-        // Восстановление
         if (localStorage.getItem("sDay")) document.getElementById("mfgDay").value = localStorage.getItem("sDay");
         if (localStorage.getItem("sMonth")) document.getElementById("mfgMonth").value = localStorage.getItem("sMonth");
         if (localStorage.getItem("sYear")) document.getElementById("mfgYear").value = localStorage.getItem("sYear");
@@ -244,7 +228,7 @@
             if (years) parts.push(`${years} ${years === 1 ? "год" : (years >= 2 && years <= 4 ? "года" : "лет")}`);
             if (months) parts.push(`${months} ${months === 1 ? "месяц" : (months >= 2 && months <= 4 ? "месяца" : "месяцев")}`);
             if (days) parts.push(`${days} ${pluralDays(days)}`);
-            if (!parts.length) parts.push(`0 дней`);
+            if (!parts.length) parts.push("0 дней");
             return parts.join(" ");
         }
 
@@ -258,7 +242,7 @@
             const errEl = document.getElementById("shelfErr");
             errEl.classList.remove("show");
 
-            if (!d || d < 1 || d > 31 || !y || y < 2000 || y > 2100) {
+            if (!d || d < 1 || d > 31 || !m || m < 1 || m > 12 || !y || y < 2000 || y > 2100) {
                 errEl.textContent = "Проверьте дату производства";
                 errEl.classList.add("show");
                 document.getElementById("shelfResult").classList.remove("show");
@@ -280,18 +264,73 @@
             }
 
             localStorage.setItem("sDay", document.getElementById("mfgDay").value);
-            localStorage.setItem("sMonth", m);
+            localStorage.setItem("sMonth", document.getElementById("mfgMonth").value);
             localStorage.setItem("sYear", document.getElementById("mfgYear").value);
             localStorage.setItem("sLife", document.getElementById("shelfLife").value);
             localStorage.setItem("sUnit", unit);
 
+            // Срок годности в днях, но день производства и день окончания НЕ считаются
+            // => добавляем life*unit дней к дате производства, потом Годен до = prodDate + totalDays
             const totalDays = life * unit;
             const expDate = new Date(prodDate);
             expDate.setDate(expDate.getDate() + totalDays);
 
+            // Остаток считаем от сегодня до expDate (не включая день окончания)
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            const diffMs = expDate - today;
+
+            // Дни между датами: считаем интервал, исключая оба граничных дня
+            // Между prodDate и expDate без учёта граничных = totalDays - 1 + ... 
+            // Проще: интервал от prodDate до expDate = totalDays дней.
+            // Но по условию день производства и день окончания не считаются.
+            // Значит «живой» период = totalDays - 1 дней между ними.
+            // Для расчёта остатка от сегодня: считаем сколько дней от today до expDate
+            // (не включая today и expDate).
+            // diffDays = разница в днях между датами (expDate - today).
+            // Если today < expDate: осталось = diffDays - 1 (не считаем today и expDate).
+            // Но это сложно и нелогично для пользователя.
+            //
+            // Упростим: «день производства и день окончания не считаются» = 
+            // срока годности N дней означает что продукт годен N-1 дней 
+            // (день 2 ... день N-1 от производства).
+            //
+            // Годен до = prodDate + totalDays (дата после которой уже НЕ годен).
+            // Годный период: с prodDate+1 по expDate-1 = totalDays - 1 дней.
+            //
+            // Остаток от сегодня: количество дней от today до expDate-1 включительно.
+            // = (expDate - today) / день  - 1 ... нет.
+            //
+            // Проще всего: осталось дней = количество дней до истечения.
+            // Если today = expDate, то сегодня последний НЕ годный день -> истекло.
+            // Если today = expDate - 1, то остался 1 день.
+            //
+            // Осталось = expDate - today (в днях).
+            // Если 0 -> истекает сегодня / просрочено.
+            // Если < 0 -> просрочено на |diff|.
+            //
+            // Но по условию день окончания не считается, значит:
+            // Годен до (не включительно) = prodDate + totalDays.
+            // Осталось дней годности = max(0, expDate - today) ... hmm.
+            //
+            // Возьмём простой подход:
+            // Годный период: totalDays дней ПОСЛЕ дня производства, но день окончания не годный.
+            // Значит годных дней = totalDays - 1 (со 2-го по totalDays-й день после производства).
+            // Годен до = prodDate + totalDays (дата, начиная с которой НЕ годен).
+            //
+            // Осталось годных дней от today = expDate - today (без учёта сегодняшнего).
+            // Если today = prodDate: осталось totalDays - 1 (т.к. today не считается).
+            // Если today = prodDate + 1: осталось totalDays - 2.
+            // Если today = expDate - 1: осталось 1.
+            // Если today = expDate: осталось 0 -> истёк.
+            //
+            // Значит осталось = (expDate - today) в днях.
+            // Просрочено = today - expDate в днях.
+            //
+            // Но это при том что и today не считается.
+            //
+            // Принимаем: осталось = diffDays (expDate - today), просрочено = -diffDays.
+
+            const diffMs = expDate.getTime() - today.getTime();
             const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
             const pad = n => String(n).padStart(2, "0");
@@ -302,12 +341,9 @@
             const leftEl = document.getElementById("daysLeft");
             leftEl.className = "left-out";
 
-            if (diffDays < 0) {
-                leftEl.textContent = `Просрочено на ${fmtParts(-diffDays)}`;
+            if (diffDays <= 0) {
+                leftEl.textContent = `Просрочено на ${fmtParts(-diffDays || 1)}`;
                 leftEl.classList.add("red");
-            } else if (diffDays === 0) {
-                leftEl.textContent = "Истекает сегодня";
-                leftEl.classList.add("orange");
             } else {
                 const pct = Math.round(diffDays / totalDays * 100);
                 leftEl.textContent = `Осталось ${fmtParts(diffDays)} (${pct}%)`;
@@ -317,7 +353,7 @@
             document.getElementById("shelfResult").classList.add("show");
         }
 
-        ["mfgDay", "mfgYear", "shelfLife"].forEach(id => {
+        ["mfgDay", "mfgMonth", "mfgYear", "shelfLife"].forEach(id => {
             document.getElementById(id).onkeydown = e => {
                 if (e.key === "Enter") { e.preventDefault(); calcShelf(); }
             };
