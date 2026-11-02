@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Калькулятор укладки на паллету</title>
+    <title>Коробов в слое</title>
     <style>
         * {
             margin: 0;
@@ -115,7 +115,6 @@
             left: 0;
             right: 0;
             bottom: 0;
-            display: block;
         }
 
         .box-cell {
@@ -188,7 +187,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>📦 Укладка на паллету</h1>
+        <h1>Коробов в слое</h1>
 
         <div class="card">
             <div class="info-row">
@@ -209,7 +208,7 @@
         </div>
 
         <div class="card result" id="result">
-            <div class="result-label">Коробок в слое</div>
+            <div class="result-label">Коробов в слое</div>
             <div class="result-count" id="count">0</div>
             <div class="layout-type" id="layoutType"></div>
             <div class="dimensions" id="dims"></div>
@@ -228,130 +227,170 @@
         const PALLET_L = 120;
         const PALLET_W = 80;
 
-        /* ========================================
-           ФУНКЦИЯ: заполнить зону одинаковыми коробками
-           Зона: (zoneX, zoneY, zoneW, zoneH)
-           boxW, boxH — реальные размеры коробки
-           Возвращает массив {x, y, w, h} для каждой коробки
-        ======================================== */
-        function fillZone(zoneX, zoneY, zoneW, zoneH, boxW, boxH) {
-            const cols = Math.floor(zoneW / boxW);
-            const rows = Math.floor(zoneH / boxH);
-            const total = cols * rows;
+        /* Подсчёт количества коробок в зоне без создания объектов */
+        function countInZone(zw, zh, bw, bh) {
+            return Math.floor(zw / bw) * Math.floor(zh / bh);
+        }
 
+        /* Построение координат коробок в зоне */
+        function fillZone(x0, y0, zw, zh, bw, bh) {
+            const cols = Math.floor(zw / bw);
+            const rows = Math.floor(zh / bh);
             const boxes = [];
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
                     boxes.push({
-                        x: zoneX + c * boxW,
-                        y: zoneY + r * boxH,
-                        w: boxW,
-                        h: boxH
+                        x: x0 + c * bw,
+                        y: y0 + r * bh,
+                        w: bw,
+                        h: bh
                     });
                 }
             }
             return boxes;
         }
 
-        /* ========================================
-           ФУНКЦИЯ: перебор комбинированных раскладок
-           Разбивает паллету на 2 зоны (по вертикали
-           или горизонтали), каждую заполняет своей
-           ориентацией коробок.
-        ======================================== */
+        /* Поиск лучшей раскладки */
         function findBestLayout(boxL, boxW) {
-            let best = { total: 0, boxes: [], type: '' };
-
-            // Варианты ориентации коробки
-            const orientations = [
+            const orients = [
                 { w: boxL, h: boxW },
                 { w: boxW, h: boxL }
             ];
 
-            // 1) Одна зона — одна ориентация
-            for (const o of orientations) {
-                const boxes = fillZone(0, 0, PALLET_L, PALLET_W, o.w, o.h);
-                if (boxes.length > best.total) {
-                    best = {
-                        total: boxes.length,
-                        boxes: boxes,
-                        type: 'Обычная'
-                    };
+            let bestCount = 0;
+            let bestConfig = null;
+
+            function tryConfig(count, config) {
+                if (count > bestCount) {
+                    bestCount = count;
+                    bestConfig = config;
                 }
             }
 
-            // 2) Две зоны: вертикальная линия разделения (по X)
-            for (const o1 of orientations) {
-                for (const o2 of orientations) {
-                    // Перебираем точку разделения
-                    for (let split = 1; split < PALLET_L; split++) {
-                        // Зона 1 (левая): (0, 0, split, PALLET_W)
-                        const b1 = fillZone(0, 0, split, PALLET_W, o1.w, o1.h);
-                        // Зона 2 (правая): (split, 0, PALLET_L-split, PALLET_W)
-                        const b2 = fillZone(split, 0, PALLET_L - split, PALLET_W, o2.w, o2.h);
-                        const total = b1.length + b2.length;
+            /* 1. Одна ориентация на весь паллет */
+            for (let i = 0; i < 2; i++) {
+                tryConfig(
+                    countInZone(PALLET_L, PALLET_W, orients[i].w, orients[i].h),
+                    { type: 'single', o: [i] }
+                );
+            }
 
-                        if (total > best.total) {
-                            best = {
-                                total: total,
-                                boxes: [...b1, ...b2],
-                                type: 'Комбинированная (верт. разделение)'
-                            };
+            /* 2. Две зоны: вертикальное разделение */
+            for (let s = 1; s < PALLET_L; s++) {
+                for (let i = 0; i < 2; i++) {
+                    for (let j = 0; j < 2; j++) {
+                        tryConfig(
+                            countInZone(s, PALLET_W, orients[i].w, orients[i].h) +
+                            countInZone(PALLET_L - s, PALLET_W, orients[j].w, orients[j].h),
+                            { type: 'v2', splits: [s], o: [i, j] }
+                        );
+                    }
+                }
+            }
+
+            /* 3. Две зоны: горизонтальное разделение */
+            for (let s = 1; s < PALLET_W; s++) {
+                for (let i = 0; i < 2; i++) {
+                    for (let j = 0; j < 2; j++) {
+                        tryConfig(
+                            countInZone(PALLET_L, s, orients[i].w, orients[i].h) +
+                            countInZone(PALLET_L, PALLET_W - s, orients[j].w, orients[j].h),
+                            { type: 'h2', splits: [s], o: [i, j] }
+                        );
+                    }
+                }
+            }
+
+            /* 4. Крест: 4 зоны (2×2) */
+            for (let xs = 1; xs < PALLET_L; xs++) {
+                for (let ys = 1; ys < PALLET_W; ys++) {
+                    for (let i = 0; i < 2; i++) {
+                        for (let j = 0; j < 2; j++) {
+                            for (let k = 0; k < 2; k++) {
+                                for (let l = 0; l < 2; l++) {
+                                    tryConfig(
+                                        countInZone(xs, ys, orients[i].w, orients[i].h) +
+                                        countInZone(PALLET_L - xs, ys, orients[j].w, orients[j].h) +
+                                        countInZone(xs, PALLET_W - ys, orients[k].w, orients[k].h) +
+                                        countInZone(PALLET_L - xs, PALLET_W - ys, orients[l].w, orients[l].h),
+                                        { type: 'cross', splits: [xs, ys], o: [i, j, k, l] }
+                                    );
+                                }
+                            }
                         }
                     }
                 }
             }
 
-            // 3) Две зоны: горизонтальная линия разделения (по Y)
-            for (const o1 of orientations) {
-                for (const o2 of orientations) {
-                    for (let split = 1; split < PALLET_W; split++) {
-                        // Зона 1 (верхняя): (0, 0, PALLET_L, split)
-                        const b1 = fillZone(0, 0, PALLET_L, split, o1.w, o1.h);
-                        // Зона 2 (нижняя): (0, split, PALLET_L, PALLET_W-split)
-                        const b2 = fillZone(0, split, PALLET_L, PALLET_W - split, o2.w, o2.h);
-                        const total = b1.length + b2.length;
+            /* Построить координаты для лучшей раскладки */
+            const boxes = buildBoxes(bestConfig, orients);
 
-                        if (total > best.total) {
-                            best = {
-                                total: total,
-                                boxes: [...b1, ...b2],
-                                type: 'Комбинированная (гориз. разделение)'
-                            };
-                        }
-                    }
-                }
-            }
+            const typeNames = {
+                single: 'Обычная',
+                v2: 'Комбинированная (верт.)',
+                h2: 'Комбинированная (гориз.)',
+                cross: 'Комбинированная'
+            };
 
-            return best;
+            return {
+                total: bestCount,
+                boxes: boxes,
+                type: typeNames[bestConfig.type]
+            };
         }
 
-        /* ========================================
-           ФУНКЦИЯ: отрисовка схемы
-        ======================================== */
+        /* Построение координат коробок из конфигурации */
+        function buildBoxes(config, orients) {
+            const boxes = [];
+
+            function fill(x0, y0, zw, zh, oIdx) {
+                const o = orients[oIdx];
+                boxes.push(...fillZone(x0, y0, zw, zh, o.w, o.h));
+            }
+
+            switch (config.type) {
+                case 'single':
+                    fill(0, 0, PALLET_L, PALLET_W, config.o[0]);
+                    break;
+                case 'v2':
+                    fill(0, 0, config.splits[0], PALLET_W, config.o[0]);
+                    fill(config.splits[0], 0, PALLET_L - config.splits[0], PALLET_W, config.o[1]);
+                    break;
+                case 'h2':
+                    fill(0, 0, PALLET_L, config.splits[0], config.o[0]);
+                    fill(0, config.splits[0], PALLET_L, PALLET_W - config.splits[0], config.o[1]);
+                    break;
+                case 'cross': {
+                    const [xs, ys] = config.splits;
+                    fill(0, 0, xs, ys, config.o[0]);
+                    fill(xs, 0, PALLET_L - xs, ys, config.o[1]);
+                    fill(0, ys, xs, PALLET_W - ys, config.o[2]);
+                    fill(xs, ys, PALLET_L - xs, PALLET_W - ys, config.o[3]);
+                    break;
+                }
+            }
+
+            return boxes;
+        }
+
+        /* Отрисовка схемы */
         function drawScheme(boxes) {
             const pallet = document.getElementById('pallet');
             pallet.innerHTML = '';
-
             for (let i = 0; i < boxes.length; i++) {
                 const b = boxes[i];
                 const div = document.createElement('div');
                 div.className = 'box-cell';
                 div.textContent = i + 1;
-
-                // Позиция и размер в процентах от паллеты
                 div.style.left   = (b.x / PALLET_L * 100) + '%';
                 div.style.top    = (b.y / PALLET_W * 100) + '%';
                 div.style.width  = (b.w / PALLET_L * 100) + '%';
                 div.style.height = (b.h / PALLET_W * 100) + '%';
-
                 pallet.appendChild(div);
             }
         }
 
-        /* ========================================
-           ОСНОВНАЯ ФУНКЦИЯ РАСЧЁТА
-        ======================================== */
+        /* Основная функция */
         function calculate() {
             const boxL = parseFloat(document.getElementById('boxL').value);
             const boxW = parseFloat(document.getElementById('boxW').value);
@@ -368,22 +407,13 @@
                 return;
             }
 
-            // Показать результат
             document.getElementById('error').classList.remove('show');
             document.getElementById('result').classList.add('show');
             document.getElementById('count').textContent = best.total;
             document.getElementById('layoutType').textContent = best.type;
-
-            // Определяем средний размер коробки в схеме
-            const b0 = best.boxes[0];
-            document.getElementById('dims').textContent =
-                `Коробка ${boxL} × ${boxW} см`;
-
+            document.getElementById('dims').textContent = `Коробка ${boxL} × ${boxW} см`;
             drawScheme(best.boxes);
-
-            document.getElementById('palletInfo').textContent =
-                `Паллета ${PALLET_L} × ${PALLET_W} см`;
-
+            document.getElementById('palletInfo').textContent = `Паллета ${PALLET_L} × ${PALLET_W} см`;
             document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
         }
 
