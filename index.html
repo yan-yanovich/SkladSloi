@@ -11,14 +11,14 @@
             --bg:#f0f2f5; --card:#fff; --text:#1a1a2e; --text2:#555; --text3:#888;
             --accent:#4a90d9; --accent-hover:#357abd; --border:#e0e0e0; --err-bg:#fff0f0;
             --err-text:#e74c3c; --green:#2e7d32; --orange:#e67e22; --fill:#2e7d32;
-            --result-text:#333; --input-bg:#fff; --input-text:#333;
+            --result-text:#333; --input-bg:#fff; --input-text:#333; --tab-bg:#e8ecf1;
         }
 
         .dark{
             --bg:#1a1a2e; --card:#242440; --text:#e0e0e0; --text2:#aaa; --text3:#777;
             --accent:#5a9fe8; --accent-hover:#7ab3f0; --border:#3a3a5c; --err-bg:#3a1a1a;
             --err-text:#ff6b6b; --green:#4caf50; --orange:#ff9800; --fill:#4caf50;
-            --result-text:#e0e0e0; --input-bg:#2a2a4a; --input-text:#e0e0e0;
+            --result-text:#e0e0e0; --input-bg:#2a2a4a; --input-text:#e0e0e0; --tab-bg:#2a2a4a;
         }
 
         body{
@@ -98,13 +98,21 @@
         .left-out.green{color:var(--green)}
         .left-out.orange{color:var(--orange)}
 
+        /* ===== Вкладки истории ===== */
+        .history-tabs{display:flex;gap:8px;margin-bottom:16px}
+        .history-tab{
+            flex:1;padding:10px;text-align:center;font-size:14px;font-weight:600;
+            color:var(--text2);background:var(--tab-bg);border:2px solid transparent;
+            border-radius:10px;cursor:pointer;transition:all .2s ease;user-select:none;
+        }
+        .history-tab.active{color:var(--accent);border-color:var(--accent);background:var(--card)}
+
         .history-list{list-style:none}
         .history-item{
             background:var(--card);border:1px solid var(--border);border-radius:12px;
             padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color .2s ease;
         }
         .history-item:hover{border-color:var(--accent)}
-        .history-item .h-type{font-size:12px;color:var(--accent);font-weight:600;margin-bottom:4px}
         .history-item .h-input{font-size:14px;color:var(--text2);margin-bottom:4px}
         .history-item .h-result{font-size:15px;font-weight:700;color:var(--text)}
         .history-item .h-date{font-size:11px;color:var(--text3);margin-top:4px}
@@ -191,6 +199,10 @@
         </div>
         <div class="collapsible expanded" id="section3">
             <div class="card">
+                <div class="history-tabs">
+                    <div class="history-tab active" id="tabBoxes" onclick="switchHistoryTab('boxes')">Короба в слое</div>
+                    <div class="history-tab" id="tabShelf" onclick="switchHistoryTab('shelf')">Сроки годности</div>
+                </div>
                 <ul class="history-list" id="historyList"></ul>
                 <button class="btn-sm" onclick="clearHistory()">Очистить историю</button>
             </div>
@@ -249,6 +261,9 @@
                 arrow.classList.remove('collapsed');
                 localStorage.setItem('collapsed_' + id, '0');
             } else {
+                section.classList.remove('expanded');
+                section.style.maxHeight = section.scrollHeight + 'px';
+                section.offsetHeight;
                 collapseSection(section);
                 arrow.classList.add('collapsed');
                 localStorage.setItem('collapsed_' + id, '1');
@@ -276,8 +291,9 @@
 
         /* ===== История ===== */
         const HISTORY_KEY = 'history';
-        const HISTORY_MAX = 10;
+        const HISTORY_MAX = 15;
         let fromHistory = false;
+        let currentHistoryTab = 'boxes';
 
         function getHistory() {
             try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
@@ -293,19 +309,28 @@
             renderHistory();
         }
 
+        function switchHistoryTab(tab) {
+            currentHistoryTab = tab;
+            document.getElementById('tabBoxes').classList.toggle('active', tab === 'boxes');
+            document.getElementById('tabShelf').classList.toggle('active', tab === 'shelf');
+            renderHistory();
+        }
+
         function renderHistory() {
-            const h = getHistory();
+            const all = getHistory();
+            const h = all.filter(e => e.type === currentHistoryTab);
             const ul = document.getElementById('historyList');
             ul.innerHTML = '';
+
             if (!h.length) {
-                ul.innerHTML = '<li style="text-align:center;color:var(--text3);padding:16px">pока пусто</li>';
+                ul.innerHTML = '<li style="text-align:center;color:var(--text3);padding:16px">Пока пусто</li>';
                 return;
             }
+
             h.forEach((e) => {
                 const li = document.createElement('li');
                 li.className = 'history-item';
                 li.innerHTML = `
-                    <div class="h-type">${e.type === 'boxes' ? 'Короба в слое' : 'Сроки годности'}</div>
                     <div class="h-input">${e.input}</div>
                     <div class="h-result">${e.result}</div>
                     <div class="h-date">${e.date}</div>
