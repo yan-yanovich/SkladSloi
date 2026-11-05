@@ -40,8 +40,8 @@
         .section-title{text-align:center;font-size:18px;color:var(--accent);font-weight:700;margin:28px 0 16px;cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:center;gap:10px}
         .section-title .arrow{display:inline-block;transition:transform .2s ease;font-size:14px;color:var(--accent)}
         .section-title .arrow.collapsed{transform:rotate(-90deg)}
-        .collapsible{overflow:hidden;transition:max-height .2s ease, opacity .2s ease, margin .2s ease}
-        .collapsible.collapsed{max-height:0!important;opacity:0;margin-bottom:0;pointer-events:none}
+        .collapsible{overflow:hidden;transition:max-height .2s ease, opacity .2s ease}
+        .collapsible.collapsed{max-height:0!important;opacity:0;pointer-events:none}
         .collapsible.expanded{overflow:visible}
 
         .card{background:var(--card);border-radius:16px;padding:24px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.08);transition:background .3s ease}
@@ -101,7 +101,7 @@
         .history-list{list-style:none}
         .history-item{
             background:var(--card);border:1px solid var(--border);border-radius:12px;
-            padding:14px;margin-bottom:10px;cursor:pointer;transition:background .2s ease,border-color .2s ease;
+            padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color .2s ease;
         }
         .history-item:hover{border-color:var(--accent)}
         .history-item .h-type{font-size:12px;color:var(--accent);font-weight:600;margin-bottom:4px}
@@ -145,7 +145,7 @@
                     <span class="fill-val" id="fill">0%</span>
                 </div>
                 <div class="dimensions" id="dims"></div>
-                <div class="pallet-size">Паллета 120 × 80 см</pallet>
+                <div class="pallet-size">Паллета 120 × 80 см</div>
             </div>
         </div>
 
@@ -212,8 +212,48 @@
                 document.body.classList.add('dark');
         })();
 
-        /* ===== Сворачивание разделов с запоминанием ===== */
+        /* ===== Сворачивание разделов ===== */
         const sectionIds = ['section1', 'section2', 'section3'];
+
+        function collapseSection(section) {
+            section.style.maxHeight = section.scrollHeight + 'px';
+            section.offsetHeight;
+            section.classList.add('collapsed');
+            section.classList.remove('expanded');
+            section.style.maxHeight = '0';
+        }
+
+        function expandSection(section) {
+            section.classList.remove('collapsed');
+            section.classList.remove('expanded');
+            section.style.maxHeight = '0';
+            section.offsetHeight;
+            section.style.maxHeight = section.scrollHeight + 'px';
+
+            const handler = function(e) {
+                if (e.target !== section) return;
+                if (e.propertyName !== 'max-height') return;
+                section.style.maxHeight = 'none';
+                section.classList.add('expanded');
+                section.removeEventListener('transitionend', handler);
+            };
+            section.addEventListener('transitionend', handler);
+        }
+
+        function toggleSection(id, titleEl) {
+            const section = document.getElementById(id);
+            const arrow = titleEl.querySelector('.arrow');
+
+            if (section.classList.contains('collapsed')) {
+                expandSection(section);
+                arrow.classList.remove('collapsed');
+                localStorage.setItem('collapsed_' + id, '0');
+            } else {
+                collapseSection(section);
+                arrow.classList.add('collapsed');
+                localStorage.setItem('collapsed_' + id, '1');
+            }
+        }
 
         function restoreSections() {
             sectionIds.forEach((id, idx) => {
@@ -223,41 +263,15 @@
                 if (saved === '1') {
                     section.classList.add('collapsed');
                     section.classList.remove('expanded');
+                    section.style.maxHeight = '0';
                     arrow.classList.add('collapsed');
                 } else {
                     section.classList.add('expanded');
                     section.classList.remove('collapsed');
+                    section.style.maxHeight = 'none';
                     arrow.classList.remove('collapsed');
                 }
             });
-        }
-
-        function toggleSection(id, titleEl) {
-            const section = document.getElementById(id);
-            const arrow = titleEl.querySelector('.arrow');
-
-            if (section.classList.contains('collapsed')) {
-                section.classList.remove('collapsed');
-                section.classList.remove('expanded');
-                section.style.maxHeight = section.scrollHeight + 'px';
-                arrow.classList.remove('collapsed');
-                localStorage.setItem('collapsed_' + id, '0');
-
-                section.addEventListener('transitionend', function onEnd(e) {
-                    if (e.propertyName !== 'max-height') return;
-                    section.style.maxHeight = 'none';
-                    section.classList.add('expanded');
-                    section.removeEventListener('transitionend', onEnd);
-                });
-            } else {
-                section.classList.remove('expanded');
-                section.style.maxHeight = section.scrollHeight + 'px';
-                requestAnimationFrame(() => {
-                    section.classList.add('collapsed');
-                });
-                arrow.classList.add('collapsed');
-                localStorage.setItem('collapsed_' + id, '1');
-            }
         }
 
         /* ===== История ===== */
@@ -284,7 +298,7 @@
             const ul = document.getElementById('historyList');
             ul.innerHTML = '';
             if (!h.length) {
-                ul.innerHTML = '<li style="text-align:center;color:var(--text3);padding:16px">Пока пусто</li>';
+                ul.innerHTML = '<li style="text-align:center;color:var(--text3);padding:16px">pока пусто</li>';
                 return;
             }
             h.forEach((e) => {
