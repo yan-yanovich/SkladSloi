@@ -1,55 +1,130 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <title>Мультитул оператора</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f0f2f5;min-height:100vh;padding:16px}
+
+        :root{
+            --bg:#f0f2f5; --card:#fff; --text:#1a1a2e; --text2:#555; --text3:#888;
+            --accent:#4a90d9; --accent-hover:#357abd; --border:#e0e0e0; --err-bg:#fff0f0;
+            --err-text:#e74c3c; --green:#2e7d32; --orange:#e67e22; --fill:#2e7d32;
+            --result-text:#333; --input-bg:#fff; --input-text:#333;
+        }
+
+        .dark{
+            --bg:#1a1a2e; --card:#242440; --text:#e0e0e0; --text2:#aaa; --text3:#777;
+            --accent:#5a9fe8; --accent-hover:#7ab3f0; --border:#3a3a5c; --err-bg:#3a1a1a;
+            --err-text:#ff6b6b; --green:#4caf50; --orange:#ff9800; --fill:#4caf50;
+            --result-text:#e0e0e0; --input-bg:#2a2a4a; --input-text:#e0e0e0;
+        }
+
+        body{
+            font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+            background:var(--bg); min-height:100vh; padding:16px;
+            transition:background .3s ease;
+        }
         .container{max-width:600px;margin:0 auto}
-        h1{text-align:center;font-size:22px;color:#1a1a2e;margin-bottom:20px}
-        .section-title{text-align:center;font-size:18px;color:#4a90d9;font-weight:700;margin:28px 0 16px;cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:center;gap:10px}
-        .section-title .arrow{display:inline-block;transition:transform .2s ease;font-size:14px;color:#4a90d9}
+
+        .top-row{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:20px;position:relative}
+        h1{font-size:22px;color:var(--text);text-align:center}
+        .theme-btn{
+            position:absolute;right:0;top:50%;transform:translateY(-50%);
+            background:none;border:none;font-size:24px;cursor:pointer;
+            padding:4px 8px;border-radius:8px;
+        }
+        .theme-btn:hover{background:rgba(128,128,128,.2)}
+
+        .section-title{text-align:center;font-size:18px;color:var(--accent);font-weight:700;margin:28px 0 16px;cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:center;gap:10px}
+        .section-title .arrow{display:inline-block;transition:transform .2s ease;font-size:14px;color:var(--accent)}
         .section-title .arrow.collapsed{transform:rotate(-90deg)}
         .collapsible{overflow:hidden;transition:max-height .2s ease, opacity .2s ease, margin .2s ease}
         .collapsible.collapsed{max-height:0!important;opacity:0;margin-bottom:0;pointer-events:none}
         .collapsible.expanded{overflow:visible}
-        .card{background:#fff;border-radius:16px;padding:24px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.08)}
-        label{display:block;font-size:15px;color:#555;margin-bottom:6px;font-weight:500}
-        input{width:100%;padding:14px;font-size:18px;border:2px solid #e0e0e0;border-radius:12px;outline:none;margin-bottom:16px;scroll-margin-bottom:220px}
-        input:focus{border-color:#4a90d9}
-        input.err{border-color:#e74c3c;background:#fff0f0}
-        select{width:100%;padding:14px;font-size:18px;border:2px solid #e0e0e0;border-radius:12px;outline:none;margin-bottom:16px;background:#fff;scroll-margin-bottom:220px}
-        select:focus{border-color:#4a90d9}
-        .btn{width:100%;padding:16px;font-size:18px;font-weight:600;color:#fff;background:#4a90d9;border:none;border-radius:12px;cursor:pointer}
-        .btn:hover{background:#357abd}
+
+        .card{background:var(--card);border-radius:16px;padding:24px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.08);transition:background .3s ease}
+
+        label{display:block;font-size:15px;color:var(--text2);margin-bottom:6px;font-weight:500}
+        input{
+            width:100%;padding:14px;font-size:18px;border:2px solid var(--border);border-radius:12px;
+            outline:none;margin-bottom:16px;scroll-margin-bottom:220px;
+            background:var(--input-bg);color:var(--input-text);transition:background .3s ease,color .3s ease;
+        }
+        input:focus{border-color:var(--accent)}
+        input.err{border-color:var(--err-text);background:var(--err-bg)}
+        select{
+            width:100%;padding:14px;font-size:18px;border:2px solid var(--border);border-radius:12px;
+            outline:none;margin-bottom:16px;background:var(--input-bg);color:var(--input-text);
+            scroll-margin-bottom:220px;transition:background .3s ease,color .3s ease;
+        }
+        select:focus{border-color:var(--accent)}
+
+        .btn{
+            width:100%;padding:16px;font-size:18px;font-weight:600;color:#fff;
+            background:var(--accent);border:none;border-radius:12px;cursor:pointer;
+            transition:background .3s ease;
+        }
+        .btn:hover{background:var(--accent-hover)}
+        .btn-sm{
+            width:auto;padding:10px 20px;font-size:14px;font-weight:600;
+            color:var(--err-text);background:none;border:2px solid var(--err-text);
+            border-radius:10px;cursor:pointer;margin:12px auto 0;display:block;
+        }
+        .btn-sm:hover{background:var(--err-bg)}
+
         .result{display:none}.result.show{display:block}
-        .result-label{text-align:center;font-size:16px;color:#888;margin-bottom:8px}
-        .result-count{text-align:center;font-size:48px;font-weight:700;color:#4a90d9}
+        .result-label{text-align:center;font-size:16px;color:var(--text3);margin-bottom:8px}
+        .result-count{text-align:center;font-size:48px;font-weight:700;color:var(--accent)}
         .fill-row{display:flex;justify-content:center;align-items:baseline;gap:8px;margin-top:8px}
-        .fill-key{font-size:14px;color:#888}
-        .fill-val{font-size:20px;font-weight:700;color:#2e7d32}
-        .dimensions{text-align:center;font-size:13px;color:#888;margin-top:8px}
-        .pallet-size{text-align:center;font-size:13px;color:#888;margin-top:4px}
-        .error{color:#e74c3c;text-align:center;font-size:15px;font-weight:600;margin-top:12px;display:none}
+        .fill-key{font-size:14px;color:var(--text3)}
+        .fill-val{font-size:20px;font-weight:700;color:var(--fill)}
+        .dimensions{text-align:center;font-size:13px;color:var(--text3);margin-top:8px}
+        .pallet-size{text-align:center;font-size:13px;color:var(--text3);margin-top:4px}
+        .error{color:var(--err-text);text-align:center;font-size:15px;font-weight:600;margin-top:12px;display:none}
         .error.show{display:block}
+
         .row3{display:flex;gap:10px}
         .row3>div{flex:1}
         .row3 input,.row3 select{margin-bottom:16px}
         .row2{display:flex;gap:10px}
         .row2>div{flex:1}
         .row2 select,.row2 input{margin-bottom:16px}
-        .expiry-out{text-align:center;font-size:22px;font-weight:700;color:#333;margin-bottom:12px}
+
+        .expiry-out{text-align:center;font-size:22px;font-weight:700;color:var(--result-text);margin-bottom:12px}
         .left-out{text-align:center;font-size:22px;font-weight:700;margin-bottom:4px}
-        .left-out.red{color:#e74c3c}
-        .left-out.green{color:#2e7d32}
-        .left-out.orange{color:#e67e22}
+        .left-out.red{color:var(--err-text)}
+        .left-out.green{color:var(--green)}
+        .left-out.orange{color:var(--orange)}
+
+        /* ===== История ===== */
+        .history-list{list-style:none}
+        .history-item{
+            background:var(--card);border:1px solid var(--border);border-radius:12px;
+            padding:14px;margin-bottom:10px;cursor:pointer;transition:background .2s ease,border-color .2s ease;
+        }
+        .history-item:hover{border-color:var(--accent)}
+        .history-item .h-type{font-size:12px;color:var(--accent);font-weight:600;margin-bottom:4px}
+        .history-item .h-input{font-size:14px;color:var(--text2);margin-bottom:4px}
+        .history-item .h-result{font-size:15px;font-weight:700;color:var(--text)}
+        .history-item .h-date{font-size:11px;color:var(--text3);margin-top:4px}
+
+        /* ===== Тема ===== */
+        .theme-btn .icon-sun{display:none}
+        .dark .theme-btn .icon-sun{display:inline}
+        .dark .theme-btn .icon-moon{display:none}
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Мультитул оператора</h1>
+        <div class="top-row">
+            <h1>Мультитул оператора</h1>
+            <button class="theme-btn" onclick="toggleTheme()" title="Сменить тему">
+                <span class="icon-moon">🌙</span>
+                <span class="icon-sun">☀️</span>
+            </button>
+        </div>
 
         <div class="section-title" onclick="toggleSection('section1', this)">
             <span class="arrow" id="arrow1">▼</span>
@@ -111,20 +186,64 @@
                 <div class="left-out" id="daysLeft"></div>
             </div>
         </div>
+
+        <div class="section-title" onclick="toggleSection('section3', this)">
+            <span class="arrow" id="arrow3">▼</span>
+            История
+        </div>
+        <div class="collapsible expanded" id="section3">
+            <div class="card">
+                <ul class="history-list" id="historyList"></ul>
+                <button class="btn-sm" onclick="clearHistory()">Очистить историю</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        /* ===== Сворачивание разделов ===== */
+        /* ===== Тема ===== */
+        function toggleTheme() {
+            document.body.classList.toggle('dark');
+            localStorage.setItem('darkTheme', document.body.classList.contains('dark') ? '1' : '0');
+        }
+
+        (function initTheme() {
+            const saved = localStorage.getItem('darkTheme');
+            if (saved === '1') document.body.classList.add('dark');
+            else if (saved === '0') document.body.classList.remove('dark');
+            else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+                document.body.classList.add('dark');
+        })();
+
+        /* ===== Сворачивание разделов с запоминанием ===== */
+        const sectionIds = ['section1', 'section2', 'section3'];
+
+        function restoreSections() {
+            sectionIds.forEach((id, idx) => {
+                const section = document.getElementById(id);
+                const arrow = document.getElementById('arrow' + (idx + 1));
+                const saved = localStorage.getItem('collapsed_' + id);
+                if (saved === '1') {
+                    section.classList.add('collapsed');
+                    section.classList.remove('expanded');
+                    arrow.classList.add('collapsed');
+                } else {
+                    section.classList.add('expanded');
+                    section.classList.remove('collapsed');
+                    arrow.classList.remove('collapsed');
+                }
+            });
+        }
+
         function toggleSection(id, titleEl) {
             const section = document.getElementById(id);
             const arrow = titleEl.querySelector('.arrow');
 
             if (section.classList.contains('collapsed')) {
-                // Разворачиваем
                 section.classList.remove('collapsed');
                 section.classList.remove('expanded');
                 section.style.maxHeight = section.scrollHeight + 'px';
                 arrow.classList.remove('collapsed');
+                localStorage.setItem('collapsed_' + id, '0');
 
                 section.addEventListener('transitionend', function onEnd(e) {
                     if (e.propertyName !== 'max-height') return;
@@ -133,13 +252,83 @@
                     section.removeEventListener('transitionend', onEnd);
                 });
             } else {
-                // Сворачиваем
                 section.classList.remove('expanded');
                 section.style.maxHeight = section.scrollHeight + 'px';
                 requestAnimationFrame(() => {
                     section.classList.add('collapsed');
                 });
                 arrow.classList.add('collapsed');
+                localStorage.setItem('collapsed_' + id, '1');
+            }
+        }
+
+        /* ===== История ===== */
+        const HISTORY_KEY = 'history';
+        const HISTORY_MAX = 10;
+
+        function getHistory() {
+            try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
+            catch { return []; }
+        }
+
+        function saveHistory(entry) {
+            const h = getHistory();
+            h.unshift(entry);
+            if (h.length > HISTORY_MAX) h.length = HISTORY_MAX;
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const h = getHistory();
+            const ul = document.getElementById('historyList');
+            ul.innerHTML = '';
+            if (!h.length) {
+                ul.innerHTML = '<li style="text-align:center;color:var(--text3);padding:16px">Пока пусто</li>';
+                return;
+            }
+            h.forEach((e, i) => {
+                const li = document.createElement('li');
+                li.className = 'history-item';
+                li.innerHTML = `
+                    <div class="h-type">${e.type === 'boxes' ? 'Короба в слое' : 'Сроки годности'}</div>
+                    <div class="h-input">${e.input}</div>
+                    <div class="h-result">${e.result}</div>
+                    <div class="h-date">${e.date}</div>
+                `;
+                li.onclick = () => restoreFromHistory(e);
+                ul.appendChild(li);
+            });
+        }
+
+        function restoreFromHistory(e) {
+            if (e.type === 'boxes') {
+                a.value = e.bl;
+                b.value = e.bw;
+                localStorage.setItem('bl', e.bl);
+                localStorage.setItem('bw', e.bw);
+                calc();
+            } else {
+                mfgDayEl.value = e.day;
+                mfgMonthEl.value = e.month;
+                mfgYearEl.value = e.year;
+                updateDayLimit();
+                mfgDayEl.value = e.day;
+                document.getElementById('shelfLife').value = e.life;
+                document.getElementById('shelfUnit').value = e.unit;
+                localStorage.setItem('sDay', e.day);
+                localStorage.setItem('sMonth', e.month);
+                localStorage.setItem('sYear', e.year);
+                localStorage.setItem('sLife', e.life);
+                localStorage.setItem('sUnit', e.unit);
+                calcShelf();
+            }
+        }
+
+        function clearHistory() {
+            if (confirm('Очистить историю?')) {
+                localStorage.removeItem(HISTORY_KEY);
+                renderHistory();
             }
         }
 
@@ -229,9 +418,18 @@
 
             document.getElementById("result").classList.add("show");
             document.getElementById("count").textContent = total;
-            document.getElementById("fill").textContent =
-                (total * bl * bw / (L * W) * 100).toFixed(1) + "%";
+            const fillPct = (total * bl * bw / (L * W) * 100).toFixed(1);
+            document.getElementById("fill").textContent = fillPct + "%";
             document.getElementById("dims").textContent = `Коробка ${bl} × ${bw} см`;
+
+            saveHistory({
+                type: 'boxes',
+                bl: a.value,
+                bw: b.value,
+                input: `Коробка ${bl} × ${bw} см`,
+                result: `${total} шт. (${fillPct}%)`,
+                date: new Date().toLocaleString('ru-RU')
+            });
         }
 
         a.oninput = b.oninput = function () { this.classList.remove("err"); };
@@ -308,23 +506,13 @@
             return Math.round((ms2 - ms1) / (1000 * 60 * 60 * 24));
         }
 
-        // Календарная разница «осталось» — минус 1 день (день производства не считается)
         function fmtRemaining(fromDate, toDate) {
             let y = toDate.getFullYear() - fromDate.getFullYear();
             let m = toDate.getMonth() - fromDate.getMonth();
             let d = toDate.getDate() - fromDate.getDate();
-
             d -= 1;
-            if (d < 0) {
-                m--;
-                const prevMonth = new Date(toDate.getFullYear(), toDate.getMonth(), 0);
-                d += prevMonth.getDate();
-            }
-            if (m < 0) {
-                y--;
-                m += 12;
-            }
-
+            if (d < 0) { m--; const pm = new Date(toDate.getFullYear(), toDate.getMonth(), 0); d += pm.getDate(); }
+            if (m < 0) { y--; m += 12; }
             const parts = [];
             if (y) parts.push(`${y} ${y === 1 ? "год" : (y >= 2 && y <= 4 ? "года" : "лет")}`);
             if (m) parts.push(`${m} ${m === 1 ? "месяц" : (m >= 2 && m <= 4 ? "месяца" : "месяцев")}`);
@@ -333,22 +521,12 @@
             return parts.join(" ");
         }
 
-        // Календарная разница «просрочено» — без вычитания
         function fmtOverdue(fromDate, toDate) {
             let y = toDate.getFullYear() - fromDate.getFullYear();
             let m = toDate.getMonth() - fromDate.getMonth();
             let d = toDate.getDate() - fromDate.getDate();
-
-            if (d < 0) {
-                m--;
-                const prevMonth = new Date(toDate.getFullYear(), toDate.getMonth(), 0);
-                d += prevMonth.getDate();
-            }
-            if (m < 0) {
-                y--;
-                m += 12;
-            }
-
+            if (d < 0) { m--; const pm = new Date(toDate.getFullYear(), toDate.getMonth(), 0); d += pm.getDate(); }
+            if (m < 0) { y--; m += 12; }
             const parts = [];
             if (y) parts.push(`${y} ${y === 1 ? "год" : (y >= 2 && y <= 4 ? "года" : "лет")}`);
             if (m) parts.push(`${m} ${m === 1 ? "месяц" : (m >= 2 && m <= 4 ? "месяца" : "месяцев")}`);
@@ -414,23 +592,40 @@
             leftEl.className = "left-out";
 
             const totalDays = daysBetween(prodDate, expDate);
+            const unitNames = {1:"Сутки",7:"Недели",30:"Месяцы",365:"Годы"};
+            let resultStr = '';
 
             if (today.getTime() > expDate.getTime()) {
-                leftEl.textContent = `Просрочено на ${fmtOverdue(expDate, today)}`;
+                resultStr = `Просрочено на ${fmtOverdue(expDate, today)}`;
+                leftEl.textContent = resultStr;
                 leftEl.classList.add("red");
             } else {
                 const remaining = Math.max(0, daysBetween(today, expDate) - 1);
                 const pct = totalDays > 0 ? Math.round(remaining / totalDays * 100) : 100;
                 if (remaining <= 0) {
-                    leftEl.textContent = `Осталось 0 дней (0%)`;
+                    resultStr = `Осталось 0 дней (0%)`;
+                    leftEl.textContent = resultStr;
                     leftEl.classList.add("orange");
                 } else {
-                    leftEl.textContent = `Осталось ${fmtRemaining(today, expDate)} (${pct}%)`;
+                    resultStr = `Осталось ${fmtRemaining(today, expDate)} (${pct}%)`;
+                    leftEl.textContent = resultStr;
                     leftEl.classList.add(pct <= 20 ? "orange" : "green");
                 }
             }
 
             document.getElementById("shelfResult").classList.add("show");
+
+            saveHistory({
+                type: 'shelf',
+                day: mfgDayEl.value,
+                month: mfgMonthEl.value,
+                year: mfgYearEl.value,
+                life: document.getElementById("shelfLife").value,
+                unit: String(unit),
+                input: `${pad(d)}.${pad(m)}.${y}, срок ${life} ${unitNames[unit] || ''}`,
+                result: `Годен до ${fmt} — ${resultStr}`,
+                date: new Date().toLocaleString('ru-RU')
+            });
         }
 
         function autoCalcShelf() {
@@ -469,6 +664,10 @@
                 document.getElementById("shelfLife").blur();
             }
         };
+
+        /* ===== Загрузка ===== */
+        restoreSections();
+        renderHistory();
     </script>
 </body>
 </html>
