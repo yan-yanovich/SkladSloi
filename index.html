@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8" content="">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <title>Мультитул оператора</title>
     <style>
@@ -98,7 +98,6 @@
         .left-out.green{color:var(--green)}
         .left-out.orange{color:var(--orange)}
 
-        /* ===== История ===== */
         .history-list{list-style:none}
         .history-item{
             background:var(--card);border:1px solid var(--border);border-radius:12px;
@@ -110,7 +109,6 @@
         .history-item .h-result{font-size:15px;font-weight:700;color:var(--text)}
         .history-item .h-date{font-size:11px;color:var(--text3);margin-top:4px}
 
-        /* ===== Тема ===== */
         .theme-btn .icon-sun{display:none}
         .dark .theme-btn .icon-sun{display:inline}
         .dark .theme-btn .icon-moon{display:none}
@@ -147,7 +145,7 @@
                     <span class="fill-val" id="fill">0%</span>
                 </div>
                 <div class="dimensions" id="dims"></div>
-                <div class="pallet-size">Паллета 120 × 80 см</div>
+                <div class="pallet-size">Паллета 120 × 80 см</pallet>
             </div>
         </div>
 
@@ -265,6 +263,7 @@
         /* ===== История ===== */
         const HISTORY_KEY = 'history';
         const HISTORY_MAX = 10;
+        let fromHistory = false;
 
         function getHistory() {
             try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
@@ -272,6 +271,7 @@
         }
 
         function saveHistory(entry) {
+            if (fromHistory) return;
             const h = getHistory();
             h.unshift(entry);
             if (h.length > HISTORY_MAX) h.length = HISTORY_MAX;
@@ -287,7 +287,7 @@
                 ul.innerHTML = '<li style="text-align:center;color:var(--text3);padding:16px">Пока пусто</li>';
                 return;
             }
-            h.forEach((e, i) => {
+            h.forEach((e) => {
                 const li = document.createElement('li');
                 li.className = 'history-item';
                 li.innerHTML = `
@@ -302,6 +302,7 @@
         }
 
         function restoreFromHistory(e) {
+            fromHistory = true;
             if (e.type === 'boxes') {
                 a.value = e.bl;
                 b.value = e.bw;
@@ -314,8 +315,8 @@
                 mfgYearEl.value = e.year;
                 updateDayLimit();
                 mfgDayEl.value = e.day;
-                document.getElementById('shelfLife').value = e.life;
-                document.getElementById('shelfUnit').value = e.unit;
+                document.getElementById("shelfLife").value = e.life;
+                document.getElementById("shelfUnit").value = e.unit;
                 localStorage.setItem('sDay', e.day);
                 localStorage.setItem('sMonth', e.month);
                 localStorage.setItem('sYear', e.year);
@@ -323,6 +324,7 @@
                 localStorage.setItem('sUnit', e.unit);
                 calcShelf();
             }
+            fromHistory = false;
         }
 
         function clearHistory() {
