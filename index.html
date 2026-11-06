@@ -46,9 +46,18 @@
         }
         .section-title .arrow{display:inline-block;transition:transform .2s ease;font-size:14px}
         .section-title .arrow.collapsed{transform:rotate(-90deg)}
-        .collapsible{overflow:hidden;transition:max-height .2s ease,opacity .2s ease}
-        .collapsible.collapsed{max-height:0!important;opacity:0;pointer-events:none}
-        .collapsible.expanded{overflow:visible}
+        
+        .collapsible{
+            overflow:hidden;
+            transition:max-height .3s ease,opacity .3s ease;
+            max-height:10000px;
+            opacity:1;
+        }
+        .collapsible.collapsed{
+            max-height:0!important;
+            opacity:0;
+            pointer-events:none;
+        }
 
         .card{
             background:var(--card);border-radius:16px;padding:24px;margin-bottom:16px;
@@ -86,7 +95,8 @@
         }
         .btn-sm:hover{background:var(--err-bg)}
 
-        .result{display:none}.result.show{display:block}
+        .result{display:none}
+        .result.show{display:block}
         .result-label{text-align:center;font-size:16px;color:var(--text3);margin-bottom:8px}
         .result-count{text-align:center;font-size:48px;font-weight:700;color:var(--accent)}
         .fill-row{display:flex;justify-content:center;align-items:baseline;gap:8px;margin-top:8px}
@@ -161,12 +171,13 @@
             transform:translateY(-2px);
         }
 
-        .code-item canvas{
+        .code-item canvas,
+        .modal-qr canvas{
             image-rendering:pixelated;
             width:100%;
             height:auto;
             display:block;
-            border:2px solid #f0f0f0;
+            border:2px solid var(--border);
             border-radius:8px;
             background:#fff;
         }
@@ -287,14 +298,6 @@
             justify-content:center;
         }
 
-        .modal-qr canvas{
-            border:2px solid var(--border);
-            border-radius:8px;
-            background:#fff;
-            width:100%;
-            height:auto;
-        }
-
         .modal-text{
             font-size:16px;
             color:var(--text);
@@ -396,14 +399,14 @@
 <div class="container">
     <div class="top-row">
         <h1>Мультитул оператора</h1>
-        <button class="theme-btn" onclick="toggleTheme()" title="Сменить тему">
+        <button class="theme-btn" onclick="App.toggleTheme()" title="Сменить тему">
             <span class="icon-moon">🌙</span>
             <span class="icon-sun">☀️</span>
         </button>
     </div>
 
     <!-- КОРОБА -->
-    <div class="section-title" onclick="toggleSection(this)">
+    <div class="section-title" onclick="App.toggleSection(this)">
         <span class="arrow">▼</span>Короба в слое
     </div>
     <div class="collapsible expanded" id="section1">
@@ -412,7 +415,7 @@
             <input type="text" inputmode="decimal" id="boxL" placeholder="например, 40 или 12,5">
             <label for="boxW">Ширина коробки (см)</label>
             <input type="text" inputmode="decimal" id="boxW" placeholder="например, 26 или 12,5">
-            <button class="btn" onclick="calc()">Рассчитать</button>
+            <button class="btn" onclick="App.calc()">Рассчитать</button>
             <div class="error" id="err"></div>
         </div>
         <div class="card result" id="result">
@@ -428,7 +431,7 @@
     </div>
 
     <!-- СРОКИ ГОДНОСТИ -->
-    <div class="section-title" onclick="toggleSection(this)">
+    <div class="section-title" onclick="App.toggleSection(this)">
         <span class="arrow">▼</span>Сроки годности
     </div>
     <div class="collapsible expanded" id="section2">
@@ -451,7 +454,7 @@
                     </select>
                 </div>
             </div>
-            <button class="btn" onclick="calcShelf()">Рассчитать</button>
+            <button class="btn" onclick="App.calcShelf()">Рассчитать</button>
             <div class="error" id="shelfErr"></div>
         </div>
         <div class="card result" id="shelfResult">
@@ -462,7 +465,7 @@
     </div>
 
     <!-- ГЕНЕРАТОР QR -->
-    <div class="section-title" onclick="toggleSection(this)">
+    <div class="section-title" onclick="App.toggleSection(this)">
         <span class="arrow">▼</span>Генератор QR-кодов
     </div>
     <div class="collapsible expanded" id="section3">
@@ -470,8 +473,8 @@
             <label for="codeInput">Текст (через пробел — отдельные коды)</label>
             <textarea id="codeInput" placeholder="Вставьте текст..."></textarea>
 
-            <div class="prefix-row" onclick="togglePrefixInput()">
-                <input type="checkbox" id="prefixCheck" onclick="event.stopPropagation();togglePrefixInput()">
+            <div class="prefix-row" onclick="App.togglePrefixInput()">
+                <input type="checkbox" id="prefixCheck" onclick="event.stopPropagation();App.togglePrefixInput()">
                 <label>Добавить текст в конец каждой строки</label>
             </div>
             <div class="prefix-input-wrap" id="prefixWrap">
@@ -479,50 +482,50 @@
                 <input type="text" id="prefixVal">
             </div>
 
-            <button class="btn" onclick="generateCode()">Сгенерировать</button>
+            <button class="btn" onclick="App.generateCode()">Сгенерировать</button>
             <div class="error" id="codeErr"></div>
         </div>
         <div class="card result" id="codeResult">
             <div class="download-row">
                 <div class="result-label" id="codeResultLabel" style="flex:1;margin:0">QR-коды (0 шт.)</div>
-                <button class="btn-download-icon" title="Скачать все PNG" onclick="downloadAllPNG()">⤓</button>
+                <button class="btn-download-icon" title="Скачать все PNG" onclick="App.downloadAllPNG()">⤓</button>
             </div>
             <div class="code-grid" id="codeGrid"></div>
         </div>
     </div>
 
     <!-- ИСТОРИЯ -->
-    <div class="section-title" onclick="toggleSection(this)">
+    <div class="section-title" onclick="App.toggleSection(this)">
         <span class="arrow">▼</span>История
     </div>
     <div class="collapsible expanded" id="section4">
         <div class="card">
             <div class="history-tabs">
-                <div class="history-tab active" id="tabBoxes" onclick="switchHistoryTab('boxes')">Короба</div>
-                <div class="history-tab" id="tabShelf" onclick="switchHistoryTab('shelf')">Сроки</div>
-                <div class="history-tab" id="tabCode" onclick="switchHistoryTab('code')">QR-коды</div>
+                <div class="history-tab active" id="tabBoxes" onclick="App.switchHistoryTab('boxes')">Короба</div>
+                <div class="history-tab" id="tabShelf" onclick="App.switchHistoryTab('shelf')">Сроки</div>
+                <div class="history-tab" id="tabCode" onclick="App.switchHistoryTab('code')">QR-коды</div>
             </div>
             <ul class="history-list" id="historyList"></ul>
-            <button class="btn-sm" onclick="clearHistory()">Очистить историю</button>
+            <button class="btn-sm" onclick="App.clearHistory()">Очистить историю</button>
         </div>
     </div>
 </div>
 
 <!-- ===== МОДАЛЬНОЕ ОКНО ДЛЯ QR ===== -->
-<div id="qrModal" class="modal" onclick="closeQRModal(event)">
+<div id="qrModal" class="modal" onclick="App.closeQRModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
         <div class="modal-header">
             <h2 style="color:var(--text);margin:0">QR-код</h2>
-            <button class="modal-close" onclick="closeQRModal()">✕</button>
+            <button class="modal-close" onclick="App.closeQRModal()">✕</button>
         </div>
         <div class="modal-qr">
             <canvas id="modalCanvas"></canvas>
         </div>
         <div class="modal-text" id="modalText"></div>
         <div class="modal-buttons">
-            <button class="modal-btn modal-btn-copy" onclick="copyToClipboard()">📋 Копировать</button>
-            <button class="modal-btn modal-btn-download" onclick="downloadSingleQR()">⤓ Скачать</button>
-            <button class="modal-btn modal-btn-close" onclick="closeQRModal()">Закрыть</button>
+            <button class="modal-btn modal-btn-copy" onclick="App.copyToClipboard()">📋 Копировать</button>
+            <button class="modal-btn modal-btn-download" onclick="App.downloadSingleQR()">⤓ Скачать</button>
+            <button class="modal-btn modal-btn-close" onclick="App.closeQRModal()">Закрыть</button>
         </div>
     </div>
 </div>
@@ -894,505 +897,676 @@ var qrcode = (function() {
 
 <!-- ===== ПРИЛОЖЕНИЕ ===== -->
 <script>
-    /* ===== Флаг для предотвращения дублирования истории ===== */
+var App = (function() {
+    // ===== ПРИВАТНЫЕ ПЕРЕМЕННЫЕ =====
+    
     var skipHistorySave = false;
-
-    /* ===== Данные текущего QR для модального окна ===== */
     var currentQRData = null;
-
-    /* ===== Форматирование чисел ===== */
-    function fmtNumber(n) {
-        return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-    }
-
-    /* ===== Тема ===== */
-    function toggleTheme() {
-        document.body.classList.toggle('dark');
-        localStorage.setItem('darkTheme', document.body.classList.contains('dark') ? '1' : '0');
-    }
-    (function() {
-        var saved = localStorage.getItem('darkTheme');
-        if (saved === '1') document.body.classList.add('dark');
-        else if (saved === '0') document.body.classList.remove('dark');
-        else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
-            document.body.classList.add('dark');
-    })();
-
-    /* ===== Состояние секций ===== */
-    var sectionStates = {
-        section1: true,
-        section2: true,
-        section3: true,
-        section4: true
-    };
-
-    /* ===== Сворачивание ===== */
-    function toggleSection(titleEl) {
-        var section = titleEl.nextElementSibling;
-        var arrow = titleEl.querySelector('.arrow');
-        
-        if (section.classList.contains('collapsed')) {
-            section.style.maxHeight = section.scrollHeight + 'px';
-            section.classList.remove('collapsed');
-            section.classList.add('expanded');
-            arrow.classList.remove('collapsed');
-            var sectionId = section.id;
-            sectionStates[sectionId] = true;
-        } else {
-            section.style.maxHeight = section.scrollHeight + 'px';
-            section.offsetHeight;
-            section.classList.add('collapsed');
-            section.classList.remove('expanded');
-            arrow.classList.add('collapsed');
-            var sectionId = section.id;
-            sectionStates[sectionId] = false;
-            section.style.maxHeight = '0px';
-        }
-        saveSectionStates();
-    }
-
-    function saveSectionStates() {
-        try { 
-            localStorage.setItem('sectionStates', JSON.stringify(sectionStates)); 
-        } catch(e) {}
-    }
-
-    function loadSectionStates() {
-        try {
-            var saved = localStorage.getItem('sectionStates');
-            if (saved) {
-                sectionStates = JSON.parse(saved);
-                ['section1', 'section2', 'section3', 'section4'].forEach(function(sectionId) {
-                    var section = document.getElementById(sectionId);
-                    var titleEl = section.previousElementSibling;
-                    var arrow = titleEl.querySelector('.arrow');
-                    
-                    if (sectionStates[sectionId]) {
-                        section.classList.remove('collapsed');
-                        section.classList.add('expanded');
-                        arrow.classList.remove('collapsed');
-                    } else {
-                        section.classList.add('collapsed');
-                        section.classList.remove('expanded');
-                        arrow.classList.add('collapsed');
-                    }
-                });
-            }
-        } catch(e) {}
-    }
-
-    /* ===== Парсинг ===== */
-    function parseNum(s) {
-        if (!s) return NaN;
-        return parseFloat(String(s).replace(',', '.'));
-    }
-    function pad(n) { return n < 10 ? '0' + n : '' + n; }
-
-    /* ===== Месяцы ===== */
-    var months = [
+    var calcCache = {};
+    var sectionStates = { section1: true, section2: true, section3: true, section4: true };
+    
+    var PALLET_L = 120, PALLET_W = 80;
+    var MONTHS = [
         'Январь (01)', 'Февраль (02)', 'Март (03)', 'Апрель (04)',
         'Май (05)', 'Июнь (06)', 'Июль (07)', 'Август (08)',
         'Сентябрь (09)', 'Октябрь (10)', 'Ноябрь (11)', 'Декабрь (12)'
     ];
 
-    /* ===== Калькулятор 1 ===== */
-    var L = 120, W = 80;
-    var calcCache = {};
+    // ===== КЭШИРОВАННЫЕ ЭЛЕМЕНТЫ DOM =====
+    var DOM = {};
 
-    function n(zw, zh, bw, bh) {
+    function initDOM() {
+        DOM = {
+            // Boxes
+            boxL: document.getElementById('boxL'),
+            boxW: document.getElementById('boxW'),
+            err: document.getElementById('err'),
+            result: document.getElementById('result'),
+            count: document.getElementById('count'),
+            fill: document.getElementById('fill'),
+            dims: document.getElementById('dims'),
+            
+            // Shelf Life
+            mfgDay: document.getElementById('mfgDay'),
+            mfgMonth: document.getElementById('mfgMonth'),
+            mfgYear: document.getElementById('mfgYear'),
+            shelfLife: document.getElementById('shelfLife'),
+            shelfUnit: document.getElementById('shelfUnit'),
+            shelfErr: document.getElementById('shelfErr'),
+            shelfResult: document.getElementById('shelfResult'),
+            expiryDate: document.getElementById('expiryDate'),
+            daysLeft: document.getElementById('daysLeft'),
+            
+            // QR
+            codeInput: document.getElementById('codeInput'),
+            prefixCheck: document.getElementById('prefixCheck'),
+            prefixWrap: document.getElementById('prefixWrap'),
+            prefixVal: document.getElementById('prefixVal'),
+            codeErr: document.getElementById('codeErr'),
+            codeResult: document.getElementById('codeResult'),
+            codeResultLabel: document.getElementById('codeResultLabel'),
+            codeGrid: document.getElementById('codeGrid'),
+            
+            // History
+            historyList: document.getElementById('historyList'),
+            tabBoxes: document.getElementById('tabBoxes'),
+            tabShelf: document.getElementById('tabShelf'),
+            tabCode: document.getElementById('tabCode'),
+            
+            // Modal
+            qrModal: document.getElementById('qrModal'),
+            modalCanvas: document.getElementById('modalCanvas'),
+            modalText: document.getElementById('modalText')
+        };
+    }
+
+    // ===== УТИЛИТЫ =====
+
+    function parseNum(s) {
+        if (!s) return NaN;
+        var n = parseFloat(String(s).replace(',', '.'));
+        return isNaN(n) ? 0 : n;
+    }
+
+    function fmtNumber(n) {
+        return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    }
+
+    function pad(n) {
+        return n < 10 ? '0' + n : '' + n;
+    }
+
+    function storageSet(key, value) {
+        try {
+            localStorage.setItem(key, value);
+        } catch (e) {}
+    }
+
+    function storageGet(key) {
+        try {
+            return localStorage.getItem(key);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    // ===== ОБРАБОТКА ОШИБОК =====
+
+    function clearErrors(section) {
+        if (section === 'boxes') {
+            DOM.boxL.classList.remove('err');
+            DOM.boxW.classList.remove('err');
+            DOM.err.classList.remove('show');
+            DOM.err.textContent = '';
+        } else if (section === 'shelf') {
+            DOM.shelfErr.classList.remove('show');
+            DOM.shelfErr.textContent = '';
+        } else if (section === 'code') {
+            DOM.codeErr.classList.remove('show');
+            DOM.codeErr.textContent = '';
+        }
+    }
+
+    function showError(section, msg, focusEl) {
+        clearErrors(section);
+        if (section === 'boxes') {
+            DOM.err.textContent = msg;
+            DOM.err.classList.add('show');
+            if (focusEl) focusEl.classList.add('err');
+        } else if (section === 'shelf') {
+            DOM.shelfErr.textContent = msg;
+            DOM.shelfErr.classList.add('show');
+        } else if (section === 'code') {
+            DOM.codeErr.textContent = msg;
+            DOM.codeErr.classList.add('show');
+        }
+        if (focusEl) focusEl.focus();
+    }
+
+    // ===== ТЕМА =====
+
+    function toggleTheme() {
+        document.body.classList.toggle('dark');
+        storageSet('darkTheme', document.body.classList.contains('dark') ? '1' : '0');
+    }
+
+    function initTheme() {
+        var saved = storageGet('darkTheme');
+        if (saved === '1') document.body.classList.add('dark');
+        else if (saved === '0') document.body.classList.remove('dark');
+        else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+            document.body.classList.add('dark');
+    }
+
+    // ===== СВОРАЧИВАНИЕ СЕКЦИЙ =====
+
+    function toggleSection(titleEl) {
+        var section = titleEl.nextElementSibling;
+        var arrow = titleEl.querySelector('.arrow');
+        var sectionId = section.id;
+
+        if (!sectionId) return;
+
+        var isCollapsed = section.classList.contains('collapsed');
+
+        if (isCollapsed) {
+            section.style.maxHeight = section.scrollHeight + 'px';
+            section.classList.remove('collapsed');
+            arrow.classList.remove('collapsed');
+            sectionStates[sectionId] = true;
+        } else {
+            section.style.maxHeight = section.scrollHeight + 'px';
+            // триггер reflow
+            void section.offsetHeight;
+            section.classList.add('collapsed');
+            arrow.classList.add('collapsed');
+            section.style.maxHeight = '0px';
+            sectionStates[sectionId] = false;
+        }
+        saveSectionStates();
+    }
+
+    function saveSectionStates() {
+        storageSet('sectionStates', JSON.stringify(sectionStates));
+    }
+
+    function loadSectionStates() {
+        var saved = storageGet('sectionStates');
+        if (saved) {
+            try {
+                sectionStates = JSON.parse(saved);
+                ['section1', 'section2', 'section3', 'section4'].forEach(function(sectionId) {
+                    var section = document.getElementById(sectionId);
+                    if (!section) return;
+                    var titleEl = section.previousElementSibling;
+                    var arrow = titleEl ? titleEl.querySelector('.arrow') : null;
+                    
+                    if (sectionStates[sectionId]) {
+                        section.classList.remove('collapsed');
+                        section.style.maxHeight = '';
+                        if (arrow) arrow.classList.remove('collapsed');
+                    } else {
+                        section.classList.add('collapsed');
+                        section.style.maxHeight = '0px';
+                        if (arrow) arrow.classList.add('collapsed');
+                    }
+                });
+            } catch (e) {}
+        }
+    }
+
+    // ===== КАЛЬКУЛЯТОР 1: КОРОБА =====
+
+    function nBoxes(zw, zh, bw, bh) {
         return Math.floor(zw / bw) * Math.floor(zh / bh);
     }
 
-    function pts(total, d1, d2) {
+    function points(total, d1, d2) {
         var s = {}, o = [];
         for (var k = 1; k * d1 <= total; k++) s[k * d1] = 1;
         for (var k = 1; k * d2 <= total; k++) s[k * d2] = 1;
         for (var k = 0; k * d1 < total; k++) s[total - k * d1] = 1;
         for (var k = 0; k * d2 < total; k++) s[total - k * d2] = 1;
-        for (var p in s) { var v = +p; if (v > 0 && v < total) o.push(v); }
+        for (var p in s) {
+            var v = +p;
+            if (v > 0 && v < total) o.push(v);
+        }
         return o.sort(function(a, b) { return a - b; });
     }
 
-    function best(bl, bw) {
+    function bestArrangement(bl, bw) {
         var cacheKey = bl + '_' + bw;
         if (calcCache[cacheKey]) return calcCache[cacheKey];
 
-        var o = [{w:bl,h:bw},{w:bw,h:bl}];
-        var bc = 0, cfg;
-        function t(c, x) { if (c > bc) { bc = c; cfg = x; } }
+        var orientations = [
+            { w: bl, h: bw },
+            { w: bw, h: bl }
+        ];
+        var bestCount = 0, bestConfig = null;
 
-        for (var i = 0; i < 2; i++) t(n(L,W,o[i].w,o[i].h), {t:'s'});
+        function updateBest(count, config) {
+            if (count > bestCount) {
+                bestCount = count;
+                bestConfig = config;
+            }
+        }
 
-        var xp = pts(L, bl, bw), yp = pts(W, bl, bw);
+        // Обычная раскладка
+        for (var i = 0; i < 2; i++) {
+            updateBest(nBoxes(PALLET_L, PALLET_W, orientations[i].w, orientations[i].h), { type: 'simple' });
+        }
 
-        for (var s of xp) for (var i = 0; i < 2; i++) for (var j = 0; j < 2; j++)
-            t(n(s,W,o[i].w,o[i].h) + n(L-s,W,o[j].w,o[j].h), {t:'v2'});
+        // Смешанная вертикальная
+        var xPoints = points(PALLET_L, bl, bw);
+        var yPoints = points(PALLET_W, bl, bw);
 
-        for (var s of yp) for (var i = 0; i < 2; i++) for (var j = 0; j < 2; j++)
-            t(n(L,s,o[i].w,o[i].h) + n(L,W-s,o[j].w,o[j].h), {t:'h2'});
+        for (var s of xPoints) {
+            for (var i = 0; i < 2; i++) {
+                for (var j = 0; j < 2; j++) {
+                    var count = nBoxes(s, PALLET_W, orientations[i].w, orientations[i].h) +
+                                nBoxes(PALLET_L - s, PALLET_W, orientations[j].w, orientations[j].h);
+                    updateBest(count, { type: 'vert' });
+                }
+            }
+        }
 
-        for (var xs of xp) for (var ys of yp)
-            for (var i = 0; i < 2; i++) for (var j = 0; j < 2; j++)
-            for (var k = 0; k < 2; k++) for (var l = 0; l < 2; l++)
-                t(n(xs,ys,o[i].w,o[i].h) + n(L-xs,ys,o[j].w,o[j].h) +
-                  n(xs,W-ys,o[k].w,o[k].h) + n(L-xs,W-ys,o[l].w,o[l].h), {t:'x'});
+        // Смешанная горизонтальная
+        for (var s of yPoints) {
+            for (var i = 0; i < 2; i++) {
+                for (var j = 0; j < 2; j++) {
+                    var count = nBoxes(PALLET_L, s, orientations[i].w, orientations[i].h) +
+                                nBoxes(PALLET_L, PALLET_W - s, orientations[j].w, orientations[j].h);
+                    updateBest(count, { type: 'horiz' });
+                }
+            }
+        }
 
-        var names = { s:'Обычная', v2:'Смешанная (верт.)', h2:'Смешанная (гориз.)', x:'Смешанная' };
-        var result = { total: bc, type: names[cfg ? cfg.t : 's'] };
+        // Комбинированная
+        for (var xs of xPoints) {
+            for (var ys of yPoints) {
+                for (var i = 0; i < 2; i++) {
+                    for (var j = 0; j < 2; j++) {
+                        for (var k = 0; k < 2; k++) {
+                            for (var l = 0; l < 2; l++) {
+                                var count = nBoxes(xs, ys, orientations[i].w, orientations[i].h) +
+                                           nBoxes(PALLET_L - xs, ys, orientations[j].w, orientations[j].h) +
+                                           nBoxes(xs, PALLET_W - ys, orientations[k].w, orientations[k].h) +
+                                           nBoxes(PALLET_L - xs, PALLET_W - ys, orientations[l].w, orientations[l].h);
+                                updateBest(count, { type: 'combined' });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        var typeNames = {
+            simple: 'Обычная',
+            vert: 'Смешанная (верт.)',
+            horiz: 'Смешанная (гориз.)',
+            combined: 'Смешанная'
+        };
+
+        var result = {
+            total: bestCount,
+            type: typeNames[bestConfig ? bestConfig.type : 'simple']
+        };
+
         calcCache[cacheKey] = result;
         return result;
     }
 
     function calc() {
-        var bl = parseNum(document.getElementById('boxL').value);
-        var bw = parseNum(document.getElementById('boxW').value);
-        var el1 = document.getElementById('boxL'), el2 = document.getElementById('boxW');
-        el1.classList.remove('err'); el2.classList.remove('err');
+        var bl = parseNum(DOM.boxL.value);
+        var bw = parseNum(DOM.boxW.value);
 
-        if (!bl || bl <= 0) { el1.classList.add('err'); el1.focus(); fail(); return; }
-        if (!bw || bw <= 0) { el2.classList.add('err'); el2.focus(); fail(); return; }
+        clearErrors('boxes');
 
-        var r = best(bl, bw);
-        if (!r.total) { el1.classList.add('err'); el2.classList.add('err'); fail(); return; }
+        if (!bl || bl <= 0) {
+            showError('boxes', '7 раз отмерь — 1 раз введи', DOM.boxL);
+            DOM.result.classList.remove('show');
+            return;
+        }
+        if (!bw || bw <= 0) {
+            showError('boxes', '7 раз отмерь — 1 раз введи', DOM.boxW);
+            DOM.result.classList.remove('show');
+            return;
+        }
 
-        document.getElementById('err').classList.remove('show');
-        var res = document.getElementById('result');
-        res.classList.add('show');
-        document.getElementById('count').textContent = fmtNumber(r.total);
-        var fillPct = ((r.total*bl*bw)/(L*W)*100).toFixed(1);
-        document.getElementById('fill').textContent = fillPct+'%';
-        document.getElementById('dims').textContent = 'Коробка ' + bl + ' × ' + bw + ' см';
-        res.scrollIntoView({behavior:'smooth'});
-        
+        var arrangement = bestArrangement(bl, bw);
+        if (!arrangement.total) {
+            showError('boxes', 'Не удалось рассчитать', DOM.boxL);
+            DOM.result.classList.remove('show');
+            return;
+        }
+
+        var totalFormatted = fmtNumber(arrangement.total);
+        var fillPct = ((arrangement.total * bl * bw) / (PALLET_L * PALLET_W) * 100).toFixed(1);
+
+        DOM.count.textContent = totalFormatted;
+        DOM.fill.textContent = fillPct + '%';
+        DOM.dims.textContent = 'Коробка ' + bl + ' × ' + bw + ' см';
+        DOM.result.classList.add('show');
+        DOM.result.scrollIntoView({ behavior: 'smooth' });
+
         if (!skipHistorySave) {
-            saveToHistory('boxes', bl+' × '+bw, fmtNumber(r.total)+' шт.', {bl:bl,bw:bw});
+            saveToHistory('boxes', bl + ' × ' + bw, totalFormatted + ' шт.', { bl: bl, bw: bw });
         }
     }
 
-    function fail() {
-        document.getElementById('err').textContent = '7 раз отмерь — 1 раз введи';
-        document.getElementById('err').classList.add('show');
-        document.getElementById('result').classList.remove('show');
-    }
+    // ===== КАЛЬКУЛЯТОР 2: СРОКИ ГОДНОСТИ =====
 
-    /* ===== Калькулятор 2 ===== */
     function initShelfSelects() {
-        var d = document.getElementById('mfgDay');
-        var m = document.getElementById('mfgMonth');
-        var y = document.getElementById('mfgYear');
-        d.innerHTML = '<option value="">День</option>';
-        for (var i = 1; i <= 31; i++) d.innerHTML += '<option value="'+i+'">'+i+'</option>';
-        m.innerHTML = '<option value="">Месяц</option>';
-        for (var i = 0; i < 12; i++) {
-            m.innerHTML += '<option value="'+(i+1)+'">'+months[i]+'</option>';
+        DOM.mfgDay.innerHTML = '<option value="">День</option>';
+        for (var i = 1; i <= 31; i++) {
+            DOM.mfgDay.innerHTML += '<option value="' + i + '">' + i + '</option>';
         }
-        y.innerHTML = '<option value="">Год</option>';
+
+        DOM.mfgMonth.innerHTML = '<option value="">Месяц</option>';
+        for (var i = 0; i < 12; i++) {
+            DOM.mfgMonth.innerHTML += '<option value="' + (i + 1) + '">' + MONTHS[i] + '</option>';
+        }
+
+        DOM.mfgYear.innerHTML = '<option value="">Год</option>';
         var now = new Date();
-        for (var i = now.getFullYear(); i > now.getFullYear()-10; i--)
-            y.innerHTML += '<option value="'+i+'">'+i+'</option>';
+        for (var i = now.getFullYear(); i > now.getFullYear() - 10; i--) {
+            DOM.mfgYear.innerHTML += '<option value="' + i + '">' + i + '</option>';
+        }
     }
 
     function isValidDate(d, m, y) {
-        var test = new Date(y, m-1, d);
-        return test.getDate() === d && test.getMonth() === m-1 && test.getFullYear() === y;
+        var test = new Date(y, m - 1, d);
+        return test.getDate() === d && test.getMonth() === m - 1 && test.getFullYear() === y;
     }
 
     function calcShelf() {
-        var d = +document.getElementById('mfgDay').value;
-        var m = +document.getElementById('mfgMonth').value;
-        var y = +document.getElementById('mfgYear').value;
-        var qty = parseInt(document.getElementById('shelfLife').value);
-        var unit = +document.getElementById('shelfUnit').value;
+        var d = +DOM.mfgDay.value;
+        var m = +DOM.mfgMonth.value;
+        var y = +DOM.mfgYear.value;
+        var qty = parseInt(DOM.shelfLife.value);
+        var unit = +DOM.shelfUnit.value;
 
-        if (!d||!m||!y) { shelfErr('Укажите дату производства'); return; }
-        if (!isValidDate(d, m, y)) { shelfErr('Неверная дата'); return; }
-        if (!qty||qty<=0) { shelfErr('Укажите срок годности'); return; }
+        clearErrors('shelf');
 
-        document.getElementById('shelfErr').classList.remove('show');
-        var mfg = new Date(y, m-1, d);
-
-        var exp = new Date(mfg);
-        var unitText = document.getElementById('shelfUnit').selectedOptions[0].text;
-
-        if (unit===30) exp.setMonth(exp.getMonth()+qty);
-        else if (unit===365) exp.setFullYear(exp.getFullYear()+qty);
-        else exp.setDate(exp.getDate()+qty*unit);
-
-        var now = new Date(); now.setHours(0,0,0,0);
-        var expMid = new Date(exp); expMid.setHours(0,0,0,0);
-        var diff = Math.round((expMid-now)/86400000);
-        var total = Math.round((expMid-mfg)/86400000);
-
-        document.getElementById('shelfResult').classList.add('show');
-        document.getElementById('expiryDate').textContent = fmtDate(exp);
-        var el = document.getElementById('daysLeft');
-        el.className = 'left-out';
-
-        if (diff<0) {
-            el.textContent = 'Просрочено на '+fmtDays(-diff);
-            el.classList.add('red');
-        } else if (diff===0) {
-            el.textContent = 'Истекает сегодня';
-            el.classList.add('orange');
-        } else {
-            var pct = total>0 ? Math.round(diff/total*100) : 0;
-            el.textContent = 'Осталось '+fmtDays(diff)+' ('+pct+'%)';
-            el.classList.add(pct>20?'green':'orange');
+        if (!d || !m || !y) {
+            showError('shelf', 'Укажите дату производства');
+            DOM.shelfResult.classList.remove('show');
+            return;
         }
+        if (!isValidDate(d, m, y)) {
+            showError('shelf', 'Неверная дата');
+            DOM.shelfResult.classList.remove('show');
+            return;
+        }
+        if (!qty || qty <= 0) {
+            showError('shelf', 'Укажите срок годности');
+            DOM.shelfResult.classList.remove('show');
+            return;
+        }
+
+        var mfg = new Date(y, m - 1, d);
+        var exp = new Date(mfg);
+
+        if (unit === 30) exp.setMonth(exp.getMonth() + qty);
+        else if (unit === 365) exp.setFullYear(exp.getFullYear() + qty);
+        else exp.setDate(exp.getDate() + qty * unit);
+
+        var ed = exp.getDate(), em = exp.getMonth() + 1, ey = exp.getFullYear();
+        var expDateStr = pad(ed) + '.' + pad(em) + '.' + ey;
+        DOM.expiryDate.textContent = expDateStr;
+
+        var now = new Date();
+        var daysLeft = Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
+
+        if (daysLeft < 0) {
+            DOM.daysLeft.textContent = 'Истёк на ' + (-daysLeft) + ' дн.';
+            DOM.daysLeft.className = 'left-out red';
+        } else if (daysLeft <= 7) {
+            DOM.daysLeft.textContent = daysLeft + ' дней до истечения';
+            DOM.daysLeft.className = 'left-out orange';
+        } else {
+            DOM.daysLeft.textContent = daysLeft + ' дней осталось';
+            DOM.daysLeft.className = 'left-out green';
+        }
+
+        DOM.shelfResult.classList.add('show');
+        DOM.shelfResult.scrollIntoView({ behavior: 'smooth' });
 
         if (!skipHistorySave) {
-            saveToHistory('shelf', pad(d)+'.'+pad(m)+'.'+y+' + '+qty+' '+unitText, fmtDate(exp),
-                {d:d,m:m,y:y,qty:qty,unit:unit});
+            saveToHistory('shelf', pad(d) + '.' + pad(m) + '.' + y + ' / ' + qty + ' ' + DOM.shelfUnit.selectedOptions[0].text.toLowerCase(), expDateStr, {
+                d: d, m: m, y: y, qty: qty, unit: unit
+            });
         }
     }
 
-    function shelfErr(msg) {
-        document.getElementById('shelfErr').textContent = msg;
-        document.getElementById('shelfErr').classList.add('show');
-        document.getElementById('shelfResult').classList.remove('show');
-    }
+    // ===== КАЛЬКУЛЯТОР 3: QR-КОДЫ =====
 
-    function fmtDate(dt) {
-        return pad(dt.getDate())+'.'+pad(dt.getMonth()+1)+'.'+dt.getFullYear();
-    }
-
-    function fmtDays(n) {
-        if (n===0) return '0 дней';
-        var l1=n%10, l2=n%100;
-        if (l1===1&&l2!==11) return n+' день';
-        if (l1>=2&&l1<=4&&(l2<12||l2>14)) return n+' дня';
-        return n+' дней';
-    }
-
-    /* ===== Калькулятор 3: QR ===== */
     function togglePrefixInput() {
-        var cb = document.getElementById('prefixCheck');
-        document.getElementById('prefixWrap').classList.toggle('show', cb.checked);
+        DOM.prefixCheck.checked = !DOM.prefixCheck.checked;
+        if (DOM.prefixCheck.checked) {
+            DOM.prefixWrap.classList.add('show');
+            DOM.prefixVal.focus();
+        } else {
+            DOM.prefixWrap.classList.remove('show');
+        }
     }
 
-    function openQRModal(canvas, text) {
-        currentQRData = {canvas: canvas, text: text};
-        
+    function generateCode() {
+        var text = DOM.codeInput.value.trim();
+        var prefix = DOM.prefixVal.value;
+        var usePrefix = DOM.prefixCheck.checked;
+
+        clearErrors('code');
+
+        if (!text) {
+            showError('code', 'Введите текст');
+            DOM.codeResult.classList.remove('show');
+            return;
+        }
+
+        var lines = text.split(/[\s\n]+/).filter(function(line) { return line.length > 0; });
+
+        if (!lines.length) {
+            showError('code', 'Введите текст');
+            DOM.codeResult.classList.remove('show');
+            return;
+        }
+
+        DOM.codeGrid.innerHTML = '';
+        var codes = [];
+
+        for (var i = 0; i < lines.length; i++) {
+            var codeText = lines[i];
+            if (usePrefix && prefix) {
+                codeText += prefix;
+            }
+
+            var canvas = document.createElement('canvas');
+            try {
+                qrcode.render(canvas, codeText, 'M', 6);
+            } catch (e) {
+                showError('code', 'Ошибка при создании QR: ' + e.message);
+                DOM.codeResult.classList.remove('show');
+                return;
+            }
+
+            var codeItem = document.createElement('div');
+            codeItem.className = 'code-item';
+            codeItem.appendChild(canvas);
+
+            var textEl = document.createElement('div');
+            textEl.className = 'code-text';
+            textEl.textContent = codeText;
+            codeItem.appendChild(textEl);
+
+            codeItem.onclick = function(codeData) {
+                return function() {
+                    openQRModal(codeData);
+                };
+            }({ canvas: canvas, text: codeText });
+
+            DOM.codeGrid.appendChild(codeItem);
+            codes.push({ canvas: canvas, text: codeText });
+        }
+
+        DOM.codeResultLabel.textContent = 'QR-коды (' + codes.length + ' шт.)';
+        DOM.codeResult.classList.add('show');
+        DOM.codeResult.scrollIntoView({ behavior: 'smooth' });
+
+        if (!skipHistorySave) {
+            saveToHistory('code', text.substring(0, 50) + (text.length > 50 ? '...' : ''), codes.length + ' шт.', {
+                text: text,
+                prefix: prefix,
+                usePrefix: usePrefix
+            });
+        }
+    }
+
+    function downloadAllPNG() {
+        var canvases = DOM.codeGrid.querySelectorAll('canvas');
+        if (!canvases.length) return;
+
+        canvases.forEach(function(canvas, idx) {
+            var link = document.createElement('a');
+            link.href = canvas.toDataURL('image/png');
+            link.download = 'qr_' + idx + '_' + new Date().getTime() + '.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    }
+
+    // ===== МОДАЛЬНОЕ ОКНО =====
+
+    function openQRModal(codeData) {
+        currentQRData = codeData;
         var modalCanvas = document.getElementById('modalCanvas');
-        var ctx = modalCanvas.getContext('2d');
         
-        var sourceCanvas = canvas;
+        // Копируем canvas
+        var sourceCanvas = codeData.canvas;
         modalCanvas.width = sourceCanvas.width;
         modalCanvas.height = sourceCanvas.height;
+        var ctx = modalCanvas.getContext('2d');
         ctx.drawImage(sourceCanvas, 0, 0);
-        
-        document.getElementById('modalText').textContent = text;
-        document.getElementById('qrModal').classList.add('show');
+
+        DOM.modalText.textContent = codeData.text;
+        DOM.qrModal.classList.add('show');
     }
 
     function closeQRModal(event) {
-        if (event && event.target.id !== 'qrModal') return;
-        document.getElementById('qrModal').classList.remove('show');
+        if (event && event.target !== DOM.qrModal) return;
+        DOM.qrModal.classList.remove('show');
         currentQRData = null;
     }
 
     function copyToClipboard() {
         if (!currentQRData) return;
-        var text = currentQRData.text;
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(text).then(function() {
-                showNotification('Скопировано!');
-            }).catch(function() {
-                fallbackCopy(text);
-            });
-        } else {
-            fallbackCopy(text);
-        }
-    }
-
-    function fallbackCopy(text) {
-        var textarea = document.createElement('textarea');
-        textarea.value = text;
-        document.body.appendChild(textarea);
-        textarea.select();
-        try {
-            document.execCommand('copy');
-            showNotification('Скопировано!');
-        } catch(err) {
-            alert('Не удалось скопировать');
-        }
-        document.body.removeChild(textarea);
+        navigator.clipboard.writeText(currentQRData.text).then(function() {
+            showNotification('Скопировано в буфер обмена');
+        }).catch(function() {
+            showNotification('Ошибка при копировании');
+        });
     }
 
     function downloadSingleQR() {
         if (!currentQRData) return;
-        
-        var canvas = currentQRData.canvas;
+        var canvas = document.getElementById('modalCanvas');
         var link = document.createElement('a');
         link.href = canvas.toDataURL('image/png');
-        link.download = 'qr_' + currentQRData.text.replace(/[^a-z0-9]/gi, '_') + '_' + new Date().getTime() + '.png';
+        link.download = 'qr_' + new Date().getTime() + '.png';
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
     }
 
-    function showNotification(text) {
-        var notify = document.createElement('div');
-        notify.className = 'copy-notify';
-        notify.textContent = text;
-        document.body.appendChild(notify);
+    function showNotification(msg) {
+        var notif = document.createElement('div');
+        notif.className = 'copy-notify';
+        notif.textContent = msg;
+        document.body.appendChild(notif);
         setTimeout(function() {
-            notify.remove();
+            notif.remove();
         }, 2000);
     }
 
-    function generateCode() {
-        var raw = document.getElementById('codeInput').value.trim();
-        if (!raw) { codeFail('Введите текст'); return; }
-
-        var parts = raw.split(/\s+/).filter(Boolean);
-        if (!parts.length) { codeFail('Введите текст'); return; }
-
-        var usePrefix = document.getElementById('prefixCheck').checked;
-        var prefix = usePrefix ? document.getElementById('prefixVal').value.trim() : '';
-
-        var grid = document.getElementById('codeGrid');
-        grid.innerHTML = '';
-        document.getElementById('codeErr').classList.remove('show');
-
-        var failedItems = [];
-
-        try {
-            for (var i = 0; i < parts.length; i++) {
-                var text = parts[i] + prefix;
-                try {
-                    var item = document.createElement('div');
-                    item.className = 'code-item';
-                    var canvas = document.createElement('canvas');
-                    qrcode.render(canvas, text, 'M', 5);
-                    
-                    (function(c, t) {
-                        item.onclick = function() {
-                            openQRModal(c, t);
-                        };
-                    })(canvas, text);
-                    
-                    item.appendChild(canvas);
-                    var label = document.createElement('div');
-                    label.className = 'code-text';
-                    label.textContent = text;
-                    item.appendChild(label);
-                    grid.appendChild(item);
-                } catch(e) {
-                    failedItems.push(text);
-                }
-            }
-        } catch(e) {
-            codeFail('Ошибка: ' + e.message);
-            return;
+    // Закрытие модала по ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && DOM.qrModal && DOM.qrModal.classList.contains('show')) {
+            closeQRModal();
         }
+    });
 
-        if (grid.children.length === 0) {
-            codeFail('Не удалось закодировать текст. Попробуйте сокращенный текст.');
-            return;
-        }
-
-        var successCount = grid.children.length;
-        
-        if (failedItems.length > 0) {
-            document.getElementById('codeResultLabel').textContent = 
-                'QR-коды ('+successCount+' из '+(parts.length)+' успешно)';
-        } else {
-            document.getElementById('codeResultLabel').textContent = 'QR-коды ('+successCount+' шт.)';
-        }
-
-        document.getElementById('codeResult').classList.add('show');
-        document.getElementById('codeResult').scrollIntoView({behavior:'smooth'});
-        
-        if (!skipHistorySave) {
-            saveToHistory('code', raw, successCount + ' QR-коды',
-                {raw:raw, prefix:prefix});
-        }
-    }
-
-    function codeFail(msg) {
-        document.getElementById('codeErr').textContent = msg;
-        document.getElementById('codeErr').classList.add('show');
-        document.getElementById('codeResult').classList.remove('show');
-    }
-
-    /* ===== История ===== */
-    var currentHistoryTab = 'boxes';
-    var history = { boxes: [], shelf: [], code: [] };
+    // ===== ИСТОРИЯ =====
 
     function saveToHistory(type, input, result, data) {
-        if (skipHistorySave) return;
-        
-        var entry = {
-            input: input,
-            result: result,
-            data: data,
-            time: new Date().toLocaleString('ru-RU')
-        };
-        
-        if (!history[type]) history[type] = [];
-        history[type].unshift(entry);
-        
-        try { 
-            localStorage.setItem('history', JSON.stringify(history)); 
-            console.log('History saved:', type, entry);
-        } catch(e) {
-            console.error('LocalStorage error:', e);
-        }
-        
-        updateHistoryList();
+        try {
+            var history = JSON.parse(storageGet('appHistory') || '{"boxes":[],"shelf":[],"code":[]}');
+            var entry = {
+                input: input,
+                result: result,
+                timestamp: new Date().toLocaleString('ru-RU'),
+                data: data
+            };
+            history[type].unshift(entry);
+            if (history[type].length > 50) history[type].pop();
+            storageSet('appHistory', JSON.stringify(history));
+            renderHistory('boxes');
+        } catch (e) {}
+    }
+
+    function renderHistory(type) {
+        try {
+            var history = JSON.parse(storageGet('appHistory') || '{"boxes":[],"shelf":[],"code":[]}');
+            var entries = history[type] || [];
+            DOM.historyList.innerHTML = '';
+
+            if (!entries.length) {
+                var emptyLi = document.createElement('li');
+                emptyLi.style.textAlign = 'center';
+                emptyLi.style.color = 'var(--text3)';
+                emptyLi.textContent = 'История пуста';
+                DOM.historyList.appendChild(emptyLi);
+                return;
+            }
+
+            for (var i = 0; i < entries.length; i++) {
+                var entry = entries[i];
+                var li = document.createElement('li');
+                li.className = 'history-item';
+                li.innerHTML = '<div class="h-input">' + entry.input + '</div>' +
+                               '<div class="h-result">' + entry.result + '</div>' +
+                               '<div class="h-date">' + entry.timestamp + '</div>';
+                li.onclick = function(histType, histData) {
+                    return function() {
+                        loadFromHistory(histType, histData);
+                    };
+                }(type, entry.data);
+                DOM.historyList.appendChild(li);
+            }
+        } catch (e) {}
+    }
+
+    function switchHistoryTab(type) {
+        [DOM.tabBoxes, DOM.tabShelf, DOM.tabCode].forEach(function(tab) {
+            tab.classList.remove('active');
+        });
+
+        if (type === 'boxes') DOM.tabBoxes.classList.add('active');
+        else if (type === 'shelf') DOM.tabShelf.classList.add('active');
+        else if (type === 'code') DOM.tabCode.classList.add('active');
+
+        renderHistory(type);
     }
 
     function loadFromHistory(type, data) {
         skipHistorySave = true;
-        
+
         if (type === 'boxes') {
-            document.getElementById('boxL').value = data.bl;
-            document.getElementById('boxW').value = data.bw;
-            
-            // Открыть раздел
-            var section = document.getElementById('section1');
-            if (section.classList.contains('collapsed')) {
-                toggleSection(section.previousElementSibling);
-            }
-            
+            DOM.boxL.value = data.bl;
+            DOM.boxW.value = data.bw;
+            expandSection('section1');
             setTimeout(function() {
                 calc();
                 skipHistorySave = false;
             }, 100);
-            
         } else if (type === 'shelf') {
-            document.getElementById('mfgDay').value = data.d;
-            document.getElementById('mfgMonth').value = data.m;
-            document.getElementById('mfgYear').value = data.y;
-            document.getElementById('shelfLife').value = data.qty;
-            document.getElementById('shelfUnit').value = data.unit;
-            
-            // Открыть раздел
-            var section = document.getElementById('section2');
-            if (section.classList.contains('collapsed')) {
-                toggleSection(section.previousElementSibling);
-            }
-            
+            DOM.mfgDay.value = data.d;
+            DOM.mfgMonth.value = data.m;
+            DOM.mfgYear.value = data.y;
+            DOM.shelfLife.value = data.qty;
+            DOM.shelfUnit.value = data.unit;
+            expandSection('section2');
             setTimeout(function() {
                 calcShelf();
                 skipHistorySave = false;
             }, 100);
-            
         } else if (type === 'code') {
-            document.getElementById('codeInput').value = data.raw;
-            document.getElementById('prefixCheck').checked = data.prefix ? true : false;
-            if (data.prefix) {
-                document.getElementById('prefixVal').value = data.prefix;
-                document.getElementById('prefixWrap').classList.add('show');
-            } else {
-                document.getElementById('prefixWrap').classList.remove('show');
-            }
-            
-            // Открыть раздел
-            var section = document.getElementById('section3');
-            if (section.classList.contains('collapsed')) {
-                toggleSection(section.previousElementSibling);
-            }
-            
+            DOM.codeInput.value = data.text;
+            DOM.prefixCheck.checked = data.usePrefix;
+            DOM.prefixVal.value = data.prefix;
+            if (data.usePrefix) DOM.prefixWrap.classList.add('show');
+            else DOM.prefixWrap.classList.remove('show');
+            expandSection('section3');
             setTimeout(function() {
                 generateCode();
                 skipHistorySave = false;
@@ -1400,118 +1574,61 @@ var qrcode = (function() {
         }
     }
 
-    function switchHistoryTab(tab) {
-        currentHistoryTab = tab;
-        document.querySelectorAll('.history-tab').forEach(function(el) {
-            el.classList.remove('active');
-        });
-        var tabEl;
-        if (tab === 'boxes') tabEl = document.getElementById('tabBoxes');
-        else if (tab === 'shelf') tabEl = document.getElementById('tabShelf');
-        else if (tab === 'code') tabEl = document.getElementById('tabCode');
-        if (tabEl) tabEl.classList.add('active');
-        updateHistoryList();
-    }
-
-    function updateHistoryList() {
-        var list = document.getElementById('historyList');
-        var items = history[currentHistoryTab] || [];
-        list.innerHTML = '';
+    function expandSection(sectionId) {
+        var section = document.getElementById(sectionId);
+        if (!section) return;
         
-        if (items.length === 0) {
-            var li = document.createElement('li');
-            li.textContent = 'История пуста';
-            li.style.color = 'var(--text3)';
-            li.style.textAlign = 'center';
-            li.style.padding = '20px';
-            list.appendChild(li);
-            return;
+        if (section.classList.contains('collapsed')) {
+            section.style.maxHeight = section.scrollHeight + 'px';
+            section.classList.remove('collapsed');
+            var arrow = section.previousElementSibling.querySelector('.arrow');
+            if (arrow) arrow.classList.remove('collapsed');
+            sectionStates[sectionId] = true;
+            saveSectionStates();
         }
-
-        items.forEach(function(entry) {
-            var li = document.createElement('li');
-            li.className = 'history-item';
-            li.innerHTML = 
-                '<div class="h-input">'+escapeHtml(entry.input)+'</div>'+
-                '<div class="h-result">'+escapeHtml(entry.result)+'</div>'+
-                '<div class="h-date">'+entry.time+'</div>';
-            li.onclick = function() { loadFromHistory(currentHistoryTab, entry.data); };
-            list.appendChild(li);
-        });
     }
 
     function clearHistory() {
-        if (confirm('Вы уверены?')) {
-            history = { boxes: [], shelf: [], code: [] };
-            try { localStorage.removeItem('history'); } catch(e) {}
-            updateHistoryList();
+        if (confirm('Вы уверены? Это действие нельзя отменить.')) {
+            storageSet('appHistory', JSON.stringify({ boxes: [], shelf: [], code: [] }));
+            renderHistory('boxes');
         }
     }
 
-    function escapeHtml(text) {
-        var div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
+    // ===== ИНИЦИАЛИЗАЦИЯ =====
 
-    /* ===== Скачивание PNG ===== */
-    function downloadAllPNG() {
-        var items = document.querySelectorAll('.code-item');
-        if (!items.length) { alert('Нет кодов для скачивания'); return; }
-
-        var canvas = document.createElement('canvas');
-        var cols = window.innerWidth > 900 ? 4 : window.innerWidth > 600 ? 3 : 2;
-        var rows = Math.ceil(items.length / cols);
-        var itemSize = 200;
-        var gap = 16;
-        var totalW = cols * itemSize + (cols - 1) * gap;
-        var totalH = rows * itemSize + (rows - 1) * gap;
-        
-        canvas.width = totalW;
-        canvas.height = totalH;
-        var ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        var processed = 0;
-        items.forEach(function(item, idx) {
-            var row = Math.floor(idx / cols);
-            var col = idx % cols;
-            var x = col * (itemSize + gap);
-            var y = row * (itemSize + gap);
-
-            var img = item.querySelector('canvas');
-            if (img) {
-                ctx.drawImage(img, x, y, itemSize, itemSize);
-            }
-            
-            processed++;
-            if (processed === items.length) {
-                var link = document.createElement('a');
-                link.href = canvas.toDataURL('image/png');
-                link.download = 'qr_codes_' + new Date().getTime() + '.png';
-                link.click();
-            }
-        });
-    }
-
-    /* ===== Инициализация ===== */
-    (function() {
+    function init() {
+        initDOM();
+        initTheme();
         initShelfSelects();
-        try {
-            var saved = localStorage.getItem('history');
-            if (saved) history = JSON.parse(saved);
-        } catch(e) {}
-        updateHistoryList();
         loadSectionStates();
-    })();
+        renderHistory('boxes');
+    }
 
-    /* ===== Закрытие модально при ESC ===== */
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closeQRModal();
-        }
-    });
+    // ===== PUBLIC API =====
+
+    return {
+        toggleTheme: toggleTheme,
+        toggleSection: toggleSection,
+        calc: calc,
+        calcShelf: calcShelf,
+        togglePrefixInput: togglePrefixInput,
+        generateCode: generateCode,
+        downloadAllPNG: downloadAllPNG,
+        closeQRModal: closeQRModal,
+        copyToClipboard: copyToClipboard,
+        downloadSingleQR: downloadSingleQR,
+        switchHistoryTab: switchHistoryTab,
+        clearHistory: clearHistory,
+        init: init
+    };
+})();
+
+// Инициализация при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    App.init();
+});
 </script>
+
 </body>
 </html>
