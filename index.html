@@ -126,7 +126,21 @@
         }
         .history-tab.active{color:var(--accent);border-color:var(--accent);background:var(--card)}
 
-        .history-list{list-style:none}
+        .history-list{
+            list-style:none;
+            /* ✅ FIX: прокрутка истории */
+            max-height:400px;
+            overflow-y:auto;
+            -webkit-overflow-scrolling:touch;
+            padding-right:4px;
+        }
+
+        /* Стилизация скроллбара */
+        .history-list::-webkit-scrollbar{width:6px}
+        .history-list::-webkit-scrollbar-track{background:transparent}
+        .history-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+        .history-list::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+
         .history-item{
             background:var(--card);border:1px solid var(--border);border-radius:12px;
             padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color .2s ease;
@@ -397,7 +411,6 @@
 </head>
 <body>
 
-<!-- ✅ FIX #11: noscript для отключённого JS -->
 <noscript>
     <div style="text-align:center;padding:40px;color:#e74c3c;font-size:18px">
         ⚠️ Для работы приложения требуется JavaScript
@@ -414,7 +427,6 @@
     </div>
 
     <!-- КОРОБА -->
-    <!-- ✅ FIX #7: aria-expanded -->
     <div class="section-title" onclick="App.toggleSection(this)" aria-expanded="true" role="button" tabindex="0">
         <span class="arrow">▼</span>Короба в слое
     </div>
@@ -427,7 +439,6 @@
             <button class="btn" onclick="App.calc()">Рассчитать</button>
             <div class="error" id="err"></div>
         </div>
-        <!-- ✅ FIX #13: aria-live для озвучки результата -->
         <div class="card result" id="result" aria-live="polite">
             <div class="result-label">Коробок в слое</div>
             <div class="result-count" id="count">0</div>
@@ -467,7 +478,6 @@
             <button class="btn" onclick="App.calcShelf()">Рассчитать</button>
             <div class="error" id="shelfErr"></div>
         </div>
-        <!-- ✅ FIX #13 -->
         <div class="card result" id="shelfResult" aria-live="polite">
             <div class="result-label">Годен до</div>
             <div class="expiry-out" id="expiryDate"></div>
@@ -484,7 +494,6 @@
             <label for="codeInput">Текст (через пробел — отдельные коды)</label>
             <textarea id="codeInput" placeholder="Вставьте текст..."></textarea>
 
-            <!-- ✅ FIX #2: исправлен баг с чекбоксом -->
             <div class="prefix-row" onclick="App.onPrefixRowClick(event)">
                 <input type="checkbox" id="prefixCheck" onclick="event.stopPropagation();App.togglePrefixInput()">
                 <label>Добавить текст в конец каждой строки</label>
@@ -497,7 +506,6 @@
             <button class="btn" onclick="App.generateCode()">Сгенерировать</button>
             <div class="error" id="codeErr"></div>
         </div>
-        <!-- ✅ FIX #13 -->
         <div class="card result" id="codeResult" aria-live="polite">
             <div class="download-row">
                 <div class="result-label" id="codeResultLabel" style="flex:1;margin:0">QR-коды (0 шт.)</div>
@@ -513,7 +521,6 @@
     </div>
     <div class="collapsible expanded" id="section4">
         <div class="card">
-            <!-- ✅ FIX #7: role для табов -->
             <div class="history-tabs" role="tablist">
                 <div class="history-tab active" id="tabBoxes" role="tab" aria-selected="true" onclick="App.switchHistoryTab('boxes')">Короба</div>
                 <div class="history-tab" id="tabShelf" role="tab" aria-selected="false" onclick="App.switchHistoryTab('shelf')">Сроки</div>
@@ -526,7 +533,6 @@
 </div>
 
 <!-- ===== МОДАЛЬНОЕ ОКНО ДЛЯ QR ===== -->
-<!-- ✅ FIX #7: role="dialog", aria-modal -->
 <div id="qrModal" class="modal" role="dialog" aria-modal="true" aria-label="QR-код" onclick="App.closeQRModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
         <div class="modal-header">
@@ -892,7 +898,6 @@ var qrcode = (function() {
         render: function(canvas, text, ecLevel, scale) {
             var qr = build(text, ecLevel || 'M');
             var count = qr.getModuleCount();
-            // ✅ FIX #9: именованная константа вместо магического числа
             var QR_QUIET_ZONE = 8;
             var total = count + QR_QUIET_ZONE * 2;
             var px = scale || 8;
@@ -919,14 +924,12 @@ var App = (function() {
     var skipHistorySave = false;
     var currentQRData = null;
 
-    // ✅ FIX #8: ограниченный кэш с LRU-подобным поведением
     var calcCache = {};
     var calcCacheKeys = [];
     var CALC_CACHE_MAX = 100;
 
     var sectionStates = { section1: true, section2: true, section3: true, section4: true };
 
-    // ✅ FIX #9: именованные константы вместо магических чисел
     var PALLET_L = 120, PALLET_W = 80;
     var HISTORY_MAX = 50;
     var QR_SCALE = 6;
@@ -934,6 +937,8 @@ var App = (function() {
     var EXPAND_MAX_HEIGHT = 10000;
     var SAVE_FIELDS_DEBOUNCE = 300;
     var DOWNLOAD_DELAY_MS = 500;
+    var ANIMATION_DURATION = 350;
+    var SCROLL_DELAY = 100;
 
     var MONTHS = [
         'Январь (01)', 'Февраль (02)', 'Март (03)', 'Апрель (04)',
@@ -941,7 +946,6 @@ var App = (function() {
         'Сентябрь (09)', 'Октябрь (10)', 'Ноябрь (11)', 'Декабрь (12)'
     ];
 
-    // ===== КЭШИРОВАННЫЕ ЭЛЕМЕНТЫ DOM =====
     var DOM = {};
 
     function initDOM() {
@@ -986,7 +990,6 @@ var App = (function() {
 
     // ===== УТИЛИТЫ =====
 
-    // ✅ FIX #6: parseNum возвращает NaN для некорректного ввода (не 0)
     function parseNum(s) {
         if (!s || !String(s).trim()) return NaN;
         var n = parseFloat(String(s).replace(',', '.'));
@@ -1009,7 +1012,6 @@ var App = (function() {
         try { return localStorage.getItem(key); } catch (e) { return null; }
     }
 
-    // ✅ FIX #8: кэш с ограничением
     function cacheSet(key, value) {
         if (calcCache[key] === undefined) {
             if (calcCacheKeys.length >= CALC_CACHE_MAX) {
@@ -1022,6 +1024,18 @@ var App = (function() {
 
     function cacheGet(key) {
         return calcCache[key];
+    }
+
+    // ✅ Безопасная прокрутка к элементу
+    function safeScrollTo(el) {
+        if (!el) return;
+        setTimeout(function() {
+            try {
+                el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } catch (e) {
+                el.scrollIntoView();
+            }
+        }, SCROLL_DELAY);
     }
 
     // ===== ОБРАБОТКА ОШИБОК =====
@@ -1084,12 +1098,21 @@ var App = (function() {
         var isCollapsed = section.classList.contains('collapsed');
 
         if (isCollapsed) {
-            section.style.maxHeight = section.scrollHeight + 'px';
+            // ✅ FIX: раскрытие — сначала показываем, потом снимаем maxHeight
             section.classList.remove('collapsed');
+            section.style.maxHeight = section.scrollHeight + 'px';
             arrow.classList.remove('collapsed');
             titleEl.setAttribute('aria-expanded', 'true');
             sectionStates[sectionId] = true;
+
+            // ✅ FIX: после анимации убираем maxHeight, чтобы контент скроллился
+            setTimeout(function() {
+                if (!section.classList.contains('collapsed')) {
+                    section.style.maxHeight = 'none';
+                }
+            }, ANIMATION_DURATION);
         } else {
+            // ✅ FIX: сворачивание — устанавливаем текущую высоту, потом 0
             section.style.maxHeight = section.scrollHeight + 'px';
             void section.offsetHeight;
             section.classList.add('collapsed');
@@ -1110,7 +1133,6 @@ var App = (function() {
         if (saved) {
             try {
                 var parsed = JSON.parse(saved);
-                // ✅ FIX: валидируем загруженный объект
                 if (parsed && typeof parsed === 'object') {
                     sectionStates = parsed;
                 }
@@ -1122,7 +1144,7 @@ var App = (function() {
 
                     if (sectionStates[sectionId]) {
                         section.classList.remove('collapsed');
-                        section.style.maxHeight = '';
+                        section.style.maxHeight = 'none';  // ✅ FIX: none вместо ''
                         if (arrow) arrow.classList.remove('collapsed');
                         if (titleEl) titleEl.setAttribute('aria-expanded', 'true');
                     } else {
@@ -1177,7 +1199,6 @@ var App = (function() {
             updateBest(nBoxes(PALLET_L, PALLET_W, orientations[i].w, orientations[i].h), { type: 'simple' });
         }
 
-        // ✅ FIX #4: заменён for...of на forEach (ES5-совместимость)
         var xPoints = points(PALLET_L, bl, bw);
         var yPoints = points(PALLET_W, bl, bw);
 
@@ -1241,7 +1262,6 @@ var App = (function() {
 
         clearErrors('boxes');
 
-        // ✅ FIX #6: проверка диапазона, а не просто <= 0
         if (isNaN(bl) || bl < 1 || bl > PALLET_L) {
             showError('boxes', 'Длина коробки: от 1 до ' + PALLET_L + ' см', DOM.boxL);
             DOM.result.classList.remove('show');
@@ -1267,7 +1287,9 @@ var App = (function() {
         DOM.fill.textContent = fillPct + '%';
         DOM.dims.textContent = 'Коробка ' + bl + ' × ' + bw + ' см · ' + arrangement.type;
         DOM.result.classList.add('show');
-        DOM.result.scrollIntoView({ behavior: 'smooth' });
+
+        // ✅ FIX: безопасная прокрутка вместо прямого scrollIntoView
+        safeScrollTo(DOM.result);
 
         if (!skipHistorySave) {
             saveToHistory('boxes', bl + ' × ' + bw, totalFormatted + ' шт.', { bl: bl, bw: bw });
@@ -1350,7 +1372,9 @@ var App = (function() {
         }
 
         DOM.shelfResult.classList.add('show');
-        DOM.shelfResult.scrollIntoView({ behavior: 'smooth' });
+
+        // ✅ FIX: безопасная прокрутка
+        safeScrollTo(DOM.shelfResult);
 
         if (!skipHistorySave) {
             saveToHistory('shelf', pad(d) + '.' + pad(m) + '.' + y + ' / ' + qty + ' ' + DOM.shelfUnit.selectedOptions[0].text.toLowerCase(), expDateStr, {
@@ -1361,14 +1385,12 @@ var App = (function() {
 
     // ===== КАЛЬКУЛЯТОР 3: QR-КОДЫ =====
 
-    // ✅ FIX #2: исправлен баг с чекбоксом — обработка клика по строке
     function onPrefixRowClick(event) {
         if (event.target === DOM.prefixCheck) return;
         DOM.prefixCheck.click();
         togglePrefixInput();
     }
 
-    // ✅ FIX #2: togglePrefixInput больше не переключает checked вручную
     function togglePrefixInput() {
         if (DOM.prefixCheck.checked) {
             DOM.prefixWrap.classList.add('show');
@@ -1423,7 +1445,6 @@ var App = (function() {
             codeItem.setAttribute('role', 'button');
             codeItem.appendChild(canvas);
 
-            // ✅ FIX #1: безопасная вставка через textContent
             var textEl = document.createElement('div');
             textEl.className = 'code-text';
             textEl.textContent = codeText;
@@ -1433,7 +1454,6 @@ var App = (function() {
                 return function() { openQRModal(cd); };
             })({ canvas: canvas, text: codeText });
 
-            // ✅ FIX #7: keyboard support
             codeItem.onkeydown = (function(cd) {
                 return function(e) {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -1449,7 +1469,9 @@ var App = (function() {
 
         DOM.codeResultLabel.textContent = 'QR-коды (' + codes.length + ' шт.)';
         DOM.codeResult.classList.add('show');
-        DOM.codeResult.scrollIntoView({ behavior: 'smooth' });
+
+        // ✅ FIX: безопасная прокрутка
+        safeScrollTo(DOM.codeResult);
 
         if (!skipHistorySave) {
             saveToHistory('code', text.substring(0, 50) + (text.length > 50 ? '...' : ''), codes.length + ' шт.', {
@@ -1460,7 +1482,6 @@ var App = (function() {
         }
     }
 
-    // ✅ FIX #3: загрузка с задержкой, чтобы браузер не блокировал
     function downloadAllPNG() {
         var canvases = DOM.codeGrid.querySelectorAll('canvas');
         if (!canvases.length) return;
@@ -1519,7 +1540,6 @@ var App = (function() {
         }
     }
 
-    // ✅ FIX: fallback для браузеров без Clipboard API
     function fallbackCopy(text) {
         var ta = document.createElement('textarea');
         ta.value = text;
@@ -1568,7 +1588,6 @@ var App = (function() {
             } catch (e) {
                 history = {};
             }
-            // ✅ FIX: валидируем структуру истории
             if (!history.boxes) history.boxes = [];
             if (!history.shelf) history.shelf = [];
             if (!history.code) history.code = [];
@@ -1589,7 +1608,7 @@ var App = (function() {
         }
     }
 
-    // ✅ FIX #1: рендер истории через DOM API (без innerHTML с пользовательскими данными)
+    // ✅ FIX #1: рендер через DOM API (без innerHTML с пользовательскими данными)
     function renderHistory(type) {
         try {
             var raw = storageGet('appHistory');
@@ -1618,7 +1637,6 @@ var App = (function() {
                 li.className = 'history-item';
                 li.setAttribute('tabindex', '0');
 
-                // Безопасная вставка — только textContent
                 var divInput = document.createElement('div');
                 divInput.className = 'h-input';
                 divInput.textContent = entry.input || '';
@@ -1667,6 +1685,7 @@ var App = (function() {
         renderHistory(type);
     }
 
+    // ✅ FIX: восстановление из истории — корректное раскрытие + задержка
     function loadFromHistory(type, data) {
         if (!data) return;
         skipHistorySave = true;
@@ -1675,10 +1694,11 @@ var App = (function() {
             DOM.boxL.value = data.bl;
             DOM.boxW.value = data.bw;
             expandSection('section1');
+            // ✅ FIX: увеличенная задержка — ждём завершения анимации раскрытия
             setTimeout(function() {
                 calc();
                 skipHistorySave = false;
-            }, 100);
+            }, ANIMATION_DURATION + 50);
         } else if (type === 'shelf') {
             DOM.mfgDay.value = data.d;
             DOM.mfgMonth.value = data.m;
@@ -1689,7 +1709,7 @@ var App = (function() {
             setTimeout(function() {
                 calcShelf();
                 skipHistorySave = false;
-            }, 100);
+            }, ANIMATION_DURATION + 50);
         } else if (type === 'code') {
             DOM.codeInput.value = data.text;
             DOM.prefixCheck.checked = !!data.usePrefix;
@@ -1700,23 +1720,31 @@ var App = (function() {
             setTimeout(function() {
                 generateCode();
                 skipHistorySave = false;
-            }, 100);
+            }, ANIMATION_DURATION + 50);
         }
     }
 
+    // ✅ FIX: expandSection — корректно раскрывает и снимает maxHeight
     function expandSection(sectionId) {
         var section = document.getElementById(sectionId);
         if (!section) return;
 
         if (section.classList.contains('collapsed')) {
-            section.style.maxHeight = section.scrollHeight + 'px';
             section.classList.remove('collapsed');
+            section.style.maxHeight = section.scrollHeight + 'px';
             var titleEl = section.previousElementSibling;
             var arrow = titleEl ? titleEl.querySelector('.arrow') : null;
             if (arrow) arrow.classList.remove('collapsed');
             if (titleEl) titleEl.setAttribute('aria-expanded', 'true');
             sectionStates[sectionId] = true;
             saveSectionStates();
+
+            // ✅ FIX: после анимации снимаем maxHeight
+            setTimeout(function() {
+                if (!section.classList.contains('collapsed')) {
+                    section.style.maxHeight = 'none';
+                }
+            }, ANIMATION_DURATION);
         }
     }
 
@@ -1730,7 +1758,6 @@ var App = (function() {
 
     // ===== СОХРАНЕНИЕ ПОЛЕЙ ВВОДА =====
 
-    // ✅ FIX #5: сохранение полей ввода с debounce
     var saveFieldsTimer = null;
 
     function saveAllFields() {
@@ -1739,10 +1766,10 @@ var App = (function() {
             var el = document.getElementById(id);
             if (el) storageSet('mt_field_' + id, el.value);
         });
-        storageSet('mt_field_shelfDay', DOM.mfgDay ? DOM.mfgDay.value : '');
-        storageSet('mt_field_shelfMonth', DOM.mfgMonth ? DOM.mfgMonth.value : '');
-        storageSet('mt_field_shelfYear', DOM.mfgYear ? DOM.mfgYear.value : '');
-        storageSet('mt_field_shelfUnit', DOM.shelfUnit ? DOM.shelfUnit.value : '');
+        if (DOM.mfgDay) storageSet('mt_field_shelfDay', DOM.mfgDay.value);
+        if (DOM.mfgMonth) storageSet('mt_field_shelfMonth', DOM.mfgMonth.value);
+        if (DOM.mfgYear) storageSet('mt_field_shelfYear', DOM.mfgYear.value);
+        if (DOM.shelfUnit) storageSet('mt_field_shelfUnit', DOM.shelfUnit.value);
     }
 
     function scheduleSaveFields() {
@@ -1760,15 +1787,14 @@ var App = (function() {
             }
         });
         var sd = storageGet('mt_field_shelfDay');
-        if (sd !== null) DOM.mfgDay.value = sd;
+        if (sd !== null && DOM.mfgDay) DOM.mfgDay.value = sd;
         var sm = storageGet('mt_field_shelfMonth');
-        if (sm !== null) DOM.mfgMonth.value = sm;
+        if (sm !== null && DOM.mfgMonth) DOM.mfgMonth.value = sm;
         var sy = storageGet('mt_field_shelfYear');
-        if (sy !== null) DOM.mfgYear.value = sy;
+        if (sy !== null && DOM.mfgYear) DOM.mfgYear.value = sy;
         var su = storageGet('mt_field_shelfUnit');
-        if (su !== null) DOM.shelfUnit.value = su;
+        if (su !== null && DOM.shelfUnit) DOM.shelfUnit.value = su;
 
-        // Восстанавливаем prefixWrap
         if (DOM.prefixCheck.checked) DOM.prefixWrap.classList.add('show');
     }
 
@@ -1782,18 +1808,15 @@ var App = (function() {
         restoreFields();
         renderHistory('boxes');
 
-        // ✅ FIX #5: слушатель сохранения полей
         document.addEventListener('input', scheduleSaveFields);
         document.addEventListener('change', scheduleSaveFields);
 
-        // ✅ FIX #12: keydown перенесён в init
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && DOM.qrModal && DOM.qrModal.classList.contains('show')) {
                 closeQRModal();
             }
         });
 
-        // ✅ FIX #7: keyboard для заголовков секций
         document.querySelectorAll('.section-title').forEach(function(el) {
             el.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' || e.key === ' ') {
