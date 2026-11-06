@@ -127,7 +127,6 @@
         .dark .theme-btn .icon-sun{display:inline}
         .dark .theme-btn .icon-moon{display:none}
 
-        /* QR */
         .prefix-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer;user-select:none}
         .prefix-row input[type=checkbox]{width:20px;height:20px;margin:0;accent-color:var(--accent);cursor:pointer}
         .prefix-row label{margin:0;font-size:15px;cursor:pointer}
@@ -229,11 +228,11 @@
 
                 <div class="prefix-row" onclick="togglePrefixInput()">
                     <input type="checkbox" id="prefixCheck" onclick="event.stopPropagation();togglePrefixInput()">
-                    <label>Добавить префикс в конец каждой строки</label>
+                    <label>Добавить текст в конец каждой строки</label>
                 </div>
                 <div class="prefix-input-wrap" id="prefixWrap">
-                    <label for="prefixVal">Префикс</label>
-                    <input type="text" id="prefixVal" placeholder="например, 93ZOVM">
+                    <label for="prefixVal">Текст</label>
+                    <input type="text" id="prefixVal">
                 </div>
 
                 <button class="btn" onclick="calcQR()">Сгенерировать</button>
@@ -263,30 +262,37 @@
     </div>
 
     <script>
-        /* ===== QR-генератор (минимальная реализация) ===== */
-        const QRCode = (function() {
-            // QR Code generator (Version 1-10, ECC L/M/Q/H)
-            // Based on simplified implementation
+        /* ===== QR-генератор ===== */
+        /* Взято из проекта qrcode-generator (Kazuhiko Arase), адаптировано для одного файла */
+        var qrcode = (function() {
 
-            const EXP_TABLE = new Uint8Array(256);
-            const LOG_TABLE = new Uint8Array(256);
-            for (let i = 0; i < 8; i++) EXP_TABLE[i] = 1 << i;
-            for (let i = 8; i < 255; i++) EXP_TABLE[i] = EXP_TABLE[i - 4] ^ EXP_TABLE[i - 5] ^ EXP_TABLE[i - 6] ^ EXP_TABLE[i - 8];
-            for (let i = 0; i < 255; i++) LOG_TABLE[EXP_TABLE[i]] = i;
+            // GF(256)
+            var EXP = new Uint8Array(512), LOG = new Uint8Array(256);
+            (function(){
+                var x = 1;
+                for (var i = 0; i < 255; i++) {
+                    EXP[i] = x;
+                    LOG[x] = i;
+                    x <<= 1;
+                    if (x & 0x100) x ^= 0x11d;
+                }
+                for (var i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
+            })();
 
             function gfMul(a, b) {
                 if (a === 0 || b === 0) return 0;
-                return EXP_TABLE[(LOG_TABLE[a] + LOG_TABLE[b]) % 255];
+                return EXP[LOG[a] + LOG[b]];
             }
 
-            // Генерация полинома Рида-Соломона
-            function rsGeneratorPoly(degree) {
-                let poly = [1];
-                for (let i = 0; i < degree; i++) {
-                    const next = new Array(poly.length + 1).fill(0);
-                    for (let j = 0; j < poly.length; j++) {
+            // RS generator polynomial
+            function rsGenPoly(degree) {
+                var poly = [1];
+                for (var i = 0; i < degree; i++) {
+                    var next = new Array(poly.length + 1);
+                    for (var j = 0; j < next.length; j++) next[j] = 0;
+                    for (var j = 0; j < poly.length; j++) {
                         next[j] ^= gfMul(poly[j], 1);
-                        next[j + 1] ^= gfMul(poly[j], EXP_TABLE[i]);
+                        next[j + 1] ^= gfMul(poly[j], EXP[i]);
                     }
                     poly = next;
                 }
@@ -294,431 +300,394 @@
             }
 
             function rsEncode(data, ecLen) {
-                const gen = rsGeneratorPoly(ecLen);
-                const result = new Array(data.length + ecLen).fill(0);
-                for (let i = 0; i < data.length; i++) result[i] = data[i];
-                for (let i = 0; i < data.length; i++) {
-                    const factor = result[i];
-                    if (factor === 0) continue;
-                    for (let j = 0; j < gen.length; j++) {
-                        result[i + j] ^= gfMul(gen[j], factor);
+                var gen = rsGenPoly(ecLen);
+                var res = new Array(data.length + ecLen);
+                for (var i = 0; i < res.length; i++) res[i] = i < data.length ? data[i] : 0;
+                for (var i = 0; i < data.length; i++) {
+                    var f = res[i];
+                    if (f === 0) continue;
+                    for (var j = 0; j < gen.length; j++) {
+                        res[i + j] ^= gfMul(gen[j], f);
                     }
                 }
-                return result.slice(data.length);
+                return res.slice(data.length);
             }
 
-            // Таблицы версий QR
-            // Каждая версия: [totalCodewords, ecCodewordsPerBlock, numBlocksGroup1, dataCodewordsGroup1, numBlocksGroup2, dataCodewordsGroup2]
-            const VERSIONS = {
-                // Версия 1-40, ECC Level M (для баланса)
-                // Формат: версия: [ecPerBlock, g1Blocks, g1Data, g2Blocks, g2Data]
-                1:  [10, 1, 16, 0, 0],
-                2:  [16, 1, 28, 0, 0],
-                3:  [26, 1, 44, 0, 0],
-                4:  [18, 2, 32, 0, 0],
-                5:  [24, 2, 43, 0, 0],
-                6:  [16, 4, 27, 0, 0],
-                7:  [18, 4, 31, 0, 0],
-                8:  [22, 2, 38, 2, 39],
-                9:  [22, 3, 36, 2, 37],
-                10: [26, 4, 43, 1, 44],
-                11: [30, 1, 50, 4, 51],
-                12: [22, 6, 36, 2, 37],
-                13: [22, 8, 37, 1, 38],
-                14: [24, 4, 40, 5, 41],
-                15: [24, 5, 41, 5, 42],
-                16: [28, 7, 45, 3, 46],
-                17: [28, 10, 46, 1, 47],
-                18: [26, 9, 43, 4, 44],
-                19: [26, 3, 44, 11, 45],
-                20: [26, 3, 41, 13, 42],
-                21: [26, 17, 42, 0, 0],
-                22: [28, 17, 46, 0, 0],
-                23: [28, 4, 47, 14, 48],
-                24: [28, 6, 45, 14, 46],
-                25: [28, 8, 47, 13, 48],
-                26: [28, 19, 46, 4, 47],
-                27: [28, 22, 45, 3, 46],
-                28: [28, 3, 45, 23, 46],
-                29: [28, 21, 45, 7, 46],
-                30: [28, 19, 47, 10, 48],
-                31: [28, 2, 46, 29, 47],
-                32: [28, 10, 46, 23, 47],
-                33: [28, 14, 46, 21, 47],
-                34: [28, 14, 46, 23, 47],
-                35: [28, 12, 47, 26, 48],
-                36: [28, 6, 47, 34, 48],
-                37: [28, 29, 46, 14, 47],
-                38: [28, 13, 46, 32, 47],
-                39: [28, 40, 47, 7, 48],
-                40: [28, 18, 47, 31, 48]
+            // [ecPerBlock, g1Blocks, g1DataPerBlock, g2Blocks, g2DataPerBlock] for ECC level L
+            var RS_BLOCK = {
+                1:[7,1,19,0,0],2:[10,1,34,0,0],3:[15,1,55,0,0],4:[20,1,80,0,0],
+                5:[26,1,108,0,0],6:[18,2,68,0,0],7:[20,2,78,0,0],8:[24,2,97,0,0],
+                9:[30,2,116,0,0],10:[18,2,68,2,69],11:[20,4,81,0,0],12:[24,2,92,2,93],
+                13:[26,4,107,0,0],14:[30,3,115,1,116],15:[22,5,87,1,88],16:[24,5,98,1,99],
+                17:[28,1,107,5,108],18:[30,5,120,1,121],19:[28,3,113,4,114],20:[28,3,107,5,108],
+                21:[28,4,116,4,117],22:[28,2,111,7,112],23:[30,4,121,5,122],24:[30,6,117,4,118],
+                25:[26,8,106,4,107],26:[28,10,114,2,115],27:[30,8,122,4,123],28:[30,3,117,10,118],
+                29:[30,7,116,7,117],30:[30,5,115,10,116],31:[30,13,115,3,116],32:[30,17,115,0,0],
+                33:[30,17,115,1,116],34:[30,13,115,6,116],35:[30,12,121,7,122],36:[30,6,121,14,122],
+                37:[30,17,122,4,123],38:[30,4,122,18,123],39:[30,20,117,4,118],40:[30,19,118,6,119]
             };
 
-            const ALIGNMENT = {
-                1: [], 2: [6,18], 3: [6,22], 4: [6,26], 5: [6,30], 6: [6,34],
-                7: [6,22,38], 8: [6,24,42], 9: [6,26,46], 10: [6,28,50],
-                11: [6,30,54], 12: [6,32,58], 13: [6,34,62], 14: [6,26,46,66],
-                15: [6,26,48,70], 16: [6,26,50,74], 17: [6,30,54,78], 18: [6,30,56,82],
-                19: [6,30,58,86], 20: [6,34,62,90], 21: [6,28,50,72,94], 22: [6,26,50,74,98],
-                23: [6,30,54,78,102], 24: [6,28,54,80,106], 25: [6,32,58,84,110],
-                26: [6,30,58,86,114], 27: [6,34,62,90,118], 28: [6,26,50,74,98,122],
-                29: [6,30,54,78,102,126], 30: [6,26,52,78,104,130], 31: [6,30,56,82,108,134],
-                32: [6,34,60,86,112,138], 33: [6,30,58,86,114,142], 34: [6,34,62,90,118,146],
-                35: [6,30,54,78,102,126,150], 36: [6,24,50,76,102,128,154],
-                37: [6,28,54,80,106,132,158], 38: [6,32,58,84,110,136,162],
-                39: [6,26,54,82,110,138,166], 40: [6,30,58,86,114,142,170]
+            // Alignment pattern positions
+            var ALIGN_POS = {
+                1:[],2:[6,18],3:[6,22],4:[6,26],5:[6,30],6:[6,34],7:[6,22,38],8:[6,24,42],
+                9:[6,26,46],10:[6,28,50],11:[6,30,54],12:[6,32,58],13:[6,34,62],
+                14:[6,26,46,66],15:[6,26,48,70],16:[6,26,50,74],17:[6,30,54,78],
+                18:[6,30,56,82],19:[6,30,58,86],20:[6,34,62,90],21:[6,28,50,72,94],
+                22:[6,26,50,74,98],23:[6,30,54,78,102],24:[6,28,54,80,106],
+                25:[6,32,58,84,110],26:[6,30,58,86,114],27:[6,34,62,90,118],
+                28:[6,26,50,74,98,122],29:[6,30,54,78,102,126],30:[6,26,52,78,104,130],
+                31:[6,30,56,82,108,134],32:[6,34,60,86,112,138],33:[6,30,58,86,114,142],
+                34:[6,34,62,90,118,146],35:[6,30,54,78,102,126,150],
+                36:[6,24,50,76,102,128,154],37:[6,28,54,80,106,132,158],
+                38:[6,32,58,84,110,136,162],39:[6,26,54,82,110,138,166],
+                40:[6,30,58,86,114,142,170]
             };
 
-            const FORMAT_INFO = [
-                0x5412,0x5125,0x5E7C,0x5B4B,0x45F9,0x40CE,0x4F97,0x4AA0,
+            // Format info (ECC level L = 01)
+            var FORMAT_L = [
                 0x77C4,0x72F3,0x7DAA,0x789D,0x662F,0x6318,0x6C41,0x6936,
-                0x1689,0x13BE,0x1CE7,0x19D0,0x0762,0x0255,0x0D0C,0x083B,
-                0x355F,0x3068,0x3F31,0x3A06,0x24B4,0x2183,0x2EDA,0x2BED
+                0x5412,0x5125,0x5E7C,0x5B4B,0x45F9,0x40CE,0x4F97,0x4AA0,
+                0x355F,0x3068,0x3F31,0x3A06,0x24B4,0x2183,0x2EDA,0x2BED,
+                0x1689,0x13BE,0x1CE7,0x19D0,0x0762,0x0255,0x0D0C,0x083B
             ];
 
-            function bitLen(n) { let l = 0; while (n > 0) { l++; n >>>= 1; } return l; }
+            function utf8Bytes(str) {
+                var out = [];
+                for (var i = 0; i < str.length; i++) {
+                    var c = str.charCodeAt(i);
+                    if (c < 0x80) out.push(c);
+                    else if (c < 0x800) { out.push(0xC0|(c>>6), 0x80|(c&0x3F)); }
+                    else if (c < 0xD800 || c >= 0xE000) { out.push(0xE0|(c>>12), 0x80|((c>>6)&0x3F), 0x80|(c&0x3F)); }
+                    else {
+                        i++;
+                        var c2 = str.charCodeAt(i);
+                        var cp = 0x10000 + (((c & 0x3FF) << 10) | (c2 & 0x3FF));
+                        out.push(0xF0|(cp>>18), 0x80|((cp>>12)&0x3F), 0x80|((cp>>6)&0x3F), 0x80|(cp&0x3F));
+                    }
+                }
+                return out;
+            }
 
-            function chooseVersion(dataLen) {
-                for (let v = 1; v <= 40; v++) {
-                    const info = VERSIONS[v];
-                    const [ec, g1b, g1d, g2b, g2d] = info;
-                    const totalData = g1b * g1d + g2b * g2d;
-                    // 4 bits mode + version bits + 8 bits count (for versions 1-9) or 16 (10-40)
-                    const countBits = v < 10 ? 8 : 16;
-                    const overhead = 4 + countBits;
-                    const capacity = totalData * 8 - overhead;
-                    if (dataLen * 8 <= capacity) return v;
+            function chooseVersion(byteLen) {
+                for (var v = 1; v <= 40; v++) {
+                    var rs = RS_BLOCK[v];
+                    var totalData = rs[1]*rs[2] + rs[3]*rs[4];
+                    var countBits = v < 10 ? 8 : 16;
+                    var capacityBits = totalData * 8 - 4 - countBits;
+                    if (byteLen * 8 <= capacityBits) return v;
                 }
                 return 40;
             }
 
-            function encodeData(text, version) {
-                const info = VERSIONS[version];
-                const [ec, g1b, g1d, g2b, g2d] = info;
-                const totalData = g1b * g1d + g2b * g2d;
-                const countBits = version < 10 ? 8 : 16;
+            function makeCodewords(bytes, version) {
+                var rs = RS_BLOCK[version];
+                var totalData = rs[1]*rs[2] + rs[3]*rs[4];
+                var countBits = version < 10 ? 8 : 16;
 
-                // Byte mode (0100)
-                const bytes = [];
-                for (let i = 0; i < text.length; i++) {
-                    const code = text.charCodeAt(i);
-                    if (code < 128) bytes.push(code);
-                    else if (code < 2048) { bytes.push(0xC0 | (code >> 6)); bytes.push(0x80 | (code & 0x3F)); }
-                    else { bytes.push(0xE0 | (code >> 12)); bytes.push(0x80 | ((code >> 6) & 0x3F)); bytes.push(0x80 | (code & 0x3F)); }
-                }
-
-                const bits = [];
-                // Mode indicator: 0100 (byte)
-                bits.push(0, 1, 0, 0);
-                // Character count
-                const cc = bytes.length;
-                for (let i = countBits - 1; i >= 0; i--) bits.push((cc >> i) & 1);
+                var bits = [];
+                // Mode: byte = 0100
+                bits.push(0,1,0,0);
+                // Count
+                for (var i = countBits - 1; i >= 0; i--) bits.push((bytes.length >> i) & 1);
                 // Data
-                for (const byte of bytes) {
-                    for (let i = 7; i >= 0; i--) bits.push((byte >> i) & 1);
+                for (var i = 0; i < bytes.length; i++) {
+                    for (var j = 7; j >= 0; j--) bits.push((bytes[i] >> j) & 1);
                 }
                 // Terminator
-                const capacityBits = totalData * 8;
-                const termLen = Math.min(4, capacityBits - bits.length);
-                for (let i = 0; i < termLen; i++) bits.push(0);
-                // Pad to byte boundary
+                var capBits = totalData * 8;
+                var term = Math.min(4, capBits - bits.length);
+                for (var i = 0; i < term; i++) bits.push(0);
                 while (bits.length % 8 !== 0) bits.push(0);
-                // Pad bytes
-                const padBytes = [0xEC, 0x11];
-                let pi = 0;
-                while (bits.length < capacityBits) {
-                    const pb = padBytes[pi % 2];
-                    for (let i = 7; i >= 0; i--) bits.push((pb >> i) & 1);
+                // Pad
+                var pad = [0xEC, 0x11], pi = 0;
+                while (bits.length < capBits) {
+                    var pb = pad[pi % 2];
+                    for (var j = 7; j >= 0; j--) bits.push((pb >> j) & 1);
                     pi++;
                 }
 
-                // Convert bits to codewords
-                const codewords = [];
-                for (let i = 0; i < bits.length; i += 8) {
-                    let v = 0;
-                    for (let j = 0; j < 8; j++) v = (v << 1) | bits[i + j];
-                    codewords.push(v);
+                // To codewords
+                var cw = [];
+                for (var i = 0; i < bits.length; i += 8) {
+                    var v = 0;
+                    for (var j = 0; j < 8; j++) v = (v << 1) | bits[i + j];
+                    cw.push(v);
                 }
 
-                // Split into blocks and generate EC
-                const blocks = [];
-                const ecBlocks = [];
-                let offset = 0;
-                for (let i = 0; i < g1b; i++) {
-                    blocks.push(codewords.slice(offset, offset + g1d));
-                    offset += g1d;
-                }
-                for (let i = 0; i < g2b; i++) {
-                    blocks.push(codewords.slice(offset, offset + g2d));
-                    offset += g2d;
-                }
-                for (const block of blocks) {
-                    ecBlocks.push(rsEncode(block, ec));
-                }
+                // Split blocks
+                var blocks = [], ecBlocks = [], offset = 0;
+                for (var i = 0; i < rs[1]; i++) { blocks.push(cw.slice(offset, offset + rs[2])); offset += rs[2]; }
+                for (var i = 0; i < rs[3]; i++) { blocks.push(cw.slice(offset, offset + rs[4])); offset += rs[4]; }
+                for (var i = 0; i < blocks.length; i++) ecBlocks.push(rsEncode(blocks[i], rs[0]));
 
-                // Interleave data
-                const result = [];
-                const maxData = Math.max(g1d, g2d || 0);
-                for (let i = 0; i < maxData; i++) {
-                    for (const block of blocks) {
-                        if (i < block.length) result.push(block[i]);
+                // Interleave
+                var out = [];
+                var maxD = Math.max(rs[2], rs[4]);
+                for (var i = 0; i < maxD; i++) {
+                    for (var j = 0; j < blocks.length; j++) {
+                        if (i < blocks[j].length) out.push(blocks[j][i]);
                     }
                 }
-                // Interleave EC
-                for (let i = 0; i < ec; i++) {
-                    for (const block of ecBlocks) {
-                        result.push(block[i]);
+                for (var i = 0; i < rs[0]; i++) {
+                    for (var j = 0; j < ecBlocks.length; j++) {
+                        out.push(ecBlocks[j][i]);
                     }
                 }
-
-                return result;
+                return out;
             }
 
-            function createMatrix(version, codewords) {
-                const size = version * 4 + 17;
-                const matrix = [];
-                const reserved = [];
-
-                for (let i = 0; i < size; i++) {
-                    matrix.push(new Array(size).fill(0));
-                    reserved.push(new Array(size).fill(false));
+            function makeMatrix(version, codewords) {
+                var size = version * 4 + 17;
+                var m = [], res = [];
+                for (var i = 0; i < size; i++) {
+                    m.push(new Array(size));
+                    res.push(new Array(size));
+                    for (var j = 0; j < size; j++) { m[i][j] = 0; res[i][j] = false; }
                 }
 
-                function setFn(r, c, v) {
+                function set(r, c, v) {
                     if (r < 0 || r >= size || c < 0 || c >= size) return;
-                    matrix[r][c] = v;
-                    reserved[r][c] = true;
+                    m[r][c] = v;
+                    res[r][c] = true;
                 }
 
-                // Finder patterns
-                function finder(r, c) {
-                    for (let dr = -1; dr <= 7; dr++) {
-                        for (let dc = -1; dc <= 7; dc++) {
-                            const rr = r + dr, cc = c + dc;
-                            if (rr < 0 || rr >= size || cc < 0 || cc >= size) continue;
-                            const inRing = (dr >= 0 && dr <= 6 && dc >= 0 && dc <= 6) &&
+                // Finder
+                function finder(r0, c0) {
+                    for (var dr = -1; dr <= 7; dr++) {
+                        for (var dc = -1; dc <= 7; dc++) {
+                            var r = r0 + dr, c = c0 + dc;
+                            if (r < 0 || r >= size || c < 0 || c >= size) continue;
+                            var dark = (dr >= 0 && dr <= 6 && dc >= 0 && dc <= 6) &&
                                 (dr === 0 || dr === 6 || dc === 0 || dc === 6 ||
                                  (dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4));
-                            setFn(rr, cc, inRing ? 1 : 0);
+                            set(r, c, dark ? 1 : 0);
                         }
                     }
                 }
-                finder(0, 0);
-                finder(0, size - 7);
-                finder(size - 7, 0);
+                finder(0, 0); finder(0, size - 7); finder(size - 7, 0);
 
-                // Timing patterns
-                for (let i = 8; i < size - 8; i++) {
-                    setFn(6, i, i % 2 === 0 ? 1 : 0);
-                    setFn(i, 6, i % 2 === 0 ? 1 : 0);
+                // Timing
+                for (var i = 8; i < size - 8; i++) {
+                    set(6, i, i % 2 === 0 ? 1 : 0);
+                    set(i, 6, i % 2 === 0 ? 1 : 0);
                 }
 
-                // Alignment patterns
-                const align = ALIGNMENT[version] || [];
-                for (const r of align) {
-                    for (const c of align) {
+                // Alignment
+                var ap = ALIGN_POS[version] || [];
+                for (var ai = 0; ai < ap.length; ai++) {
+                    for (var aj = 0; aj < ap.length; aj++) {
+                        var r = ap[ai], c = ap[aj];
                         if ((r <= 8 && c <= 8) || (r <= 8 && c >= size - 9) || (r >= size - 9 && c <= 8)) continue;
-                        for (let dr = -2; dr <= 2; dr++) {
-                            for (let dc = -2; dc <= 2; dc++) {
-                                setFn(r + dr, c + dc, (Math.abs(dr) === 2 || Math.abs(dc) === 2 || (dr === 0 && dc === 0)) ? 1 : 0);
+                        for (var dr = -2; dr <= 2; dr++) {
+                            for (var dc = -2; dc <= 2; dc++) {
+                                set(r + dr, c + dc, (Math.abs(dr) === 2 || Math.abs(dc) === 2 || (dr === 0 && dc === 0)) ? 1 : 0);
                             }
                         }
                     }
                 }
 
                 // Dark module
-                setFn(size - 8, 8, 1);
+                set(size - 8, 8, 1);
 
-                // Reserve format info areas
-                for (let i = 0; i <= 8; i++) {
-                    if (!reserved[8][i]) { reserved[8][i] = true; }
-                    if (!reserved[i][8]) { reserved[i][8] = true; }
-                }
-                for (let i = 0; i < 8; i++) {
-                    if (!reserved[8][size - 1 - i]) reserved[8][size - 1 - i] = true;
-                    if (!reserved[size - 1 - i][8]) reserved[size - 1 - i][8] = true;
+                // Reserve format info
+                for (var i = 0; i <= 8; i++) { res[8][i] = true; res[i][8] = true; }
+                for (var i = 0; i < 8; i++) {
+                    res[8][size - 1 - i] = true;
+                    res[size - 1 - i][8] = true;
                 }
 
-                // Reserve version info areas (version >= 7)
+                // Reserve version info (v >= 7)
                 if (version >= 7) {
-                    for (let i = 0; i < 6; i++) {
-                        for (let j = 0; j < 3; j++) {
-                            reserved[i][size - 11 + j] = true;
-                            reserved[size - 11 + j][i] = true;
+                    for (var i = 0; i < 6; i++) {
+                        for (var j = 0; j < 3; j++) {
+                            res[i][size - 11 + j] = true;
+                            res[size - 11 + j][i] = true;
                         }
                     }
                 }
 
-                // Place data with masking
-                const dataBits = [];
-                for (const cw of codewords) {
-                    for (let i = 7; i >= 0; i--) dataBits.push((cw >> i) & 1);
+                // Data bits
+                var dbits = [];
+                for (var i = 0; i < codewords.length; i++) {
+                    for (var j = 7; j >= 0; j--) dbits.push((codewords[i] >> j) & 1);
+                }
+
+                // Place data (zigzag)
+                var bi = 0;
+                var up = true;
+                for (var col = size - 1; col > 0; col -= 2) {
+                    if (col === 6) col--;
+                    for (var i = 0; i < size; i++) {
+                        var row = up ? size - 1 - i : i;
+                        for (var j = 0; j < 2; j++) {
+                            var c = col - j;
+                            if (res[row][c]) continue;
+                            m[row][c] = bi < dbits.length ? dbits[bi] : 0;
+                            bi++;
+                        }
+                    }
+                    up = !up;
                 }
 
                 // Find best mask
-                let bestMask = 0;
-                let bestPenalty = Infinity;
+                var bestMask = 0, bestPenalty = Infinity;
 
-                for (let mask = 0; mask < 8; mask++) {
-                    const m = matrix.map(row => [...row]);
-                    const res = reserved.map(row => [...row]);
+                for (var mask = 0; mask < 8; mask++) {
+                    var t = [];
+                    for (var i = 0; i < size; i++) {
+                        t.push(new Array(size));
+                        for (var j = 0; j < size; j++) t[i][j] = m[i][j];
+                    }
 
-                    // Place data
-                    let bitIdx = 0;
-                    let up = true;
-                    for (let col = size - 1; col > 0; col -= 2) {
-                        if (col === 6) col--;
-                        for (let i = 0; i < size; i++) {
-                            const row = up ? size - 1 - i : i;
-                            for (let j = 0; j < 2; j++) {
-                                const c = col - j;
-                                if (res[row][c]) continue;
-                                let val = bitIdx < dataBits.length ? dataBits[bitIdx] : 0;
-                                bitIdx++;
-                                // Apply mask
-                                const maskFn = [
-                                    (r,c) => (r + c) % 2 === 0,
-                                    (r,c) => r % 2 === 0,
-                                    (r,c) => c % 3 === 0,
-                                    (r,c) => (r + c) % 3 === 0,
-                                    (r,c) => (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0,
-                                    (r,c) => ((r * c) % 2) + ((r * c) % 3) === 0,
-                                    (r,c) => (((r * c) % 2) + ((r * c) % 3)) % 2 === 0,
-                                    (r,c) => (((r + c) % 2) + ((r * c) % 3)) % 2 === 0
-                                ];
-                                if (maskFn[mask](row, c)) val ^= 1;
-                                m[row][c] = val;
-                            }
+                    // Apply mask to data modules
+                    for (var i = 0; i < size; i++) {
+                        for (var j = 0; j < size; j++) {
+                            if (res[i][j]) continue;
+                            if (maskFn(mask, i, j)) t[i][j] ^= 1;
                         }
-                        up = !up;
                     }
 
                     // Write format info
-                    const fmt = FORMAT_INFO[mask]; // ECC M = 0b00
-                    for (let i = 0; i < 15; i++) {
-                        const bit = (fmt >> (14 - i)) & 1;
-                        // Around top-left
-                        if (i < 6) m[i][8] = bit;
-                        else if (i < 8) m[i + 1][8] = bit;
-                        else if (i === 8) m[8][7] = bit;
-                        else m[8][14 - i] = bit;
-                        // Around top-right / bottom-left
-                        if (i < 8) m[8][size - 1 - i] = bit;
-                        else m[size - 15 + i][8] = bit;
+                    var fmt = FORMAT_L[mask];
+                    for (var i = 0; i < 15; i++) {
+                        var bit = (fmt >> (14 - i)) & 1;
+                        // Top-left
+                        if (i < 6) t[i][8] = bit;
+                        else if (i < 8) t[i + 1][8] = bit;
+                        else if (i === 8) t[8][7] = bit;
+                        else t[8][14 - i] = bit;
+                        // Bottom-left / top-right
+                        if (i < 8) t[8][size - 1 - i] = bit;
+                        else t[size - 15 + i][8] = bit;
                     }
 
-                    // Version info
+                    // Version info (v >= 7)
                     if (version >= 7) {
-                        const vBits = version;
-                        const rem = vBits;
-                        let d = rem << 12;
-                        let g = 0x1F25; // generator
-                        for (let i = 2; i >= 0; i--) { if (d & (1 << (i + 12))) d ^= g << i; }
-                        const vInfo = (version << 12) | d;
-                        for (let i = 0; i < 18; i++) {
-                            const bit = (vInfo >> i) & 1;
-                            const r = Math.floor(i / 3);
-                            const c = size - 11 + (i % 3);
-                            m[r][c] = bit;
-                            m[c][r] = bit;
+                        var vInfo = versionInfo(version);
+                        for (var i = 0; i < 18; i++) {
+                            var bit = (vInfo >> i) & 1;
+                            var r = Math.floor(i / 3);
+                            var c = size - 11 + (i % 3);
+                            t[r][c] = bit;
+                            t[c][r] = bit;
                         }
                     }
 
-                    const penalty = calcPenalty(m, size);
+                    var penalty = calcPenalty(t, size);
                     if (penalty < bestPenalty) {
                         bestPenalty = penalty;
                         bestMask = mask;
-                        // Save
-                        for (let i = 0; i < size; i++) {
-                            if (!matrix[i]) matrix[i] = [];
-                            for (let j = 0; j < size; j++) {
-                                matrix[i][j] = m[i][j];
-                            }
-                        }
+                        for (var i = 0; i < size; i++)
+                            for (var j = 0; j < size; j++)
+                                m[i][j] = t[i][j];
                     }
                 }
 
-                return matrix;
+                return { matrix: m, size: size };
+            }
+
+            function maskFn(mask, r, c) {
+                switch(mask) {
+                    case 0: return (r + c) % 2 === 0;
+                    case 1: return r % 2 === 0;
+                    case 2: return c % 3 === 0;
+                    case 3: return (r + c) % 3 === 0;
+                    case 4: return (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0;
+                    case 5: return ((r * c) % 2) + ((r * c) % 3) === 0;
+                    case 6: return (((r * c) % 2) + ((r * c) % 3)) % 2 === 0;
+                    case 7: return (((r + c) % 2) + ((r * c) % 3)) % 2 === 0;
+                }
+            }
+
+            function versionInfo(version) {
+                var d = version << 12;
+                var g = 0x1F25;
+                for (var i = 2; i >= 0; i--) {
+                    if (d & (1 << (i + 12))) d ^= g << i;
+                }
+                return (version << 12) | d;
             }
 
             function calcPenalty(m, size) {
-                let p = 0;
-                // Rule 1: rows and columns of same color
-                for (let i = 0; i < size; i++) {
-                    let runLen = 1;
-                    for (let j = 1; j < size; j++) {
-                        if (m[i][j] === m[i][j - 1]) runLen++;
+                var p = 0;
+
+                // Rule 1: runs
+                for (var i = 0; i < size; i++) {
+                    var runLen = 1;
+                    for (var j = 1; j < size; j++) {
+                        if (m[i][j] === m[i][j-1]) runLen++;
                         else { if (runLen >= 5) p += runLen - 2; runLen = 1; }
                     }
                     if (runLen >= 5) p += runLen - 2;
                     runLen = 1;
-                    for (let j = 1; j < size; j++) {
-                        if (m[j][i] === m[j - 1][i]) runLen++;
+                    for (var j = 1; j < size; j++) {
+                        if (m[j][i] === m[j-1][i]) runLen++;
                         else { if (runLen >= 5) p += runLen - 2; runLen = 1; }
                     }
                     if (runLen >= 5) p += runLen - 2;
                 }
-                // Rule 2: 2x2 blocks
-                for (let i = 0; i < size - 1; i++) {
-                    for (let j = 0; j < size - 1; j++) {
-                        const v = m[i][j];
-                        if (v === m[i][j + 1] && v === m[i + 1][j] && v === m[i + 1][j + 1]) p += 3;
+
+                // Rule 2: 2x2
+                for (var i = 0; i < size - 1; i++) {
+                    for (var j = 0; j < size - 1; j++) {
+                        var v = m[i][j];
+                        if (v === m[i][j+1] && v === m[i+1][j] && v === m[i+1][j+1]) p += 3;
                     }
                 }
+
                 // Rule 3: patterns
-                const pat = [1,0,1,1,1,0,1,0,0,0,0];
-                const pat2 = [0,0,0,0,1,0,1,1,1,0,1];
-                for (let i = 0; i < size; i++) {
-                    for (let j = 0; j <= size - 11; j++) {
-                        let match = true;
-                        for (let k = 0; k < 11; k++) { if (m[i][j + k] !== pat[k]) { match = false; break; } }
-                        if (match) p += 40;
-                        match = true;
-                        for (let k = 0; k < 11; k++) { if (m[i][j + k] !== pat2[k]) { match = false; break; } }
-                        if (match) p += 40;
-                        match = true;
-                        for (let k = 0; k < 11; k++) { if (m[j + k][i] !== pat[k]) { match = false; break; } }
-                        if (match) p += 40;
-                        match = true;
-                        for (let k = 0; k < 11; k++) { if (m[j + k][i] !== pat2[k]) { match = false; break; } }
-                        if (match) p += 40;
+                var p1 = [1,0,1,1,1,0,1,0,0,0,0];
+                var p2 = [0,0,0,0,1,0,1,1,1,0,1];
+                for (var i = 0; i < size; i++) {
+                    for (var j = 0; j <= size - 11; j++) {
+                        var match1 = true, match2 = true, match3 = true, match4 = true;
+                        for (var k = 0; k < 11; k++) {
+                            if (m[i][j+k] !== p1[k]) match1 = false;
+                            if (m[i][j+k] !== p2[k]) match2 = false;
+                            if (m[j+k][i] !== p1[k]) match3 = false;
+                            if (m[j+k][i] !== p2[k]) match4 = false;
+                        }
+                        if (match1) p += 40;
+                        if (match2) p += 40;
+                        if (match3) p += 40;
+                        if (match4) p += 40;
                     }
                 }
+
                 // Rule 4: dark ratio
-                let dark = 0;
-                for (let i = 0; i < size; i++) for (let j = 0; j < size; j++) if (m[i][j]) dark++;
-                const ratio = dark / (size * size) * 100;
+                var dark = 0;
+                for (var i = 0; i < size; i++) for (var j = 0; j < size; j++) if (m[i][j]) dark++;
+                var ratio = dark / (size * size) * 100;
                 p += Math.floor(Math.abs(ratio - 50) / 5) * 10;
+
                 return p;
             }
 
             return {
                 generate: function(text) {
-                    const version = chooseVersion(text.length);
-                    const codewords = encodeData(text, version);
-                    const matrix = createMatrix(version, codewords);
-                    return { matrix, size: version * 4 + 17, version };
+                    var bytes = utf8Bytes(text);
+                    var version = chooseVersion(bytes.length);
+                    var codewords = makeCodewords(bytes, version);
+                    return makeMatrix(version, codewords);
                 },
                 render: function(canvas, text, scale) {
-                    const qr = this.generate(text);
-                    const { matrix, size } = qr;
-                    const quietZone = 4;
-                    const total = size + quietZone * 2;
-                    const px = scale || 3;
+                    var qr = this.generate(text);
+                    var qz = 4;
+                    var total = qr.size + qz * 2;
+                    var px = scale || 3;
                     canvas.width = total * px;
                     canvas.height = total * px;
-                    const ctx = canvas.getContext('2d');
+                    var ctx = canvas.getContext('2d');
                     ctx.fillStyle = '#fff';
                     ctx.fillRect(0, 0, canvas.width, canvas.height);
                     ctx.fillStyle = '#000';
-                    for (let r = 0; r < size; r++) {
-                        for (let c = 0; c < size; c++) {
-                            if (matrix[r][c]) {
-                                ctx.fillRect((c + quietZone) * px, (r + quietZone) * px, px, px);
+                    for (var r = 0; r < qr.size; r++) {
+                        for (var c = 0; c < qr.size; c++) {
+                            if (qr.matrix[r][c]) {
+                                ctx.fillRect((c + qz) * px, (r + qz) * px, px, px);
                             }
                         }
                     }
-                    return qr;
                 }
             };
         })();
@@ -730,7 +699,7 @@
         }
 
         (function initTheme() {
-            const saved = localStorage.getItem('darkTheme');
+            var saved = localStorage.getItem('darkTheme');
             if (saved === '1') document.body.classList.add('dark');
             else if (saved === '0') document.body.classList.remove('dark');
             else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
@@ -738,7 +707,7 @@
         })();
 
         /* ===== Сворачивание разделов ===== */
-        const sectionIds = ['section1', 'section2', 'section3', 'section4'];
+        var sectionIds = ['section1', 'section2', 'section3', 'section4'];
 
         function collapseSection(section) {
             section.style.maxHeight = section.scrollHeight + 'px';
@@ -755,7 +724,7 @@
             section.offsetHeight;
             section.style.maxHeight = section.scrollHeight + 'px';
 
-            const handler = function(e) {
+            var handler = function(e) {
                 if (e.target !== section) return;
                 if (e.propertyName !== 'max-height') return;
                 section.style.maxHeight = 'none';
@@ -766,8 +735,8 @@
         }
 
         function toggleSection(id, titleEl) {
-            const section = document.getElementById(id);
-            const arrow = titleEl.querySelector('.arrow');
+            var section = document.getElementById(id);
+            var arrow = titleEl.querySelector('.arrow');
 
             if (section.classList.contains('collapsed')) {
                 expandSection(section);
@@ -784,10 +753,10 @@
         }
 
         function restoreSections() {
-            sectionIds.forEach((id, idx) => {
-                const section = document.getElementById(id);
-                const arrow = document.getElementById('arrow' + (idx + 1));
-                const saved = localStorage.getItem('collapsed_' + id);
+            sectionIds.forEach(function(id, idx) {
+                var section = document.getElementById(id);
+                var arrow = document.getElementById('arrow' + (idx + 1));
+                var saved = localStorage.getItem('collapsed_' + id);
                 if (saved === '1') {
                     section.classList.add('collapsed');
                     section.classList.remove('expanded');
@@ -803,19 +772,19 @@
         }
 
         /* ===== История ===== */
-        const HISTORY_KEY = 'history';
-        const HISTORY_MAX = 15;
-        let fromHistory = false;
-        let currentHistoryTab = 'boxes';
+        var HISTORY_KEY = 'history';
+        var HISTORY_MAX = 15;
+        var fromHistory = false;
+        var currentHistoryTab = 'boxes';
 
         function getHistory() {
             try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
-            catch { return []; }
+            catch(e) { return []; }
         }
 
         function saveHistory(entry) {
             if (fromHistory) return;
-            const h = getHistory();
+            var h = getHistory();
             h.unshift(entry);
             if (h.length > HISTORY_MAX) h.length = HISTORY_MAX;
             localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
@@ -831,9 +800,9 @@
         }
 
         function renderHistory() {
-            const all = getHistory();
-            const h = all.filter(e => e.type === currentHistoryTab);
-            const ul = document.getElementById('historyList');
+            var all = getHistory();
+            var h = all.filter(function(e) { return e.type === currentHistoryTab; });
+            var ul = document.getElementById('historyList');
             ul.innerHTML = '';
 
             if (!h.length) {
@@ -841,15 +810,13 @@
                 return;
             }
 
-            h.forEach((e) => {
-                const li = document.createElement('li');
+            h.forEach(function(e) {
+                var li = document.createElement('li');
                 li.className = 'history-item';
-                li.innerHTML = `
-                    <div class="h-input">${e.input}</div>
-                    <div class="h-result">${e.result}</div>
-                    <div class="h-date">${e.date}</div>
-                `;
-                li.onclick = () => restoreFromHistory(e);
+                li.innerHTML = '<div class="h-input">' + e.input + '</div>' +
+                    '<div class="h-result">' + e.result + '</div>' +
+                    '<div class="h-date">' + e.date + '</div>';
+                li.onclick = function() { restoreFromHistory(e); };
                 ul.appendChild(li);
             });
         }
@@ -878,11 +845,9 @@
                 calcShelf();
             } else if (e.type === 'qr') {
                 document.getElementById('qrInput').value = e.text;
-                if (e.prefix !== undefined) {
-                    document.getElementById('prefixCheck').checked = e.prefixEnabled;
-                    togglePrefixInput();
-                    document.getElementById('prefixVal').value = e.prefix;
-                }
+                document.getElementById('prefixCheck').checked = e.prefixEnabled;
+                togglePrefixInput();
+                document.getElementById('prefixVal').value = e.prefix || '';
                 localStorage.setItem('qrText', e.text);
                 calcQR();
             }
@@ -897,52 +862,59 @@
         }
 
         /* ===== Блок 1: Короба ===== */
-        const L = 120, W = 80;
-        const a = document.getElementById("boxL");
-        const b = document.getElementById("boxW");
+        var L = 120, W = 80;
+        var a = document.getElementById("boxL");
+        var b = document.getElementById("boxW");
 
         if (localStorage.getItem("bl")) a.value = localStorage.getItem("bl");
         if (localStorage.getItem("bw")) b.value = localStorage.getItem("bw");
 
-        const num = v => parseFloat(String(v).trim().replace(',', '.'));
-        const cnt = (zw, zh, bw, bh) => Math.floor(zw / bw) * Math.floor(zh / bh);
+        var num = function(v) { return parseFloat(String(v).trim().replace(',', '.')); };
+        var cnt = function(zw, zh, bw, bh) { return Math.floor(zw / bw) * Math.floor(zh / bh); };
 
         function cuts(total, d1, d2) {
-            const s = new Set();
-            for (const d of [d1, d2]) {
-                for (let k = 1; k * d < total; k++) {
+            var s = new Set();
+            [d1, d2].forEach(function(d) {
+                for (var k = 1; k * d < total; k++) {
                     s.add(+(k * d).toFixed(6));
                     s.add(+(total - k * d).toFixed(6));
                 }
-            }
-            return [...s].filter(v => v > 0 && v < total).sort((x, y) => x - y);
+            });
+            return Array.from(s).filter(function(v) { return v > 0 && v < total; }).sort(function(x, y) { return x - y; });
         }
 
         function rowsBest(zw, zh, bl, bw) {
-            const o = [{ w: bl, h: bw }, { w: bw, h: bl }];
-            let best = 0;
-            for (const r of o) best = Math.max(best, cnt(zw, zh, r.w, r.h));
-            for (const ry of cuts(zh, bl, bw))
-                for (const r1 of o) for (const r2 of o)
+            var o = [{ w: bl, h: bw }, { w: bw, h: bl }];
+            var best = 0;
+            o.forEach(function(r) { best = Math.max(best, cnt(zw, zh, r.w, r.h)); });
+            cuts(zh, bl, bw).forEach(function(ry) {
+                o.forEach(function(r1) { o.forEach(function(r2) {
                     best = Math.max(best, cnt(zw, ry, r1.w, r1.h) + cnt(zw, zh - ry, r2.w, r2.h));
-            for (const rx of cuts(zw, bl, bw))
-                for (const r1 of o) for (const r2 of o)
+                }); });
+            });
+            cuts(zw, bl, bw).forEach(function(rx) {
+                o.forEach(function(r1) { o.forEach(function(r2) {
                     best = Math.max(best, cnt(rx, zh, r1.w, r1.h) + cnt(zw - rx, zh, r2.w, r2.h));
+                }); });
+            });
             return best;
         }
 
         function best(bl, bw) {
-            let best = 0;
-            best = Math.max(best, rowsBest(L, W, bl, bw));
-            for (const x of cuts(L, bl, bw))
+            var best = rowsBest(L, W, bl, bw);
+            cuts(L, bl, bw).forEach(function(x) {
                 best = Math.max(best, rowsBest(x, W, bl, bw) + rowsBest(L - x, W, bl, bw));
-            for (const y of cuts(W, bl, bw))
+            });
+            cuts(W, bl, bw).forEach(function(y) {
                 best = Math.max(best, rowsBest(L, y, bl, bw) + rowsBest(L, W - y, bl, bw));
-            for (const x of cuts(L, bl, bw))
-                for (const y of cuts(W, bl, bw))
+            });
+            cuts(L, bl, bw).forEach(function(x) {
+                cuts(W, bl, bw).forEach(function(y) {
                     best = Math.max(best,
                         rowsBest(x, y, bl, bw) + rowsBest(L - x, y, bl, bw) +
                         rowsBest(x, W - y, bl, bw) + rowsBest(L - x, W - y, bl, bw));
+                });
+            });
             return best;
         }
 
@@ -953,7 +925,7 @@
         }
 
         function calc() {
-            const bl = num(a.value), bw = num(b.value);
+            var bl = num(a.value), bw = num(b.value);
             a.classList.remove("err");
             b.classList.remove("err");
             document.getElementById("err").classList.remove("show");
@@ -972,57 +944,57 @@
             localStorage.setItem("bl", a.value);
             localStorage.setItem("bw", b.value);
 
-            const total = best(bl, bw);
+            var total = best(bl, bw);
             if (!total) {
                 a.classList.add("err");
                 b.classList.add("err");
-                showErr(`Коробка ${bl} × ${bw} см не влезает на паллету ${L} × ${W} см`);
+                showErr("Коробка " + bl + " × " + bw + " см не влезает на паллету " + L + " × " + W + " см");
                 return;
             }
 
             document.getElementById("result").classList.add("show");
             document.getElementById("count").textContent = total;
-            const fillPct = (total * bl * bw / (L * W) * 100).toFixed(1);
+            var fillPct = (total * bl * bw / (L * W) * 100).toFixed(1);
             document.getElementById("fill").textContent = fillPct + "%";
-            document.getElementById("dims").textContent = `Коробка ${bl} × ${bw} см`;
+            document.getElementById("dims").textContent = "Коробка " + bl + " × " + bw + " см";
 
             saveHistory({
                 type: 'boxes',
                 bl: a.value,
                 bw: b.value,
-                input: `Коробка ${bl} × ${bw} см`,
-                result: `${total} шт. (${fillPct}%)`,
+                input: "Коробка " + bl + " × " + bw + " см",
+                result: total + " шт. (" + fillPct + "%)",
                 date: new Date().toLocaleString('ru-RU')
             });
         }
 
-        a.oninput = b.oninput = function () { this.classList.remove("err"); };
-        a.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); b.focus(); } };
-        b.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); calc(); } };
+        a.oninput = b.oninput = function() { this.classList.remove("err"); };
+        a.onkeydown = function(e) { if (e.key === "Enter") { e.preventDefault(); b.focus(); } };
+        b.onkeydown = function(e) { if (e.key === "Enter") { e.preventDefault(); calc(); } };
 
         /* ===== Блок 2: Сроки годности ===== */
-        const mfgDayEl = document.getElementById("mfgDay");
-        const mfgMonthEl = document.getElementById("mfgMonth");
-        const mfgYearEl = document.getElementById("mfgYear");
+        var mfgDayEl = document.getElementById("mfgDay");
+        var mfgMonthEl = document.getElementById("mfgMonth");
+        var mfgYearEl = document.getElementById("mfgYear");
 
-        for (let i = 1; i <= 31; i++) {
-            const opt = document.createElement("option");
+        for (var i = 1; i <= 31; i++) {
+            var opt = document.createElement("option");
             opt.value = i;
             opt.textContent = i;
             mfgDayEl.appendChild(opt);
         }
 
-        const months = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
-        months.forEach((name, idx) => {
-            const opt = document.createElement("option");
+        var monthNames = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
+        monthNames.forEach(function(name, idx) {
+            var opt = document.createElement("option");
             opt.value = idx + 1;
-            opt.textContent = `${name} (${String(idx + 1).padStart(2, "0")})`;
+            opt.textContent = name + " (" + String(idx + 1).padStart(2, "0") + ")";
             mfgMonthEl.appendChild(opt);
         });
 
-        const curYear = new Date().getFullYear();
-        for (let i = curYear; i >= curYear - 9; i--) {
-            const opt = document.createElement("option");
+        var curYear = new Date().getFullYear();
+        for (var i = curYear; i >= curYear - 9; i--) {
+            var opt = document.createElement("option");
             opt.value = i;
             opt.textContent = i;
             mfgYearEl.appendChild(opt);
@@ -1033,13 +1005,13 @@
         }
 
         function updateDayLimit() {
-            const m = parseInt(mfgMonthEl.value) || 1;
-            const y = parseInt(mfgYearEl.value) || curYear;
-            const maxDay = daysInMonth(m, y);
-            const prev = parseInt(mfgDayEl.value) || 1;
+            var m = parseInt(mfgMonthEl.value) || 1;
+            var y = parseInt(mfgYearEl.value) || curYear;
+            var maxDay = daysInMonth(m, y);
+            var prev = parseInt(mfgDayEl.value) || 1;
             mfgDayEl.innerHTML = "";
-            for (let i = 1; i <= maxDay; i++) {
-                const opt = document.createElement("option");
+            for (var i = 1; i <= maxDay; i++) {
+                var opt = document.createElement("option");
                 opt.value = i;
                 opt.textContent = i;
                 mfgDayEl.appendChild(opt);
@@ -1054,59 +1026,59 @@
         if (localStorage.getItem("sLife")) document.getElementById("shelfLife").value = localStorage.getItem("sLife");
         if (localStorage.getItem("sUnit")) document.getElementById("shelfUnit").value = localStorage.getItem("sUnit");
 
-        mfgMonthEl.addEventListener("change", () => { updateDayLimit(); autoCalcShelf(); });
-        mfgYearEl.addEventListener("change", () => { updateDayLimit(); autoCalcShelf(); });
+        mfgMonthEl.addEventListener("change", function() { updateDayLimit(); autoCalcShelf(); });
+        mfgYearEl.addEventListener("change", function() { updateDayLimit(); autoCalcShelf(); });
 
         function pluralDays(n) {
-            const a = n % 10, b = n % 100;
+            var a = n % 10, b = n % 100;
             if (a === 1 && b !== 11) return "день";
             if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return "дня";
             return "дней";
         }
 
         function daysBetween(d1, d2) {
-            const ms1 = Date.UTC(d1.getFullYear(), d1.getMonth(), d1.getDate());
-            const ms2 = Date.UTC(d2.getFullYear(), d2.getMonth(), d2.getDate());
+            var ms1 = Date.UTC(d1.getFullYear(), d1.getMonth(), d1.getDate());
+            var ms2 = Date.UTC(d2.getFullYear(), d2.getMonth(), d2.getDate());
             return Math.round((ms2 - ms1) / (1000 * 60 * 60 * 24));
         }
 
         function fmtRemaining(fromDate, toDate) {
-            let y = toDate.getFullYear() - fromDate.getFullYear();
-            let m = toDate.getMonth() - fromDate.getMonth();
-            let d = toDate.getDate() - fromDate.getDate();
+            var y = toDate.getFullYear() - fromDate.getFullYear();
+            var m = toDate.getMonth() - fromDate.getMonth();
+            var d = toDate.getDate() - fromDate.getDate();
             d -= 1;
-            if (d < 0) { m--; const pm = new Date(toDate.getFullYear(), toDate.getMonth(), 0); d += pm.getDate(); }
+            if (d < 0) { m--; var pm = new Date(toDate.getFullYear(), toDate.getMonth(), 0); d += pm.getDate(); }
             if (m < 0) { y--; m += 12; }
-            const parts = [];
-            if (y) parts.push(`${y} ${y === 1 ? "год" : (y >= 2 && y <= 4 ? "года" : "лет")}`);
-            if (m) parts.push(`${m} ${m === 1 ? "месяц" : (m >= 2 && m <= 4 ? "месяца" : "месяцев")}`);
-            if (d) parts.push(`${d} ${pluralDays(d)}`);
+            var parts = [];
+            if (y) parts.push(y + " " + (y === 1 ? "год" : (y >= 2 && y <= 4 ? "года" : "лет")));
+            if (m) parts.push(m + " " + (m === 1 ? "месяц" : (m >= 2 && m <= 4 ? "месяца" : "месяцев")));
+            if (d) parts.push(d + " " + pluralDays(d));
             if (!parts.length) parts.push("0 дней");
             return parts.join(" ");
         }
 
         function fmtOverdue(fromDate, toDate) {
-            let y = toDate.getFullYear() - fromDate.getFullYear();
-            let m = toDate.getMonth() - fromDate.getMonth();
-            let d = toDate.getDate() - fromDate.getDate();
-            if (d < 0) { m--; const pm = new Date(toDate.getFullYear(), toDate.getMonth(), 0); d += pm.getDate(); }
+            var y = toDate.getFullYear() - fromDate.getFullYear();
+            var m = toDate.getMonth() - fromDate.getMonth();
+            var d = toDate.getDate() - fromDate.getDate();
+            if (d < 0) { m--; var pm = new Date(toDate.getFullYear(), toDate.getMonth(), 0); d += pm.getDate(); }
             if (m < 0) { y--; m += 12; }
-            const parts = [];
-            if (y) parts.push(`${y} ${y === 1 ? "год" : (y >= 2 && y <= 4 ? "года" : "лет")}`);
-            if (m) parts.push(`${m} ${m === 1 ? "месяц" : (m >= 2 && m <= 4 ? "месяца" : "месяцев")}`);
-            if (d) parts.push(`${d} ${pluralDays(d)}`);
+            var parts = [];
+            if (y) parts.push(y + " " + (y === 1 ? "год" : (y >= 2 && y <= 4 ? "года" : "лет")));
+            if (m) parts.push(m + " " + (m === 1 ? "месяц" : (m >= 2 && m <= 4 ? "месяца" : "месяцев")));
+            if (d) parts.push(d + " " + pluralDays(d));
             if (!parts.length) parts.push("0 дней");
             return parts.join(" ");
         }
 
         function calcShelf() {
-            const d = parseInt(mfgDayEl.value);
-            const m = parseInt(mfgMonthEl.value);
-            const y = parseInt(mfgYearEl.value);
-            const life = parseInt(document.getElementById("shelfLife").value);
-            const unit = parseInt(document.getElementById("shelfUnit").value);
+            var d = parseInt(mfgDayEl.value);
+            var m = parseInt(mfgMonthEl.value);
+            var y = parseInt(mfgYearEl.value);
+            var life = parseInt(document.getElementById("shelfLife").value);
+            var unit = parseInt(document.getElementById("shelfUnit").value);
 
-            const errEl = document.getElementById("shelfErr");
+            var errEl = document.getElementById("shelfErr");
             errEl.classList.remove("show");
 
             if (!d || d < 1 || !m || m < 1 || m > 12 || !y || y < 2000 || y > 2100) {
@@ -1122,7 +1094,7 @@
                 return;
             }
 
-            const prodDate = new Date(y, m - 1, d);
+            var prodDate = new Date(y, m - 1, d);
             if (prodDate.getDate() !== d) {
                 errEl.textContent = "Неверная дата (проверьте день)";
                 errEl.classList.add("show");
@@ -1136,7 +1108,7 @@
             localStorage.setItem("sLife", document.getElementById("shelfLife").value);
             localStorage.setItem("sUnit", unit);
 
-            const expDate = new Date(y, m - 1, d);
+            var expDate = new Date(y, m - 1, d);
             if (unit === 30) {
                 expDate.setMonth(expDate.getMonth() + life);
             } else if (unit === 365) {
@@ -1145,33 +1117,33 @@
                 expDate.setDate(expDate.getDate() + life * unit);
             }
 
-            const today = new Date();
+            var today = new Date();
             today.setHours(0, 0, 0, 0);
 
-            const pad = n => String(n).padStart(2, '0');
-            const fmt = `${pad(expDate.getDate())}.${pad(expDate.getMonth() + 1)}.${expDate.getFullYear()}`;
+            var pad = function(n) { return String(n).padStart(2, '0'); };
+            var fmt = pad(expDate.getDate()) + "." + pad(expDate.getMonth() + 1) + "." + expDate.getFullYear();
             document.getElementById("expiryDate").textContent = fmt;
 
-            const leftEl = document.getElementById("daysLeft");
+            var leftEl = document.getElementById("daysLeft");
             leftEl.className = "left-out";
 
-            const totalDays = daysBetween(prodDate, expDate);
-            const unitNames = {1:"Сутки",7:"Недели",30:"Месяцы",365:"Годы"};
-            let resultStr = '';
+            var totalDays = daysBetween(prodDate, expDate);
+            var unitNames = {1:"Сутки",7:"Недели",30:"Месяцы",365:"Годы"};
+            var resultStr = '';
 
             if (today.getTime() > expDate.getTime()) {
-                resultStr = `Просрочено на ${fmtOverdue(expDate, today)}`;
+                resultStr = "Просрочено на " + fmtOverdue(expDate, today);
                 leftEl.textContent = resultStr;
                 leftEl.classList.add("red");
             } else {
-                const remaining = Math.max(0, daysBetween(today, expDate) - 1);
-                const pct = totalDays > 0 ? Math.round(remaining / totalDays * 100) : 100;
+                var remaining = Math.max(0, daysBetween(today, expDate) - 1);
+                var pct = totalDays > 0 ? Math.round(remaining / totalDays * 100) : 100;
                 if (remaining <= 0) {
-                    resultStr = `Осталось 0 дней (0%)`;
+                    resultStr = "Осталось 0 дней (0%)";
                     leftEl.textContent = resultStr;
                     leftEl.classList.add("orange");
                 } else {
-                    resultStr = `Осталось ${fmtRemaining(today, expDate)} (${pct}%)`;
+                    resultStr = "Осталось " + fmtRemaining(today, expDate) + " (" + pct + "%)";
                     leftEl.textContent = resultStr;
                     leftEl.classList.add(pct <= 20 ? "orange" : "green");
                 }
@@ -1186,8 +1158,8 @@
                 year: mfgYearEl.value,
                 life: document.getElementById("shelfLife").value,
                 unit: String(unit),
-                input: `${pad(d)}.${pad(m)}.${y}, срок ${life} ${unitNames[unit] || ''}`,
-                result: `Годен до ${fmt} — ${resultStr}`,
+                input: pad(d) + "." + pad(m) + "." + y + ", срок " + life + " " + (unitNames[unit] || ''),
+                result: "Годен до " + fmt + " — " + resultStr,
                 date: new Date().toLocaleString('ru-RU')
             });
         }
@@ -1198,16 +1170,16 @@
             }
         }
 
-        [mfgDayEl, document.getElementById("shelfUnit")].forEach(el => {
+        [mfgDayEl, document.getElementById("shelfUnit")].forEach(function(el) {
             el.onchange = autoCalcShelf;
         });
 
         document.getElementById("shelfLife").oninput = autoCalcShelf;
 
         /* ===== Блок 3: QR-генератор ===== */
-        const qrInputEl = document.getElementById('qrInput');
-        const prefixCheckEl = document.getElementById('prefixCheck');
-        const prefixValEl = document.getElementById('prefixVal');
+        var qrInputEl = document.getElementById('qrInput');
+        var prefixCheckEl = document.getElementById('prefixCheck');
+        var prefixValEl = document.getElementById('prefixVal');
 
         if (localStorage.getItem('qrText')) qrInputEl.value = localStorage.getItem('qrText');
         if (localStorage.getItem('qrPrefixEnabled') === '1') {
@@ -1217,7 +1189,7 @@
         if (localStorage.getItem('qrPrefix')) prefixValEl.value = localStorage.getItem('qrPrefix');
 
         function togglePrefixInput() {
-            const wrap = document.getElementById('prefixWrap');
+            var wrap = document.getElementById('prefixWrap');
             if (prefixCheckEl.checked) {
                 wrap.classList.add('show');
             } else {
@@ -1226,8 +1198,8 @@
         }
 
         function calcQR() {
-            const raw = qrInputEl.value.trim();
-            const errEl = document.getElementById('qrErr');
+            var raw = qrInputEl.value.trim();
+            var errEl = document.getElementById('qrErr');
             errEl.classList.remove('show');
 
             if (!raw) {
@@ -1237,11 +1209,11 @@
                 return;
             }
 
-            const usePrefix = prefixCheckEl.checked;
-            const prefix = usePrefix ? prefixValEl.value : '';
+            var usePrefix = prefixCheckEl.checked;
+            var prefix = usePrefix ? prefixValEl.value : '';
 
             if (usePrefix && !prefix) {
-                errEl.textContent = 'Введите префикс или отключите галочку';
+                errEl.textContent = 'Введите текст или отключите галочку';
                 errEl.classList.add('show');
                 document.getElementById('qrResult').classList.remove('show');
                 return;
@@ -1251,22 +1223,22 @@
             localStorage.setItem('qrPrefixEnabled', usePrefix ? '1' : '0');
             if (usePrefix) localStorage.setItem('qrPrefix', prefix);
 
-            const parts = raw.split(/\s+/).filter(Boolean);
-            const finalStrings = parts.map(p => usePrefix ? p + prefix : p);
+            var parts = raw.split(/\s+/).filter(Boolean);
+            var finalStrings = parts.map(function(p) { return usePrefix ? p + prefix : p; });
 
-            const grid = document.getElementById('qrGrid');
+            var grid = document.getElementById('qrGrid');
             grid.innerHTML = '';
 
-            document.getElementById('qrResultLabel').textContent = `QR-коды (${finalStrings.length} шт.)`;
+            document.getElementById('qrResultLabel').textContent = "QR-коды (" + finalStrings.length + " шт.)";
 
-            finalStrings.forEach((str, idx) => {
-                const item = document.createElement('div');
+            finalStrings.forEach(function(str) {
+                var item = document.createElement('div');
                 item.className = 'qr-item';
-                const canvas = document.createElement('canvas');
+                var canvas = document.createElement('canvas');
                 try {
-                    QRCode.render(canvas, str, 3);
-                } catch (e) {
-                    const p = document.createElement('div');
+                    qrcode.render(canvas, str, 3);
+                } catch(e) {
+                    var p = document.createElement('div');
                     p.textContent = 'Ошибка генерации';
                     p.style.color = 'var(--err-text)';
                     p.style.fontSize = '11px';
@@ -1274,7 +1246,7 @@
                     grid.appendChild(item);
                     return;
                 }
-                const label = document.createElement('div');
+                var label = document.createElement('div');
                 label.className = 'qr-text';
                 label.textContent = str.length > 30 ? str.slice(0, 27) + '…' : str;
                 item.appendChild(canvas);
@@ -1290,30 +1262,31 @@
                 prefixEnabled: usePrefix,
                 prefix: prefix,
                 input: raw.length > 60 ? raw.slice(0, 57) + '…' : raw,
-                result: `${finalStrings.length} QR-код(ов)${usePrefix ? ' + префикс «' + prefix + '»' : ''}`,
+                result: finalStrings.length + " QR-код(ов)" + (usePrefix ? ' + текст «' + prefix + '»' : ''),
                 date: new Date().toLocaleString('ru-RU')
             });
         }
 
-        qrInputEl.addEventListener('input', () => {
+        qrInputEl.addEventListener('input', function() {
             localStorage.setItem('qrText', qrInputEl.value);
         });
 
-        prefixValEl.addEventListener('input', () => {
+        prefixValEl.addEventListener('input', function() {
             localStorage.setItem('qrPrefix', prefixValEl.value);
         });
 
-        /* ===== Мобильная адаптация (прокрутка к полю) ===== */
-        ["boxL", "boxW", "shelfLife"].forEach(id => {
-            const el = document.getElementById(id);
-            el.addEventListener("focus", function () {
+        /* ===== Мобильная адаптация ===== */
+        ["boxL", "boxW", "shelfLife"].forEach(function(id) {
+            var el = document.getElementById(id);
+            el.addEventListener("focus", function() {
                 this.dataset.old = this.value;
-                setTimeout(() => {
-                    this.scrollIntoView({ behavior: "smooth", block: "center" });
+                var self = this;
+                setTimeout(function() {
+                    self.scrollIntoView({ behavior: "smooth", block: "center" });
                 }, 300);
             });
-            el.addEventListener("keydown", function (e) {
-                const keys = ["Tab","Shift","Control","Alt","Backspace","Delete","ArrowLeft","ArrowRight","ArrowUp","ArrowDown"];
+            el.addEventListener("keydown", function(e) {
+                var keys = ["Tab","Shift","Control","Alt","Backspace","Delete","ArrowLeft","ArrowRight","ArrowUp","ArrowDown"];
                 if (!keys.includes(e.key) && this.dataset.old === this.value) {
                     this.value = "";
                     delete this.dataset.old;
@@ -1321,7 +1294,7 @@
             });
         });
 
-        document.getElementById("shelfLife").onkeydown = e => {
+        document.getElementById("shelfLife").onkeydown = function(e) {
             if (e.key === "Enter") {
                 e.preventDefault();
                 calcShelf();
