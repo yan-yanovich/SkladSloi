@@ -147,10 +147,18 @@
             align-items:center;
             gap:8px;
             background:#fff;
-            border-radius:8px;
-            padding:12px;
-            flex: 0 0 calc(25% - 12px);
-            min-width:160px;
+            border-radius:12px;
+            padding:16px;
+            flex: 0 0 calc(33.333% - 11px);
+            min-width:180px;
+            cursor:pointer;
+            box-shadow:0 2px 8px rgba(0,0,0,.1);
+            transition:all .2s ease;
+        }
+
+        .code-item:hover{
+            box-shadow:0 4px 16px rgba(0,0,0,.15);
+            transform:translateY(-2px);
         }
 
         .code-item canvas{
@@ -158,22 +166,24 @@
             width:100%;
             height:auto;
             display:block;
-            border:1px solid #ddd;
-            border-radius:4px;
+            border:2px solid #f0f0f0;
+            border-radius:8px;
+            background:#fff;
         }
 
         .code-item .code-text{
-            font-size:10px;
-            color:#333;
+            font-size:11px;
+            color:#555;
             max-width:100%;
             word-break:break-all;
             text-align:center;
-            line-height:1.2;
+            line-height:1.3;
             overflow:hidden;
             text-overflow:ellipsis;
             display:-webkit-box;
             -webkit-line-clamp:2;
             -webkit-box-orient:vertical;
+            font-weight:500;
         }
 
         .download-row{
@@ -182,15 +192,202 @@
         }
 
         .btn-download-icon{
-            font-size:20px;cursor:pointer;transition:transform .2s ease;
+            font-size:24px;cursor:pointer;transition:transform .2s ease;
+            padding:8px 12px;
+            background:var(--accent);
+            color:#fff;
+            border-radius:8px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
         }
-        .btn-download-icon:hover{transform:scale(1.2)}
+        .btn-download-icon:hover{transform:scale(1.1)}
+
+        /* ===== МОДАЛЬНОЕ ОКНО ===== */
+        .modal{
+            display:none;
+            position:fixed;
+            z-index:1000;
+            left:0;
+            top:0;
+            width:100%;
+            height:100%;
+            background-color:rgba(0,0,0,.7);
+            animation:fadeIn .2s ease;
+        }
+
+        .modal.show{display:flex}
+
+        @keyframes fadeIn{
+            from{opacity:0}
+            to{opacity:1}
+        }
+
+        .modal-content{
+            background:var(--card);
+            margin:auto;
+            padding:30px;
+            border-radius:16px;
+            max-width:90%;
+            max-height:90vh;
+            overflow:auto;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            gap:20px;
+            box-shadow:0 4px 20px rgba(0,0,0,.3);
+            animation:slideIn .2s ease;
+        }
+
+        @keyframes slideIn{
+            from{
+                transform:translateY(-50px);
+                opacity:0;
+            }
+            to{
+                transform:translateY(0);
+                opacity:1;
+            }
+        }
+
+        .modal-header{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            width:100%;
+            gap:16px;
+        }
+
+        .modal-close{
+            background:none;
+            border:none;
+            font-size:28px;
+            cursor:pointer;
+            color:var(--text);
+            padding:0;
+            width:40px;
+            height:40px;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            border-radius:8px;
+            transition:background .2s ease;
+        }
+
+        .modal-close:hover{
+            background:var(--err-bg);
+            color:var(--err-text);
+        }
+
+        .modal-qr{
+            width:100%;
+            max-width:400px;
+            display:flex;
+            justify-content:center;
+        }
+
+        .modal-qr canvas{
+            border:2px solid var(--border);
+            border-radius:8px;
+            background:#fff;
+            width:100%;
+            height:auto;
+        }
+
+        .modal-text{
+            font-size:16px;
+            color:var(--text);
+            text-align:center;
+            word-break:break-all;
+            max-width:100%;
+            padding:12px;
+            background:var(--tab-bg);
+            border-radius:8px;
+            width:100%;
+        }
+
+        .modal-buttons{
+            display:flex;
+            gap:12px;
+            width:100%;
+            flex-wrap:wrap;
+            justify-content:center;
+        }
+
+        .modal-btn{
+            flex:1;
+            min-width:120px;
+            padding:12px 20px;
+            font-size:14px;
+            font-weight:600;
+            border:none;
+            border-radius:8px;
+            cursor:pointer;
+            transition:all .2s ease;
+        }
+
+        .modal-btn-copy{
+            background:var(--accent);
+            color:#fff;
+        }
+
+        .modal-btn-copy:hover{
+            background:var(--accent-hover);
+        }
+
+        .modal-btn-download{
+            background:var(--green);
+            color:#fff;
+        }
+
+        .modal-btn-download:hover{
+            background:#1e5620;
+        }
+
+        .modal-btn-close{
+            background:var(--err-bg);
+            color:var(--err-text);
+        }
+
+        .modal-btn-close:hover{
+            background:var(--err-text);
+            color:#fff;
+        }
+
+        .copy-notify{
+            position:fixed;
+            bottom:20px;
+            left:50%;
+            transform:translateX(-50%);
+            background:var(--green);
+            color:#fff;
+            padding:12px 24px;
+            border-radius:8px;
+            font-weight:600;
+            animation:slideUp .3s ease;
+            z-index:2000;
+        }
+
+        @keyframes slideUp{
+            from{
+                transform:translateX(-50%) translateY(100px);
+                opacity:0;
+            }
+            to{
+                transform:translateX(-50%) translateY(0);
+                opacity:1;
+            }
+        }
 
         @media (max-width: 900px) {
-            .code-item { flex: 0 0 calc(33.333% - 11px); }
+            .code-item { flex: 0 0 calc(50% - 8px); }
         }
         @media (max-width: 600px) {
-            .code-item { flex: 0 0 calc(50% - 8px); }
+            .code-item { flex: 0 0 calc(100% - 0px); }
+            .modal-content{
+                max-width:95%;
+                padding:20px;
+            }
         }
     </style>
 </head>
@@ -287,7 +484,7 @@
         <div class="card result" id="codeResult">
             <div class="download-row">
                 <div class="result-label" id="codeResultLabel" style="flex:1;margin:0">QR-коды (0 шт.)</div>
-                <span class="btn-download-icon" title="Скачать PNG" onclick="downloadAllPNG()">⤓</span>
+                <button class="btn-download-icon" title="Скачать все PNG" onclick="downloadAllPNG()">⤓</button>
             </div>
             <div class="code-grid" id="codeGrid"></div>
         </div>
@@ -306,6 +503,25 @@
             </div>
             <ul class="history-list" id="historyList"></ul>
             <button class="btn-sm" onclick="clearHistory()">Очистить историю</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== МОДАЛЬНОЕ ОКНО ДЛЯ QR ===== -->
+<div id="qrModal" class="modal" onclick="closeQRModal(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+        <div class="modal-header">
+            <h2 style="color:var(--text);margin:0">QR-код</h2>
+            <button class="modal-close" onclick="closeQRModal()">✕</button>
+        </div>
+        <div class="modal-qr">
+            <canvas id="modalCanvas"></canvas>
+        </div>
+        <div class="modal-text" id="modalText"></div>
+        <div class="modal-buttons">
+            <button class="modal-btn modal-btn-copy" onclick="copyToClipboard()">📋 Копировать</button>
+            <button class="modal-btn modal-btn-download" onclick="downloadSingleQR()">⤓ Скачать</button>
+            <button class="modal-btn modal-btn-close" onclick="closeQRModal()">Закрыть</button>
         </div>
     </div>
 </div>
@@ -680,6 +896,9 @@ var qrcode = (function() {
     /* ===== Флаг для предотвращения дублирования истории ===== */
     var skipHistorySave = false;
 
+    /* ===== Данные текущего QR для модального окна ===== */
+    var currentQRData = null;
+
     /* ===== Форматирование чисел ===== */
     function fmtNumber(n) {
         return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
@@ -948,6 +1167,75 @@ var qrcode = (function() {
         document.getElementById('prefixWrap').classList.toggle('show', cb.checked);
     }
 
+    function openQRModal(canvas, text) {
+        currentQRData = {canvas: canvas, text: text};
+        
+        var modalCanvas = document.getElementById('modalCanvas');
+        var ctx = modalCanvas.getContext('2d');
+        
+        var sourceCanvas = canvas;
+        modalCanvas.width = sourceCanvas.width;
+        modalCanvas.height = sourceCanvas.height;
+        ctx.drawImage(sourceCanvas, 0, 0);
+        
+        document.getElementById('modalText').textContent = text;
+        document.getElementById('qrModal').classList.add('show');
+    }
+
+    function closeQRModal(event) {
+        if (event && event.target.id !== 'qrModal') return;
+        document.getElementById('qrModal').classList.remove('show');
+        currentQRData = null;
+    }
+
+    function copyToClipboard() {
+        if (!currentQRData) return;
+        var text = currentQRData.text;
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).then(function() {
+                showNotification('Скопировано!');
+            }).catch(function() {
+                fallbackCopy(text);
+            });
+        } else {
+            fallbackCopy(text);
+        }
+    }
+
+    function fallbackCopy(text) {
+        var textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            showNotification('Скопировано!');
+        } catch(err) {
+            alert('Не удалось скопировать');
+        }
+        document.body.removeChild(textarea);
+    }
+
+    function downloadSingleQR() {
+        if (!currentQRData) return;
+        
+        var canvas = currentQRData.canvas;
+        var link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = 'qr_' + currentQRData.text.replace(/[^a-z0-9]/gi, '_') + '_' + new Date().getTime() + '.png';
+        link.click();
+    }
+
+    function showNotification(text) {
+        var notify = document.createElement('div');
+        notify.className = 'copy-notify';
+        notify.textContent = text;
+        document.body.appendChild(notify);
+        setTimeout(function() {
+            notify.remove();
+        }, 2000);
+    }
+
     function generateCode() {
         var raw = document.getElementById('codeInput').value.trim();
         if (!raw) { codeFail('Введите текст'); return; }
@@ -972,6 +1260,13 @@ var qrcode = (function() {
                     item.className = 'code-item';
                     var canvas = document.createElement('canvas');
                     qrcode.render(canvas, text, 'M', 5);
+                    
+                    (function(c, t) {
+                        item.onclick = function() {
+                            openQRModal(c, t);
+                        };
+                    })(canvas, text);
+                    
                     item.appendChild(canvas);
                     var label = document.createElement('div');
                     label.className = 'code-text';
@@ -1163,16 +1458,12 @@ var qrcode = (function() {
             
             processed++;
             if (processed === items.length) {
-                downloadCanvas(canvas);
+                var link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png');
+                link.download = 'qr_codes_' + new Date().getTime() + '.png';
+                link.click();
             }
         });
-    }
-
-    function downloadCanvas(canvas) {
-        var link = document.createElement('a');
-        link.href = canvas.toDataURL('image/png');
-        link.download = 'qr_codes_' + new Date().getTime() + '.png';
-        link.click();
     }
 
     /* ===== Инициализация ===== */
@@ -1185,6 +1476,13 @@ var qrcode = (function() {
         updateHistoryList();
         loadSectionStates();
     })();
+
+    /* ===== Закрытие модально при ESC ===== */
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeQRModal();
+        }
+    });
 </script>
 </body>
 </html>
