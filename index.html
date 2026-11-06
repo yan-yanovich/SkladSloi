@@ -149,6 +149,7 @@
             gap:16px;
             margin-top:16px;
             justify-content:center;
+            overflow-x:auto;
         }
 
         .code-item{
@@ -1020,9 +1021,10 @@ var qrcode = (function() {
                         item.className = 'code-item';
                         var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                         
-                        // Явно устанавливаем размеры на SVG
-                        svg.setAttribute('width', '200');
-                        svg.setAttribute('height', '150');
+                        // Вычисляем размер в зависимости от длины текста
+                        var svgWidth = Math.max(150, text.length * 12);
+                        svg.setAttribute('width', svgWidth.toString());
+                        svg.setAttribute('height', '100');
                         
                         item.appendChild(svg);
                         JsBarcode(svg, text, {
@@ -1206,6 +1208,24 @@ var qrcode = (function() {
         renderHistory();
     }
 
+    function loadFromHistory(type, data) {
+        if (type === 'boxes') {
+            document.getElementById('boxL').value = data.bl || '';
+            document.getElementById('boxW').value = data.bw || '';
+            calc();
+        } else if (type === 'shelf') {
+            document.getElementById('mfgDay').value = data.d || '';
+            document.getElementById('mfgMonth').value = data.m || '';
+            document.getElementById('mfgYear').value = data.y || '';
+            document.getElementById('shelfLife').value = data.qty || '';
+            document.getElementById('shelfUnit').value = data.unit || '1';
+            calcShelf();
+        } else if (type === 'code') {
+            // Для кодов просто показываем результат
+            document.getElementById('codeResult').classList.add('show');
+        }
+    }
+
     function renderHistory() {
         var historyData = getHistoryData();
         var type = currentHistoryTab;
@@ -1222,6 +1242,13 @@ var qrcode = (function() {
             var item = items[i];
             var li = document.createElement('li');
             li.className = 'history-item';
+            li.setAttribute('data-type', type);
+            li.setAttribute('data-data', JSON.stringify(item.data));
+            li.onclick = function() {
+                var t = this.getAttribute('data-type');
+                var d = JSON.parse(this.getAttribute('data-data'));
+                loadFromHistory(t, d);
+            };
             li.innerHTML = 
                 '<div class="h-input">Ввод: ' + (item.input || '') + '</div>' +
                 '<div class="h-result">Результат: ' + (item.result || '') + '</div>' +
