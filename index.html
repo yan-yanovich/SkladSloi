@@ -705,6 +705,9 @@ var qrcode = (function() {
 
 <!-- ===== ПРИЛОЖЕНИЕ ===== -->
 <script>
+    /* ===== Флаг для предотвращения дублирования истории ===== */
+    var skipHistorySave = false;
+
     /* ===== Форматирование чисел ===== */
     function fmtNumber(n) {
         return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
@@ -866,7 +869,10 @@ var qrcode = (function() {
         document.getElementById('fill').textContent = fillPct+'%';
         document.getElementById('dims').textContent = 'Коробка ' + bl + ' × ' + bw + ' см';
         res.scrollIntoView({behavior:'smooth'});
-        saveToHistory('boxes', bl+' × '+bw, fmtNumber(r.total)+' шт.', {bl:bl,bw:bw});
+        
+        if (!skipHistorySave) {
+            saveToHistory('boxes', bl+' × '+bw, fmtNumber(r.total)+' шт.', {bl:bl,bw:bw});
+        }
     }
 
     function fail() {
@@ -940,8 +946,10 @@ var qrcode = (function() {
             el.classList.add(pct>20?'green':'orange');
         }
 
-        saveToHistory('shelf', pad(d)+'.'+pad(m)+'.'+y+' + '+qty+' '+unitText, fmtDate(exp),
-            {d:d,m:m,y:y,qty:qty,unit:unit});
+        if (!skipHistorySave) {
+            saveToHistory('shelf', pad(d)+'.'+pad(m)+'.'+y+' + '+qty+' '+unitText, fmtDate(exp),
+                {d:d,m:m,y:y,qty:qty,unit:unit});
+        }
     }
 
     function shelfErr(msg) {
@@ -1021,10 +1029,10 @@ var qrcode = (function() {
                         item.className = 'code-item';
                         var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
                         
-                        // Вычисляем размер в зависимости от длины текста
+                        // Вычисляем размер в зависимости от длины текста через CSS стили
                         var svgWidth = Math.max(150, text.length * 12);
-                        svg.setAttribute('width', svgWidth.toString());
-                        svg.setAttribute('height', '100');
+                        svg.style.width = svgWidth + 'px';
+                        svg.style.height = '100px';
                         
                         item.appendChild(svg);
                         JsBarcode(svg, text, {
@@ -1067,7 +1075,10 @@ var qrcode = (function() {
 
         document.getElementById('codeResult').classList.add('show');
         document.getElementById('codeResult').scrollIntoView({behavior:'smooth'});
-        saveToHistory('code', raw, successCount + ' ' + (successCount%10===1?'код':'кодов'), {});
+        
+        if (!skipHistorySave) {
+            saveToHistory('code', raw, successCount + ' ' + (successCount%10===1?'код':'кодов'), {});
+        }
     }
 
     function codeFail(msg) {
@@ -1209,6 +1220,9 @@ var qrcode = (function() {
     }
 
     function loadFromHistory(type, data) {
+        // Включаем флаг чтобы не сохранять при загрузке
+        skipHistorySave = true;
+        
         if (type === 'boxes') {
             document.getElementById('boxL').value = data.bl || '';
             document.getElementById('boxW').value = data.bw || '';
@@ -1224,6 +1238,9 @@ var qrcode = (function() {
             // Для кодов просто показываем результат
             document.getElementById('codeResult').classList.add('show');
         }
+        
+        // Отключаем флаг после загрузки
+        skipHistorySave = false;
     }
 
     function renderHistory() {
