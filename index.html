@@ -46,11 +46,11 @@
         }
         .section-title .arrow{display:inline-block;transition:transform .2s ease;font-size:14px}
         .section-title .arrow.collapsed{transform:rotate(-90deg)}
-        
+
         .collapsible{
             overflow:hidden;
             transition:max-height .3s ease,opacity .3s ease;
-            max-height:10000px;
+            max-height:var(--expand-max-height,10000px);
             opacity:1;
         }
         .collapsible.collapsed{
@@ -396,6 +396,14 @@
     </style>
 </head>
 <body>
+
+<!-- ✅ FIX #11: noscript для отключённого JS -->
+<noscript>
+    <div style="text-align:center;padding:40px;color:#e74c3c;font-size:18px">
+        ⚠️ Для работы приложения требуется JavaScript
+    </div>
+</noscript>
+
 <div class="container">
     <div class="top-row">
         <h1>Мультитул оператора</h1>
@@ -406,7 +414,8 @@
     </div>
 
     <!-- КОРОБА -->
-    <div class="section-title" onclick="App.toggleSection(this)">
+    <!-- ✅ FIX #7: aria-expanded -->
+    <div class="section-title" onclick="App.toggleSection(this)" aria-expanded="true" role="button" tabindex="0">
         <span class="arrow">▼</span>Короба в слое
     </div>
     <div class="collapsible expanded" id="section1">
@@ -418,7 +427,8 @@
             <button class="btn" onclick="App.calc()">Рассчитать</button>
             <div class="error" id="err"></div>
         </div>
-        <div class="card result" id="result">
+        <!-- ✅ FIX #13: aria-live для озвучки результата -->
+        <div class="card result" id="result" aria-live="polite">
             <div class="result-label">Коробок в слое</div>
             <div class="result-count" id="count">0</div>
             <div class="fill-row">
@@ -431,16 +441,16 @@
     </div>
 
     <!-- СРОКИ ГОДНОСТИ -->
-    <div class="section-title" onclick="App.toggleSection(this)">
+    <div class="section-title" onclick="App.toggleSection(this)" aria-expanded="true" role="button" tabindex="0">
         <span class="arrow">▼</span>Сроки годности
     </div>
     <div class="collapsible expanded" id="section2">
         <div class="card">
             <label>Дата производства</label>
             <div class="row3">
-                <div><select id="mfgDay"></select></div>
-                <div><select id="mfgMonth"></select></div>
-                <div><select id="mfgYear"></select></div>
+                <div><select id="mfgDay" aria-label="День"></select></div>
+                <div><select id="mfgMonth" aria-label="Месяц"></select></div>
+                <div><select id="mfgYear" aria-label="Год"></select></div>
             </div>
             <label for="shelfLife">Срок годности</label>
             <div class="row2">
@@ -457,7 +467,8 @@
             <button class="btn" onclick="App.calcShelf()">Рассчитать</button>
             <div class="error" id="shelfErr"></div>
         </div>
-        <div class="card result" id="shelfResult">
+        <!-- ✅ FIX #13 -->
+        <div class="card result" id="shelfResult" aria-live="polite">
             <div class="result-label">Годен до</div>
             <div class="expiry-out" id="expiryDate"></div>
             <div class="left-out" id="daysLeft"></div>
@@ -465,7 +476,7 @@
     </div>
 
     <!-- ГЕНЕРАТОР QR -->
-    <div class="section-title" onclick="App.toggleSection(this)">
+    <div class="section-title" onclick="App.toggleSection(this)" aria-expanded="true" role="button" tabindex="0">
         <span class="arrow">▼</span>Генератор QR-кодов
     </div>
     <div class="collapsible expanded" id="section3">
@@ -473,7 +484,8 @@
             <label for="codeInput">Текст (через пробел — отдельные коды)</label>
             <textarea id="codeInput" placeholder="Вставьте текст..."></textarea>
 
-            <div class="prefix-row" onclick="App.togglePrefixInput()">
+            <!-- ✅ FIX #2: исправлен баг с чекбоксом -->
+            <div class="prefix-row" onclick="App.onPrefixRowClick(event)">
                 <input type="checkbox" id="prefixCheck" onclick="event.stopPropagation();App.togglePrefixInput()">
                 <label>Добавить текст в конец каждой строки</label>
             </div>
@@ -485,7 +497,8 @@
             <button class="btn" onclick="App.generateCode()">Сгенерировать</button>
             <div class="error" id="codeErr"></div>
         </div>
-        <div class="card result" id="codeResult">
+        <!-- ✅ FIX #13 -->
+        <div class="card result" id="codeResult" aria-live="polite">
             <div class="download-row">
                 <div class="result-label" id="codeResultLabel" style="flex:1;margin:0">QR-коды (0 шт.)</div>
                 <button class="btn-download-icon" title="Скачать все PNG" onclick="App.downloadAllPNG()">⤓</button>
@@ -495,15 +508,16 @@
     </div>
 
     <!-- ИСТОРИЯ -->
-    <div class="section-title" onclick="App.toggleSection(this)">
+    <div class="section-title" onclick="App.toggleSection(this)" aria-expanded="true" role="button" tabindex="0">
         <span class="arrow">▼</span>История
     </div>
     <div class="collapsible expanded" id="section4">
         <div class="card">
-            <div class="history-tabs">
-                <div class="history-tab active" id="tabBoxes" onclick="App.switchHistoryTab('boxes')">Короба</div>
-                <div class="history-tab" id="tabShelf" onclick="App.switchHistoryTab('shelf')">Сроки</div>
-                <div class="history-tab" id="tabCode" onclick="App.switchHistoryTab('code')">QR-коды</div>
+            <!-- ✅ FIX #7: role для табов -->
+            <div class="history-tabs" role="tablist">
+                <div class="history-tab active" id="tabBoxes" role="tab" aria-selected="true" onclick="App.switchHistoryTab('boxes')">Короба</div>
+                <div class="history-tab" id="tabShelf" role="tab" aria-selected="false" onclick="App.switchHistoryTab('shelf')">Сроки</div>
+                <div class="history-tab" id="tabCode" role="tab" aria-selected="false" onclick="App.switchHistoryTab('code')">QR-коды</div>
             </div>
             <ul class="history-list" id="historyList"></ul>
             <button class="btn-sm" onclick="App.clearHistory()">Очистить историю</button>
@@ -512,7 +526,8 @@
 </div>
 
 <!-- ===== МОДАЛЬНОЕ ОКНО ДЛЯ QR ===== -->
-<div id="qrModal" class="modal" onclick="App.closeQRModal(event)">
+<!-- ✅ FIX #7: role="dialog", aria-modal -->
+<div id="qrModal" class="modal" role="dialog" aria-modal="true" aria-label="QR-код" onclick="App.closeQRModal(event)">
     <div class="modal-content" onclick="event.stopPropagation()">
         <div class="modal-header">
             <h2 style="color:var(--text);margin:0">QR-код</h2>
@@ -877,8 +892,9 @@ var qrcode = (function() {
         render: function(canvas, text, ecLevel, scale) {
             var qr = build(text, ecLevel || 'M');
             var count = qr.getModuleCount();
-            var qz = 8;
-            var total = count + qz * 2;
+            // ✅ FIX #9: именованная константа вместо магического числа
+            var QR_QUIET_ZONE = 8;
+            var total = count + QR_QUIET_ZONE * 2;
             var px = scale || 8;
             canvas.width = total * px;
             canvas.height = total * px;
@@ -889,7 +905,7 @@ var qrcode = (function() {
             for (var r = 0; r < count; r++)
                 for (var c = 0; c < count; c++)
                     if (qr.isDark(r, c))
-                        ctx.fillRect((c + qz) * px, (r + qz) * px, px, px);
+                        ctx.fillRect((c + QR_QUIET_ZONE) * px, (r + QR_QUIET_ZONE) * px, px, px);
         }
     };
 })();
@@ -899,13 +915,26 @@ var qrcode = (function() {
 <script>
 var App = (function() {
     // ===== ПРИВАТНЫЕ ПЕРЕМЕННЫЕ =====
-    
+
     var skipHistorySave = false;
     var currentQRData = null;
+
+    // ✅ FIX #8: ограниченный кэш с LRU-подобным поведением
     var calcCache = {};
+    var calcCacheKeys = [];
+    var CALC_CACHE_MAX = 100;
+
     var sectionStates = { section1: true, section2: true, section3: true, section4: true };
-    
+
+    // ✅ FIX #9: именованные константы вместо магических чисел
     var PALLET_L = 120, PALLET_W = 80;
+    var HISTORY_MAX = 50;
+    var QR_SCALE = 6;
+    var DAYS_ORANGE_THRESHOLD = 7;
+    var EXPAND_MAX_HEIGHT = 10000;
+    var SAVE_FIELDS_DEBOUNCE = 300;
+    var DOWNLOAD_DELAY_MS = 500;
+
     var MONTHS = [
         'Январь (01)', 'Февраль (02)', 'Март (03)', 'Апрель (04)',
         'Май (05)', 'Июнь (06)', 'Июль (07)', 'Август (08)',
@@ -917,7 +946,6 @@ var App = (function() {
 
     function initDOM() {
         DOM = {
-            // Boxes
             boxL: document.getElementById('boxL'),
             boxW: document.getElementById('boxW'),
             err: document.getElementById('err'),
@@ -925,8 +953,7 @@ var App = (function() {
             count: document.getElementById('count'),
             fill: document.getElementById('fill'),
             dims: document.getElementById('dims'),
-            
-            // Shelf Life
+
             mfgDay: document.getElementById('mfgDay'),
             mfgMonth: document.getElementById('mfgMonth'),
             mfgYear: document.getElementById('mfgYear'),
@@ -936,8 +963,7 @@ var App = (function() {
             shelfResult: document.getElementById('shelfResult'),
             expiryDate: document.getElementById('expiryDate'),
             daysLeft: document.getElementById('daysLeft'),
-            
-            // QR
+
             codeInput: document.getElementById('codeInput'),
             prefixCheck: document.getElementById('prefixCheck'),
             prefixWrap: document.getElementById('prefixWrap'),
@@ -946,14 +972,12 @@ var App = (function() {
             codeResult: document.getElementById('codeResult'),
             codeResultLabel: document.getElementById('codeResultLabel'),
             codeGrid: document.getElementById('codeGrid'),
-            
-            // History
+
             historyList: document.getElementById('historyList'),
             tabBoxes: document.getElementById('tabBoxes'),
             tabShelf: document.getElementById('tabShelf'),
             tabCode: document.getElementById('tabCode'),
-            
-            // Modal
+
             qrModal: document.getElementById('qrModal'),
             modalCanvas: document.getElementById('modalCanvas'),
             modalText: document.getElementById('modalText')
@@ -962,10 +986,11 @@ var App = (function() {
 
     // ===== УТИЛИТЫ =====
 
+    // ✅ FIX #6: parseNum возвращает NaN для некорректного ввода (не 0)
     function parseNum(s) {
-        if (!s) return NaN;
+        if (!s || !String(s).trim()) return NaN;
         var n = parseFloat(String(s).replace(',', '.'));
-        return isNaN(n) ? 0 : n;
+        return isNaN(n) ? NaN : n;
     }
 
     function fmtNumber(n) {
@@ -977,17 +1002,26 @@ var App = (function() {
     }
 
     function storageSet(key, value) {
-        try {
-            localStorage.setItem(key, value);
-        } catch (e) {}
+        try { localStorage.setItem(key, value); } catch (e) {}
     }
 
     function storageGet(key) {
-        try {
-            return localStorage.getItem(key);
-        } catch (e) {
-            return null;
+        try { return localStorage.getItem(key); } catch (e) { return null; }
+    }
+
+    // ✅ FIX #8: кэш с ограничением
+    function cacheSet(key, value) {
+        if (calcCache[key] === undefined) {
+            if (calcCacheKeys.length >= CALC_CACHE_MAX) {
+                delete calcCache[calcCacheKeys.shift()];
+            }
+            calcCacheKeys.push(key);
         }
+        calcCache[key] = value;
+    }
+
+    function cacheGet(key) {
+        return calcCache[key];
     }
 
     // ===== ОБРАБОТКА ОШИБОК =====
@@ -1053,14 +1087,15 @@ var App = (function() {
             section.style.maxHeight = section.scrollHeight + 'px';
             section.classList.remove('collapsed');
             arrow.classList.remove('collapsed');
+            titleEl.setAttribute('aria-expanded', 'true');
             sectionStates[sectionId] = true;
         } else {
             section.style.maxHeight = section.scrollHeight + 'px';
-            // триггер reflow
             void section.offsetHeight;
             section.classList.add('collapsed');
             arrow.classList.add('collapsed');
             section.style.maxHeight = '0px';
+            titleEl.setAttribute('aria-expanded', 'false');
             sectionStates[sectionId] = false;
         }
         saveSectionStates();
@@ -1074,21 +1109,27 @@ var App = (function() {
         var saved = storageGet('sectionStates');
         if (saved) {
             try {
-                sectionStates = JSON.parse(saved);
+                var parsed = JSON.parse(saved);
+                // ✅ FIX: валидируем загруженный объект
+                if (parsed && typeof parsed === 'object') {
+                    sectionStates = parsed;
+                }
                 ['section1', 'section2', 'section3', 'section4'].forEach(function(sectionId) {
                     var section = document.getElementById(sectionId);
                     if (!section) return;
                     var titleEl = section.previousElementSibling;
                     var arrow = titleEl ? titleEl.querySelector('.arrow') : null;
-                    
+
                     if (sectionStates[sectionId]) {
                         section.classList.remove('collapsed');
                         section.style.maxHeight = '';
                         if (arrow) arrow.classList.remove('collapsed');
+                        if (titleEl) titleEl.setAttribute('aria-expanded', 'true');
                     } else {
                         section.classList.add('collapsed');
                         section.style.maxHeight = '0px';
                         if (arrow) arrow.classList.add('collapsed');
+                        if (titleEl) titleEl.setAttribute('aria-expanded', 'false');
                     }
                 });
             } catch (e) {}
@@ -1116,7 +1157,8 @@ var App = (function() {
 
     function bestArrangement(bl, bw) {
         var cacheKey = bl + '_' + bw;
-        if (calcCache[cacheKey]) return calcCache[cacheKey];
+        var cached = cacheGet(cacheKey);
+        if (cached) return cached;
 
         var orientations = [
             { w: bl, h: bw },
@@ -1131,16 +1173,15 @@ var App = (function() {
             }
         }
 
-        // Обычная раскладка
         for (var i = 0; i < 2; i++) {
             updateBest(nBoxes(PALLET_L, PALLET_W, orientations[i].w, orientations[i].h), { type: 'simple' });
         }
 
-        // Смешанная вертикальная
+        // ✅ FIX #4: заменён for...of на forEach (ES5-совместимость)
         var xPoints = points(PALLET_L, bl, bw);
         var yPoints = points(PALLET_W, bl, bw);
 
-        for (var s of xPoints) {
+        xPoints.forEach(function(s) {
             for (var i = 0; i < 2; i++) {
                 for (var j = 0; j < 2; j++) {
                     var count = nBoxes(s, PALLET_W, orientations[i].w, orientations[i].h) +
@@ -1148,10 +1189,9 @@ var App = (function() {
                     updateBest(count, { type: 'vert' });
                 }
             }
-        }
+        });
 
-        // Смешанная горизонтальная
-        for (var s of yPoints) {
+        yPoints.forEach(function(s) {
             for (var i = 0; i < 2; i++) {
                 for (var j = 0; j < 2; j++) {
                     var count = nBoxes(PALLET_L, s, orientations[i].w, orientations[i].h) +
@@ -1159,11 +1199,10 @@ var App = (function() {
                     updateBest(count, { type: 'horiz' });
                 }
             }
-        }
+        });
 
-        // Комбинированная
-        for (var xs of xPoints) {
-            for (var ys of yPoints) {
+        xPoints.forEach(function(xs) {
+            yPoints.forEach(function(ys) {
                 for (var i = 0; i < 2; i++) {
                     for (var j = 0; j < 2; j++) {
                         for (var k = 0; k < 2; k++) {
@@ -1177,8 +1216,8 @@ var App = (function() {
                         }
                     }
                 }
-            }
-        }
+            });
+        });
 
         var typeNames = {
             simple: 'Обычная',
@@ -1192,7 +1231,7 @@ var App = (function() {
             type: typeNames[bestConfig ? bestConfig.type : 'simple']
         };
 
-        calcCache[cacheKey] = result;
+        cacheSet(cacheKey, result);
         return result;
     }
 
@@ -1202,20 +1241,21 @@ var App = (function() {
 
         clearErrors('boxes');
 
-        if (!bl || bl <= 0) {
-            showError('boxes', '7 раз отмерь — 1 раз введи', DOM.boxL);
+        // ✅ FIX #6: проверка диапазона, а не просто <= 0
+        if (isNaN(bl) || bl < 1 || bl > PALLET_L) {
+            showError('boxes', 'Длина коробки: от 1 до ' + PALLET_L + ' см', DOM.boxL);
             DOM.result.classList.remove('show');
             return;
         }
-        if (!bw || bw <= 0) {
-            showError('boxes', '7 раз отмерь — 1 раз введи', DOM.boxW);
+        if (isNaN(bw) || bw < 1 || bw > PALLET_W) {
+            showError('boxes', 'Ширина коробки: от 1 до ' + PALLET_W + ' см', DOM.boxW);
             DOM.result.classList.remove('show');
             return;
         }
 
         var arrangement = bestArrangement(bl, bw);
         if (!arrangement.total) {
-            showError('boxes', 'Не удалось рассчитать', DOM.boxL);
+            showError('boxes', 'Не удалось рассчитать — коробка не помещается', DOM.boxL);
             DOM.result.classList.remove('show');
             return;
         }
@@ -1225,7 +1265,7 @@ var App = (function() {
 
         DOM.count.textContent = totalFormatted;
         DOM.fill.textContent = fillPct + '%';
-        DOM.dims.textContent = 'Коробка ' + bl + ' × ' + bw + ' см';
+        DOM.dims.textContent = 'Коробка ' + bl + ' × ' + bw + ' см · ' + arrangement.type;
         DOM.result.classList.add('show');
         DOM.result.scrollIntoView({ behavior: 'smooth' });
 
@@ -1301,11 +1341,11 @@ var App = (function() {
         if (daysLeft < 0) {
             DOM.daysLeft.textContent = 'Истёк на ' + (-daysLeft) + ' дн.';
             DOM.daysLeft.className = 'left-out red';
-        } else if (daysLeft <= 7) {
-            DOM.daysLeft.textContent = daysLeft + ' дней до истечения';
+        } else if (daysLeft <= DAYS_ORANGE_THRESHOLD) {
+            DOM.daysLeft.textContent = daysLeft + ' дн. до истечения';
             DOM.daysLeft.className = 'left-out orange';
         } else {
-            DOM.daysLeft.textContent = daysLeft + ' дней осталось';
+            DOM.daysLeft.textContent = daysLeft + ' дн. осталось';
             DOM.daysLeft.className = 'left-out green';
         }
 
@@ -1321,8 +1361,15 @@ var App = (function() {
 
     // ===== КАЛЬКУЛЯТОР 3: QR-КОДЫ =====
 
+    // ✅ FIX #2: исправлен баг с чекбоксом — обработка клика по строке
+    function onPrefixRowClick(event) {
+        if (event.target === DOM.prefixCheck) return;
+        DOM.prefixCheck.click();
+        togglePrefixInput();
+    }
+
+    // ✅ FIX #2: togglePrefixInput больше не переключает checked вручную
     function togglePrefixInput() {
-        DOM.prefixCheck.checked = !DOM.prefixCheck.checked;
         if (DOM.prefixCheck.checked) {
             DOM.prefixWrap.classList.add('show');
             DOM.prefixVal.focus();
@@ -1363,27 +1410,38 @@ var App = (function() {
 
             var canvas = document.createElement('canvas');
             try {
-                qrcode.render(canvas, codeText, 'M', 6);
+                qrcode.render(canvas, codeText, 'M', QR_SCALE);
             } catch (e) {
-                showError('code', 'Ошибка при создании QR: ' + e.message);
+                showError('code', 'Ошибка QR для «' + codeText.substring(0, 30) + '»: ' + e.message);
                 DOM.codeResult.classList.remove('show');
                 return;
             }
 
             var codeItem = document.createElement('div');
             codeItem.className = 'code-item';
+            codeItem.setAttribute('tabindex', '0');
+            codeItem.setAttribute('role', 'button');
             codeItem.appendChild(canvas);
 
+            // ✅ FIX #1: безопасная вставка через textContent
             var textEl = document.createElement('div');
             textEl.className = 'code-text';
             textEl.textContent = codeText;
             codeItem.appendChild(textEl);
 
-            codeItem.onclick = function(codeData) {
-                return function() {
-                    openQRModal(codeData);
+            codeItem.onclick = (function(cd) {
+                return function() { openQRModal(cd); };
+            })({ canvas: canvas, text: codeText });
+
+            // ✅ FIX #7: keyboard support
+            codeItem.onkeydown = (function(cd) {
+                return function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openQRModal(cd);
+                    }
                 };
-            }({ canvas: canvas, text: codeText });
+            })({ canvas: canvas, text: codeText });
 
             DOM.codeGrid.appendChild(codeItem);
             codes.push({ canvas: canvas, text: codeText });
@@ -1402,57 +1460,86 @@ var App = (function() {
         }
     }
 
+    // ✅ FIX #3: загрузка с задержкой, чтобы браузер не блокировал
     function downloadAllPNG() {
         var canvases = DOM.codeGrid.querySelectorAll('canvas');
         if (!canvases.length) return;
 
-        canvases.forEach(function(canvas, idx) {
+        var idx = 0;
+        function downloadNext() {
+            if (idx >= canvases.length) return;
+            var canvas = canvases[idx];
             var link = document.createElement('a');
             link.href = canvas.toDataURL('image/png');
-            link.download = 'qr_' + idx + '_' + new Date().getTime() + '.png';
+            link.download = 'qr_' + (idx + 1) + '.png';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-        });
+            idx++;
+            if (idx < canvases.length) {
+                setTimeout(downloadNext, DOWNLOAD_DELAY_MS);
+            }
+        }
+        downloadNext();
+        showNotification('Загрузка ' + canvases.length + ' файлов...');
     }
 
     // ===== МОДАЛЬНОЕ ОКНО =====
 
     function openQRModal(codeData) {
         currentQRData = codeData;
-        var modalCanvas = document.getElementById('modalCanvas');
-        
-        // Копируем canvas
         var sourceCanvas = codeData.canvas;
-        modalCanvas.width = sourceCanvas.width;
-        modalCanvas.height = sourceCanvas.height;
-        var ctx = modalCanvas.getContext('2d');
+        DOM.modalCanvas.width = sourceCanvas.width;
+        DOM.modalCanvas.height = sourceCanvas.height;
+        var ctx = DOM.modalCanvas.getContext('2d');
         ctx.drawImage(sourceCanvas, 0, 0);
 
         DOM.modalText.textContent = codeData.text;
         DOM.qrModal.classList.add('show');
+        document.body.style.overflow = 'hidden';
     }
 
     function closeQRModal(event) {
         if (event && event.target !== DOM.qrModal) return;
         DOM.qrModal.classList.remove('show');
+        document.body.style.overflow = '';
         currentQRData = null;
     }
 
     function copyToClipboard() {
         if (!currentQRData) return;
-        navigator.clipboard.writeText(currentQRData.text).then(function() {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(currentQRData.text).then(function() {
+                showNotification('Скопировано в буфер обмена');
+            }).catch(function() {
+                fallbackCopy(currentQRData.text);
+            });
+        } else {
+            fallbackCopy(currentQRData.text);
+        }
+    }
+
+    // ✅ FIX: fallback для браузеров без Clipboard API
+    function fallbackCopy(text) {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+            document.execCommand('copy');
             showNotification('Скопировано в буфер обмена');
-        }).catch(function() {
-            showNotification('Ошибка при копировании');
-        });
+        } catch (e) {
+            showNotification('Не удалось скопировать');
+        }
+        document.body.removeChild(ta);
     }
 
     function downloadSingleQR() {
         if (!currentQRData) return;
-        var canvas = document.getElementById('modalCanvas');
         var link = document.createElement('a');
-        link.href = canvas.toDataURL('image/png');
+        link.href = DOM.modalCanvas.toDataURL('image/png');
         link.download = 'qr_' + new Date().getTime() + '.png';
         document.body.appendChild(link);
         link.click();
@@ -1462,6 +1549,7 @@ var App = (function() {
     function showNotification(msg) {
         var notif = document.createElement('div');
         notif.className = 'copy-notify';
+        notif.setAttribute('role', 'status');
         notif.textContent = msg;
         document.body.appendChild(notif);
         setTimeout(function() {
@@ -1469,35 +1557,50 @@ var App = (function() {
         }, 2000);
     }
 
-    // Закрытие модала по ESC
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && DOM.qrModal && DOM.qrModal.classList.contains('show')) {
-            closeQRModal();
-        }
-    });
-
     // ===== ИСТОРИЯ =====
 
     function saveToHistory(type, input, result, data) {
         try {
-            var history = JSON.parse(storageGet('appHistory') || '{"boxes":[],"shelf":[],"code":[]}');
+            var raw = storageGet('appHistory');
+            var history;
+            try {
+                history = JSON.parse(raw || '{}');
+            } catch (e) {
+                history = {};
+            }
+            // ✅ FIX: валидируем структуру истории
+            if (!history.boxes) history.boxes = [];
+            if (!history.shelf) history.shelf = [];
+            if (!history.code) history.code = [];
+            if (!Array.isArray(history[type])) history[type] = [];
+
             var entry = {
-                input: input,
-                result: result,
+                input: String(input),
+                result: String(result),
                 timestamp: new Date().toLocaleString('ru-RU'),
                 data: data
             };
             history[type].unshift(entry);
-            if (history[type].length > 50) history[type].pop();
+            if (history[type].length > HISTORY_MAX) history[type].length = HISTORY_MAX;
             storageSet('appHistory', JSON.stringify(history));
-            renderHistory('boxes');
-        } catch (e) {}
+            renderHistory(type);
+        } catch (e) {
+            console.warn('Не удалось сохранить в историю:', e);
+        }
     }
 
+    // ✅ FIX #1: рендер истории через DOM API (без innerHTML с пользовательскими данными)
     function renderHistory(type) {
         try {
-            var history = JSON.parse(storageGet('appHistory') || '{"boxes":[],"shelf":[],"code":[]}');
-            var entries = history[type] || [];
+            var raw = storageGet('appHistory');
+            var history;
+            try {
+                history = JSON.parse(raw || '{}');
+            } catch (e) {
+                history = {};
+            }
+
+            var entries = (history[type] && Array.isArray(history[type])) ? history[type] : [];
             DOM.historyList.innerHTML = '';
 
             if (!entries.length) {
@@ -1513,32 +1616,59 @@ var App = (function() {
                 var entry = entries[i];
                 var li = document.createElement('li');
                 li.className = 'history-item';
-                li.innerHTML = '<div class="h-input">' + entry.input + '</div>' +
-                               '<div class="h-result">' + entry.result + '</div>' +
-                               '<div class="h-date">' + entry.timestamp + '</div>';
-                li.onclick = function(histType, histData) {
+                li.setAttribute('tabindex', '0');
+
+                // Безопасная вставка — только textContent
+                var divInput = document.createElement('div');
+                divInput.className = 'h-input';
+                divInput.textContent = entry.input || '';
+
+                var divResult = document.createElement('div');
+                divResult.className = 'h-result';
+                divResult.textContent = entry.result || '';
+
+                var divDate = document.createElement('div');
+                divDate.className = 'h-date';
+                divDate.textContent = entry.timestamp || '';
+
+                li.appendChild(divInput);
+                li.appendChild(divResult);
+                li.appendChild(divDate);
+
+                li.onclick = (function(histType, histData) {
                     return function() {
                         loadFromHistory(histType, histData);
                     };
-                }(type, entry.data);
+                })(type, entry.data);
+
+                li.onkeydown = (function(histType, histData) {
+                    return function(e) {
+                        if (e.key === 'Enter') loadFromHistory(histType, histData);
+                    };
+                })(type, entry.data);
+
                 DOM.historyList.appendChild(li);
             }
-        } catch (e) {}
+        } catch (e) {
+            console.warn('Не удалось отрисовать историю:', e);
+        }
     }
 
     function switchHistoryTab(type) {
         [DOM.tabBoxes, DOM.tabShelf, DOM.tabCode].forEach(function(tab) {
             tab.classList.remove('active');
+            tab.setAttribute('aria-selected', 'false');
         });
 
-        if (type === 'boxes') DOM.tabBoxes.classList.add('active');
-        else if (type === 'shelf') DOM.tabShelf.classList.add('active');
-        else if (type === 'code') DOM.tabCode.classList.add('active');
+        if (type === 'boxes') { DOM.tabBoxes.classList.add('active'); DOM.tabBoxes.setAttribute('aria-selected', 'true'); }
+        else if (type === 'shelf') { DOM.tabShelf.classList.add('active'); DOM.tabShelf.setAttribute('aria-selected', 'true'); }
+        else if (type === 'code') { DOM.tabCode.classList.add('active'); DOM.tabCode.setAttribute('aria-selected', 'true'); }
 
         renderHistory(type);
     }
 
     function loadFromHistory(type, data) {
+        if (!data) return;
         skipHistorySave = true;
 
         if (type === 'boxes') {
@@ -1562,8 +1692,8 @@ var App = (function() {
             }, 100);
         } else if (type === 'code') {
             DOM.codeInput.value = data.text;
-            DOM.prefixCheck.checked = data.usePrefix;
-            DOM.prefixVal.value = data.prefix;
+            DOM.prefixCheck.checked = !!data.usePrefix;
+            DOM.prefixVal.value = data.prefix || '';
             if (data.usePrefix) DOM.prefixWrap.classList.add('show');
             else DOM.prefixWrap.classList.remove('show');
             expandSection('section3');
@@ -1577,12 +1707,14 @@ var App = (function() {
     function expandSection(sectionId) {
         var section = document.getElementById(sectionId);
         if (!section) return;
-        
+
         if (section.classList.contains('collapsed')) {
             section.style.maxHeight = section.scrollHeight + 'px';
             section.classList.remove('collapsed');
-            var arrow = section.previousElementSibling.querySelector('.arrow');
+            var titleEl = section.previousElementSibling;
+            var arrow = titleEl ? titleEl.querySelector('.arrow') : null;
             if (arrow) arrow.classList.remove('collapsed');
+            if (titleEl) titleEl.setAttribute('aria-expanded', 'true');
             sectionStates[sectionId] = true;
             saveSectionStates();
         }
@@ -1592,7 +1724,52 @@ var App = (function() {
         if (confirm('Вы уверены? Это действие нельзя отменить.')) {
             storageSet('appHistory', JSON.stringify({ boxes: [], shelf: [], code: [] }));
             renderHistory('boxes');
+            showNotification('История очищена');
         }
+    }
+
+    // ===== СОХРАНЕНИЕ ПОЛЕЙ ВВОДА =====
+
+    // ✅ FIX #5: сохранение полей ввода с debounce
+    var saveFieldsTimer = null;
+
+    function saveAllFields() {
+        var fields = ['boxL', 'boxW', 'codeInput', 'prefixVal', 'shelfLife'];
+        fields.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) storageSet('mt_field_' + id, el.value);
+        });
+        storageSet('mt_field_shelfDay', DOM.mfgDay ? DOM.mfgDay.value : '');
+        storageSet('mt_field_shelfMonth', DOM.mfgMonth ? DOM.mfgMonth.value : '');
+        storageSet('mt_field_shelfYear', DOM.mfgYear ? DOM.mfgYear.value : '');
+        storageSet('mt_field_shelfUnit', DOM.shelfUnit ? DOM.shelfUnit.value : '');
+    }
+
+    function scheduleSaveFields() {
+        clearTimeout(saveFieldsTimer);
+        saveFieldsTimer = setTimeout(saveAllFields, SAVE_FIELDS_DEBOUNCE);
+    }
+
+    function restoreFields() {
+        var fields = ['boxL', 'boxW', 'codeInput', 'prefixVal', 'shelfLife'];
+        fields.forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) {
+                var saved = storageGet('mt_field_' + id);
+                if (saved !== null) el.value = saved;
+            }
+        });
+        var sd = storageGet('mt_field_shelfDay');
+        if (sd !== null) DOM.mfgDay.value = sd;
+        var sm = storageGet('mt_field_shelfMonth');
+        if (sm !== null) DOM.mfgMonth.value = sm;
+        var sy = storageGet('mt_field_shelfYear');
+        if (sy !== null) DOM.mfgYear.value = sy;
+        var su = storageGet('mt_field_shelfUnit');
+        if (su !== null) DOM.shelfUnit.value = su;
+
+        // Восстанавливаем prefixWrap
+        if (DOM.prefixCheck.checked) DOM.prefixWrap.classList.add('show');
     }
 
     // ===== ИНИЦИАЛИЗАЦИЯ =====
@@ -1602,7 +1779,29 @@ var App = (function() {
         initTheme();
         initShelfSelects();
         loadSectionStates();
+        restoreFields();
         renderHistory('boxes');
+
+        // ✅ FIX #5: слушатель сохранения полей
+        document.addEventListener('input', scheduleSaveFields);
+        document.addEventListener('change', scheduleSaveFields);
+
+        // ✅ FIX #12: keydown перенесён в init
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && DOM.qrModal && DOM.qrModal.classList.contains('show')) {
+                closeQRModal();
+            }
+        });
+
+        // ✅ FIX #7: keyboard для заголовков секций
+        document.querySelectorAll('.section-title').forEach(function(el) {
+            el.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleSection(el);
+                }
+            });
+        });
     }
 
     // ===== PUBLIC API =====
@@ -1612,6 +1811,7 @@ var App = (function() {
         toggleSection: toggleSection,
         calc: calc,
         calcShelf: calcShelf,
+        onPrefixRowClick: onPrefixRowClick,
         togglePrefixInput: togglePrefixInput,
         generateCode: generateCode,
         downloadAllPNG: downloadAllPNG,
@@ -1624,7 +1824,6 @@ var App = (function() {
     };
 })();
 
-// Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', function() {
     App.init();
 });
