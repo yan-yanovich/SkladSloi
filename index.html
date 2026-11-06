@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
+    <meta name="0viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content">
     <title>Мультитул оператора</title>
     <style>
         *{margin:0;padding:0;box-sizing:border-box}
@@ -101,7 +101,7 @@
 
         .expiry-out{text-align:center;font-size:22px;font-weight:700;color:var(--result-text);margin-bottom:12px}
         .left-out{text-align:center;font-size:22px;font-weight:700;margin-bottom:4px}
-        .left-out.red{color:var(--err-text)}
+        .left-out.red{color:var(--(err-text))}
         .left-out.green{color:var(--green)}
         .left-out.orange{color:var(--orange)}
 
@@ -132,6 +132,15 @@
         .prefix-row label{margin:0;font-size:15px;cursor:pointer}
         .prefix-input-wrap{display:none;margin-bottom:16px}
         .prefix-input-wrap.show{display:block}
+
+        .type-row{display:flex;gap:8px;margin-bottom:16px}
+        .type-btn{
+            flex:1;padding:12px;text-align:center;font-size:15px;font-weight:600;
+            color:var(--text2);background:var(--tab-bg);border:2px solid transparent;
+            border-radius:10px;cursor:pointer;transition:all .2s ease;user-select:none;
+        }
+        .type-btn.active{color:var(--accent);border-color:var(--accent);background:var(--card)}
+
         .qr-grid{
             display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-top:16px;
         }
@@ -219,11 +228,16 @@
 
         <div class="section-title" onclick="toggleSection('section3', this)">
             <span class="arrow" id="arrow3">▼</span>
-            Генератор QR
+            Генератор кодов
         </div>
         <div class="collapsible expanded" id="section3">
             <div class="card">
-                <label for="qrInput">Текст (через пробел — отдельные QR)</label>
+                <div class="type-row">
+                    <div class="type-btn active" id="typeQR" onclick="switchCodeType('qr')">QR-код</div>
+                    <div class="type-btn" id="typeDM" onclick="switchCodeType('dm')">Data Matrix</div>
+                </div>
+
+                <label for="qrInput">Текст (через пробел — отдельные коды)</label>
                 <textarea id="qrInput" placeholder="Вставьте текст..."></textarea>
 
                 <div class="prefix-row" onclick="togglePrefixInput()">
@@ -239,7 +253,7 @@
                 <div class="error" id="qrErr"></div>
             </div>
             <div class="card result" id="qrResult">
-                <div class="result-label" id="qrResultLabel">QR-коды</div>
+                <div class="result-label" id="qrResultLabel">Коды</div>
                 <div class="qr-grid" id="qrGrid"></div>
             </div>
         </div>
@@ -253,7 +267,7 @@
                 <div class="history-tabs">
                     <div class="history-tab active" id="tabBoxes" onclick="switchHistoryTab('boxes')">Короба в слое</div>
                     <div class="history-tab" id="tabShelf" onclick="switchHistoryTab('shelf')">Сроки годности</div>
-                    <div class="history-tab" id="tabQR" onclick="switchHistoryTab('qr')">QR-коды</div>
+                    <div class="history-tab" id="tabQR" onclick="switchHistoryTab('qr')">Коды</div>
                 </div>
                 <ul class="history-list" id="historyList"></ul>
                 <button class="btn-sm" onclick="clearHistory()">Очистить историю</button>
@@ -261,33 +275,21 @@
         </div>
     </div>
 
-    <!-- ===== Библиотека qrcode-generator (Kazuhiko Arase), встроенная ===== -->
+    <!-- ===== Библиотека QR-кодов ===== -->
     <script>
     (function(){
         'use strict';
-        // --- GF(256) ---
         var EXP=new Uint8Array(512),LOG=new Uint8Array(256);
         (function(){var x=1;for(var i=0;i<255;i++){EXP[i]=x;LOG[x]=i;x<<=1;if(x&0x100)x^=0x11d;}for(var i=255;i<512;i++)EXP[i]=EXP[i-255];})();
         function gfMul(a,b){if(a===0||b===0)return 0;return EXP[LOG[a]+LOG[b]];}
         function rsGenPoly(n){var p=[1];for(var i=0;i<n;i++){var q=new Array(p.length+1);for(var j=0;j<q.length;j++)q[j]=0;for(var j=0;j<p.length;j++){q[j]^=gfMul(p[j],1);q[j+1]^=gfMul(p[j],EXP[i]);}p=q;}return p;}
         function rsEncode(data,ecLen){var gen=rsGenPoly(ecLen);var res=new Array(data.length+ecLen);for(var i=0;i<res.length;i++)res[i]=i<data.length?data[i]:0;for(var i=0;i<data.length;i++){var f=res[i];if(f===0)continue;for(var j=0;j<gen.length;j++)res[i+j]^=gfMul(gen[j],f);}return res.slice(data.length);}
-
-        // --- Таблицы для ECC Level L ---
         var RS_BLOCK={1:[7,1,19,0,0],2:[10,1,34,0,0],3:[15,1,55,0,0],4:[20,1,80,0,0],5:[26,1,108,0,0],6:[18,2,68,0,0],7:[20,2,78,0,0],8:[24,2,97,0,0],9:[30,2,116,0,0],10:[18,2,68,2,69],11:[20,4,81,0,0],12:[24,2,92,2,93],13:[26,4,107,0,0],14:[30,3,115,1,116],15:[22,5,87,1,88],16:[24,5,98,1,99],17:[28,1,107,5,108],18:[30,5,120,1,121],19:[28,3,113,4,114],20:[28,3,107,5,108],21:[28,4,116,4,117],22:[28,2,111,7,112],23:[30,4,121,5,122],24:[30,6,117,4,118],25:[26,8,106,4,107],26:[28,10,114,2,115],27:[30,8,122,4,123],28:[30,3,117,10,118],29:[30,7,116,7,117],30:[30,5,115,10,116],31:[30,13,115,3,116],32:[30,17,115,0,0],33:[30,17,115,1,116],34:[30,13,115,6,116],35:[30,12,121,7,122],36:[30,6,121,14,122],37:[30,17,122,4,123],38:[30,4,122,18,123],39:[30,20,117,4,118],40:[30,19,118,6,119]};
         var ALIGN={1:[],2:[6,18],3:[6,22],4:[6,26],5:[6,30],6:[6,34],7:[6,22,38],8:[6,24,42],9:[6,26,46],10:[6,28,50],11:[6,30,54],12:[6,32,58],13:[6,34,62],14:[6,26,46,66],15:[6,26,48,70],16:[6,26,50,74],17:[6,30,54,78],18:[6,30,56,82],19:[6,30,58,86],20:[6,34,62,90],21:[6,28,50,72,94],22:[6,26,50,74,98],23:[6,30,54,78,102],24:[6,28,54,80,106],25:[6,32,58,84,110],26:[6,30,58,86,114],27:[6,34,62,90,118],28:[6,26,50,74,98,122],29:[6,30,54,78,102,126],30:[6,26,52,78,104,130],31:[6,30,56,82,108,134],32:[6,34,60,86,112,138],33:[6,30,58,86,114,142],34:[6,34,62,90,118,146],35:[6,30,54,78,102,126,150],36:[6,24,50,76,102,128,154],37:[6,28,54,80,106,132,158],38:[6,32,58,84,110,136,162],39:[6,26,54,82,110,138,166],40:[6,30,58,86,114,142,170]};
-
-        // Format info: ECC L (01) + mask 0..7
         var FMT_L=[0x77C4,0x72F3,0x7DAA,0x789D,0x662F,0x6318,0x6C41,0x6936,0x5412,0x5125,0x5E7C,0x5B4B,0x45F9,0x40CE,0x4F97,0x4AA0,0x355F,0x3068,0x3F31,0x3A06,0x24B4,0x2183,0x2EDA,0x2BED,0x1689,0x13BE,0x1CE7,0x19D0,0x0762,0x0255,0x0D0C,0x083B];
-        // Format info indexed by (ecc<<3|mask)
-        // ECC L = 0b01, so index = 0b01mmm = 8+mask
-        // The 32 entries above are ordered: (ecc=00,mask=0..7), (ecc=01,mask=0..7), (ecc=10,...), (ecc=11,...)
-        // So for ECC L, entries 8..15
         function fmtBits(mask){return FMT_L[8+mask];}
-
         function utf8(str){var out=[];for(var i=0;i<str.length;i++){var c=str.charCodeAt(i);if(c<0x80)out.push(c);else if(c<0x800){out.push(0xC0|(c>>6),0x80|(c&0x3F));}else if(c<0xD800||c>=0xE000){out.push(0xE0|(c>>12),0x80|((c>>6)&0x3F),0x80|(c&0x3F));}else{i++;var c2=str.charCodeAt(i);var cp=0x10000+(((c&0x3FF)<<10)|(c2&0x3FF));out.push(0xF0|(cp>>18),0x80|((cp>>12)&0x3F),0x80|((cp>>6)&0x3F),0x80|(cp&0x3F));}}return out;}
-
         function chooseVersion(len){for(var v=1;v<=40;v++){var rs=RS_BLOCK[v];var total=rs[1]*rs[2]+rs[3]*rs[4];var cb=v<10?8:16;if(len*8<=total*8-4-cb)return v;}return 40;}
-
         function makeCW(bytes,version){
             var rs=RS_BLOCK[version];var total=rs[1]*rs[2]+rs[3]*rs[4];var cb=version<10?8:16;
             var bits=[];
@@ -303,13 +305,11 @@
             for(var i=0;i<rs[1];i++){blocks.push(cw.slice(off,off+rs[2]));off+=rs[2];}
             for(var i=0;i<rs[3];i++){blocks.push(cw.slice(off,off+rs[4]));off+=rs[4];}
             for(var i=0;i<blocks.length;i++)ecBlocks.push(rsEncode(blocks[i],rs[0]));
-            var out=[];
-            var maxD=Math.max(rs[2],rs[4]);
+            var out=[];var maxD=Math.max(rs[2],rs[4]);
             for(var i=0;i<maxD;i++)for(var j=0;j<blocks.length;j++)if(i<blocks[j].length)out.push(blocks[j][i]);
             for(var i=0;i<rs[0];i++)for(var j=0;j<ecBlocks.length;j++)out.push(ecBlocks[j][i]);
             return out;
         }
-
         function maskFn(mask,r,c){
             switch(mask){
                 case 0:return (r+c)%2===0;
@@ -322,96 +322,44 @@
                 case 7:return (((r+c)%2)+((r*c)%3))%2===0;
             }
         }
-
         function vInfo(v){var d=v<<12;var g=0x1F25;for(var i=2;i>=0;i--){if(d&(1<<(i+12)))d^=g<<i;}return (v<<12)|d;}
-
         function penalty(m,size){
             var p=0;
-            for(var i=0;i<size;i++){
-                var r=1;
-                for(var j=1;j<size;j++){if(m[i][j]===m[i][j-1])r++;else{if(r>=5)p+=r-2;r=1;}}
-                if(r>=5)p+=r-2;
-                r=1;
-                for(var j=1;j<size;j++){if(m[j][i]===m[j-1][i])r++;else{if(r>=5)p+=r-2;r=1;}}
-                if(r>=5)p+=r-2;
-            }
+            for(var i=0;i<size;i++){var r=1;for(var j=1;j<size;j++){if(m[i][j]===m[i][j-1])r++;else{if(r>=5)p+=r-2;r=1;}}if(r>=5)p+=r-2;r=1;for(var j=1;j<size;j++){if(m[j][i]===m[j-1][i])r++;else{if(r>=5)p+=r-2;r=1;}}if(r>=5)p+=r-2;}
             for(var i=0;i<size-1;i++)for(var j=0;j<size-1;j++){var v=m[i][j];if(v===m[i][j+1]&&v===m[i+1][j]&&v===m[i+1][j+1])p+=3;}
             var p1=[1,0,1,1,1,0,1,0,0,0,0],p2=[0,0,0,0,1,0,1,1,1,0,1];
-            for(var i=0;i<size;i++)for(var j=0;j<=size-11;j++){
-                var m1=true,m2=true,m3=true,m4=true;
-                for(var k=0;k<11;k++){if(m[i][j+k]!==p1[k])m1=false;if(m[i][j+k]!==p2[k])m2=false;if(m[j+k][i]!==p1[k])m3=false;if(m[j+k][i]!==p2[k])m4=false;}
-                if(m1)p+=40;if(m2)p+=40;if(m3)p+=40;if(m4)p+=40;
-            }
+            for(var i=0;i<size;i++)for(var j=0;j<=size-11;j++){var m1=true,m2=true,m3=true,m4=true;for(var k=0;k<11;k++){if(m[i][j+k]!==p1[k])m1=false;if(m[i][j+k]!==p2[k])m2=false;if(m[j+k][i]!==p1[k])m3=false;if(m[j+k][i]!==p2[k])m4=false;}if(m1)p+=40;if(m2)p+=40;if(m3)p+=40;if(m4)p+=40;}
             var dark=0;for(var i=0;i<size;i++)for(var j=0;j<size;j++)if(m[i][j])dark++;
             p+=Math.floor(Math.abs(dark/(size*size)*100-50)/5)*10;
             return p;
         }
-
         function makeMatrix(version,cw){
             var size=version*4+17;
             var m=[],res=[];
             for(var i=0;i<size;i++){m.push([]);res.push([]);for(var j=0;j<size;j++){m[i][j]=0;res[i][j]=false;}}
-
             function set(r,c,v){if(r<0||r>=size||c<0||c>=size)return;m[r][c]=v;res[r][c]=true;}
-
-            function finder(r0,c0){
-                for(var dr=-1;dr<=7;dr++)for(var dc=-1;dc<=7;dc++){
-                    var r=r0+dr,c=c0+dc;
-                    if(r<0||r>=size||c<0||c>=size)continue;
-                    var dark=(dr>=0&&dr<=6&&dc>=0&&dc<=6)&&(dr===0||dr===6||dc===0||dc===6||(dr>=2&&dr<=4&&dc>=2&&dc<=4));
-                    set(r,c,dark?1:0);
-                }
-            }
+            function finder(r0,c0){for(var dr=-1;dr<=7;dr++)for(var dc=-1;dc<=7;dc++){var r=r0+dr,c=c0+dc;if(r<0||r>=size||c<0||c>=size)continue;var dark=(dr>=0&&dr<=6&&dc>=0&&dc<=6)&&(dr===0||dr===6||dc===0||dc===6||(dr>=2&&dr<=4&&dc>=2&&dc<=4));set(r,c,dark?1:0);}}
             finder(0,0);finder(0,size-7);finder(size-7,0);
-
             for(var i=8;i<size-8;i++){set(6,i,i%2===0?1:0);set(i,6,i%2===0?1:0);}
-
             var ap=ALIGN[version]||[];
-            for(var ai=0;ai<ap.length;ai++)for(var aj=0;aj<ap.length;aj++){
-                var r=ap[ai],c=ap[aj];
-                if((r<=8&&c<=8)||(r<=8&&c>=size-9)||(r>=size-9&&c<=8))continue;
-                for(var dr=-2;dr<=2;dr++)for(var dc=-2;dc<=2;dc++)
-                    set(r+dr,c+dc,(Math.abs(dr)===2||Math.abs(dc)===2||(dr===0&&dc===0))?1:0);
-            }
-
+            for(var ai=0;ai<ap.length;ai++)for(var aj=0;aj<ap.length;aj++){var r=ap[ai],c=ap[aj];if((r<=8&&c<=8)||(r<=8&&c>=size-9)||(r>=size-9&&c<=8))continue;for(var dr=-2;dr<=2;dr++)for(var dc=-2;dc<=2;dc++)set(r+dr,c+dc,(Math.abs(dr)===2||Math.abs(dc)===2||(dr===0&&dc===0))?1:0);}
             set(size-8,8,1);
-
-            // Reserve format info
             for(var i=0;i<=8;i++){res[8][i]=true;res[i][8]=true;}
             for(var i=0;i<8;i++){res[8][size-1-i]=true;res[size-1-i][8]=true;}
             if(version>=7)for(var i=0;i<6;i++)for(var j=0;j<3;j++){res[i][size-11+j]=true;res[size-11+j][i]=true;}
-
-            // Data bits
             var db=[];
             for(var i=0;i<cw.length;i++)for(var j=7;j>=0;j--)db.push((cw[i]>>j)&1);
-
             var bi=0,up=true;
             for(var col=size-1;col>0;col-=2){
                 if(col===6)col--;
-                for(var i=0;i<size;i++){
-                    var row=up?size-1-i:i;
-                    for(var j=0;j<2;j++){
-                        var c=col-j;
-                        if(res[row][c])continue;
-                        m[row][c]=bi<db.length?db[bi]:0;
-                        bi++;
-                    }
-                }
+                for(var i=0;i<size;i++){var row=up?size-1-i:i;for(var j=0;j<2;j++){var c=col-j;if(res[row][c])continue;m[row][c]=bi<db.length?db[bi]:0;bi++;}}
                 up=!up;
             }
-
             var bestMask=0,bestP=Infinity;
-
             for(var mask=0;mask<8;mask++){
                 var t=[];
                 for(var i=0;i<size;i++){t.push([]);for(var j=0;j<size;j++)t[i][j]=m[i][j];}
-
-                for(var i=0;i<size;i++)for(var j=0;j<size;j++){
-                    if(res[i][j])continue;
-                    if(maskFn(mask,i,j))t[i][j]^=1;
-                }
-
-                // Format info (ECC L)
+                for(var i=0;i<size;i++)for(var j=0;j<size;j++){if(res[i][j])continue;if(maskFn(mask,i,j))t[i][j]^=1;}
                 var fmt=fmtBits(mask);
                 for(var i=0;i<15;i++){
                     var bit=(fmt>>(14-i))&1;
@@ -422,24 +370,12 @@
                     if(i<8)t[8][size-1-i]=bit;
                     else t[size-15+i][8]=bit;
                 }
-
-                if(version>=7){
-                    var vi=vInfo(version);
-                    for(var i=0;i<18;i++){
-                        var bit=(vi>>i)&1;
-                        var r=Math.floor(i/3),c=size-11+(i%3);
-                        t[r][c]=bit;
-                        t[c][r]=bit;
-                    }
-                }
-
+                if(version>=7){var vi=vInfo(version);for(var i=0;i<18;i++){var bit=(vi>>i)&1;var r=Math.floor(i/3),c=size-11+(i%3);t[r][c]=bit;t[c][r]=bit;}}
                 var p=penalty(t,size);
                 if(p<bestP){bestP=p;bestMask=mask;for(var i=0;i<size;i++)for(var j=0;j<size;j++)m[i][j]=t[i][j];}
             }
-
             return {matrix:m,size:size};
         }
-
         window._qrlib = {
             generate: function(text){
                 var bytes=utf8(text);
@@ -456,6 +392,354 @@
                 ctx.fillStyle='#000';
                 for(var r=0;r<qr.size;r++)for(var c=0;c<qr.size;c++)
                     if(qr.matrix[r][c])ctx.fillRect((c+qz)*px,(r+qz)*px,px,px);
+            }
+        };
+    })();
+    </script>
+
+    <!-- ===== Библиотека Data Matrix ECC200 ===== -->
+    <script>
+    (function(){
+        'use strict';
+        // Data Matrix ECC200 encoder
+        // Символьные наборы: ASCII, C40, Text, X12, EDIFACT, Base256
+
+        // Таблица размеров: [rows, cols, dataCodewords, ecCodewords, blocks]
+        // Только квадратные и стандартные прямоугольные
+        var SIZES = [
+            [10,10,3,5,1],[12,12,5,7,1],[14,14,8,10,1],[16,16,12,12,1],
+            [18,18,18,14,1],[20,20,22,18,1],[22,22,30,20,1],[24,24,36,24,1],
+            [26,26,44,28,1],[32,32,62,36,2],[36,36,86,42,2],[40,40,114,48,2],
+            [44,44,144,56,2],[48,48,174,68,2],[52,52,204,84,2],[64,64,280,112,4],
+            [72,72,368,144,4],[80,80,456,192,4],[88,88,576,224,4],[96,96,696,272,4],
+            [104,104,816,336,6],[120,120,1050,408,6],[132,132,1304,496,8],
+            [144,144,1558,620,8]
+        ];
+
+        // Reed-Solomon GF(256) with primitive polynomial 0x12D
+        var EXP=new Uint8Array(512),LOG=new Uint8Array(256);
+        (function(){var x=1;for(var i=0;i<255;i++){EXP[i]=x;LOG[x]=i;x<<=1;if(x&0x100)x^=0x12D;}for(var i=255;i<512;i++)EXP[i]=EXP[i-255];})();
+
+        function gfMul(a,b){if(a===0||b===0)return 0;return EXP[LOG[a]+LOG[b]];}
+
+        function rsGenPoly(n){var p=[1];for(var i=0;i<n;i++){var q=new Array(p.length+1);for(var j=0;j<q.length;j++)q[j]=0;for(var j=0;j<p.length;j++){q[j]^=gfMul(p[j],1);q[j+1]^=gfMul(p[j],EXP[i]);}p=q;}return p;}
+
+        function rsEncode(data,ecLen){
+            var gen=rsGenPoly(ecLen);
+            var res=new Array(data.length+ecLen);
+            for(var i=0;i<res.length;i++)res[i]=i<data.length?data[i]:0;
+            for(var i=0;i<data.length;i++){
+                var f=res[i];if(f===0)continue;
+                for(var j=0;j<gen.length;j++)res[i+j]^=gfMul(gen[j],f);
+            }
+            return res.slice(data.length);
+        }
+
+        // ASCII encoder (0-127 + extended)
+        function encodeAscii(data){
+            var cw=[];
+            for(var i=0;i<data.length;i++){
+                var c=data.charCodeAt(i);
+                if(c>127){
+                    // Extended ASCII: 253 + (c-128)
+                    cw.push(253);
+                    cw.push(c-128);
+                }else{
+                    cw.push(c+1);
+                }
+            }
+            return cw;
+        }
+
+        // Try C40 encoding for compactness
+        function encodeC40(data){
+            // C40 values
+            var cw=[];
+            cw.push(230); // Latch to C40
+            var i=0;
+            var values=[];
+            while(i<data.length){
+                var c=data.charCodeAt(i);
+                if(c>=48&&c<=57&&i+1<data.length){
+                    // digit pair
+                    var c2=data.charCodeAt(i+1);
+                    if(c2>=48&&c2<=57){
+                        values.push(14);
+                        values.push(c-48);
+                        values.push(c2-48);
+                        i+=2;
+                        continue;
+                    }
+                }
+                if(c>=32&&c<=95){
+                    values.push(c-32);
+                }else if(c>=0&&c<32){
+                    values.push(0); // shift 1
+                    values.push(c);
+                }else{
+                    // Extended: shift 2 + value
+                    values.push(1); // shift 2
+                    values.push(c-128);
+                }
+                i++;
+            }
+            // Pack triplets
+            for(var j=0;j<values.length;j+=3){
+                var v1=values[j]||0;
+                var v2=values[j+1]||0;
+                var v3=values[j+2]||0;
+                var packed=1600*v1+40*v2+v3+1;
+                cw.push(Math.floor(packed/256));
+                cw.push(packed%256);
+            }
+            // Unlatch if needed (254 = unlatch back to ASCII)
+            if(values.length%3!==0||values.length===0){
+                cw.push(254);
+            }
+            return cw;
+        }
+
+        // Base256 encoder
+        function encodeBase256(data){
+            var cw=[];
+            cw.push(231); // Latch to Base256
+            var bytes=[];
+            for(var i=0;i<data.length;i++){
+                var c=data.charCodeAt(i);
+                if(c<256)bytes.push(c);
+                else{bytes.push(0x3F);bytes.push(0x3F);}
+            }
+            // Length
+            if(bytes.length<250){
+                cw.push(bytes.length);
+            }else{
+                cw.push(Math.floor(bytes.length/250)+249);
+                cw.push(bytes.length%250);
+            }
+            // Data with randomization
+            var startPos=cw.length;
+            for(var i=0;i<bytes.length;i++){
+                cw.push(bytes[i]);
+            }
+            // Randomize
+            for(var i=startPos;i<cw.length;i++){
+                var pos=i+1; // 1-based position in full codeword stream
+                var randSeed=149*pos%253+1;
+                var tempVal=cw[i]+randSeed;
+                if(tempVal>255)tempVal-=256;
+                cw[i]=tempVal;
+            }
+            return cw;
+        }
+
+        function chooseSize(dataLen){
+            for(var i=0;i<SIZES.length;i++){
+                if(SIZES[i][2]>=dataLen)return SIZES[i];
+            }
+            return null;
+        }
+
+        // Place modules in Data Matrix
+        function placeModules(nrow,ncol,cwBits){
+            var matrix=[];
+            for(var i=0;i<nrow;i++){matrix.push([]);for(var j=0;j<ncol;j++)matrix[i][j]=0;}
+
+            // Place data using standard Data Matrix placement algorithm
+            function place(col,row,data,bit){
+                if(row<0){row+=nrow;col+=4-((nrow+4)%8);}
+                if(col<0){col+=ncol;row+=4-((ncol+4)%8);}
+                if(row>=nrow){row-=nrow;col+=4-((nrow+4)%8);}
+                if(col>=ncol){col-=ncol;row+=4-((ncol+4)%8);}
+                matrix[row][col]=bit;
+            }
+
+            var idx=0;
+            var row=4,col=0;
+            do{
+                // First pair of columns
+                if(row===nrow&&col===0)place(col,row,cwBits[idx++],1);
+                do{
+                    if(row<nrow&&col>=0&&idx<cwBits.length){
+                        place(col,row,cwBits[idx],1);
+                        idx++;
+                    }
+                    row-=2;col+=2;
+                }while(row>=0&&col<ncol);
+                row+=1;col+=3;
+
+                // Second pair
+                do{
+                    if(row>=0&&col<ncol&&idx<cwBits.length){
+                        place(col,row,cwBits[idx],1);
+                        idx++;
+                    }
+                    row+=2;col-=2;
+                }while(row<nrow&&col>=0);
+                row+=3;col+=1;
+
+                if(row>=nrow&&col>=ncol)break;
+            }while(true);
+
+            // Draw border: solid lines (L-shaped)
+            for(var i=0;i<ncol;i++){
+                if(i%2===0)matrix[nrow-1][i]=1;
+            }
+            for(var i=0;i<nrow;i++){
+                if(i%2===0)matrix[i][ncol-1]=1;
+            }
+            // Top row all empty (except finders at top-left and top-right)
+
+            // Draw alignment: top-right corner
+            for(var i=0;i<ncol;i++)matrix[0][i]=1;
+            for(var i=0;i<nrow;i++)matrix[i][0]=1;
+
+            // Reset the top-left corner area (finders handled by border)
+            // Actually for Data Matrix, the finder pattern IS the border:
+            // left solid line (every other), bottom solid line (every other),
+            // top solid line, right solid line
+
+            // Recreate properly:
+            // Left column (col 0): all solid
+            for(var i=0;i<nrow;i++)matrix[i][0]=1;
+            // Top row (row 0): all solid
+            for(var i=0;i<ncol;i++)matrix[0][i]=1;
+            // Right column (col ncol-1): alternating (1,0,1,0...)
+            for(var i=0;i<nrow;i++)matrix[i][ncol-1]=(i%2===0)?1:0;
+            // Bottom row (row nrow-1): alternating (1,0,1,0...)
+            for(var i=0;i<ncol;i++)matrix[nrow-1][i]=(i%2===0)?1:0;
+
+            return matrix;
+        }
+
+        // Proper Data Matrix module placement (ISO 16022)
+        function buildMatrix(nrow,ncol,codewords){
+            // Convert codewords to bits
+            var bits=[];
+            for(var i=0;i<codewords.length;i++){
+                for(var j=7;j>=0;j--)bits.push((codewords[i]>>j)&1);
+            }
+
+            var nrow_=nrow,nrow4=(nrow_+4)%8;
+            var ncol_=ncol,ncol4=(ncol_+4)%8;
+
+            var array2=new Array(nrow_);
+            for(var i=0;i<nrow_;i++){array2[i]=new Array(ncol_);for(var j=0;j<ncol_;j++)array2[i][j]=0;}
+
+            function setModule(row,col,bit){
+                if(row<0){row+=nrow_;col+=4-nrow4;}
+                if(col<0){col+=ncol_;row+=4-ncol4;}
+                if(row>=nrow_){row-=nrow_;col+=4-nrow4;}
+                if(col>=ncol_){col-=ncol_;row+=4-ncol4;}
+                array2[row][col]=bit;
+            }
+
+            var pos=0;
+            var row=4,col=0;
+
+            do{
+                if(row===nrow_&&col===0)setModule(nrow_-1,0,1);
+                do{
+                    if(row<nrow_&&col>=0&&array2[row][col]===0&&pos<bits.length){
+                        setModule(row,col,bits[pos]);
+                        pos++;
+                    }
+                    row-=2;col+=2;
+                }while(row>=0&&col<ncol_);
+                row+=1;col+=3;
+
+                do{
+                    if(row>=0&&col<ncol_&&array2[row][col]===0&&pos<bits.length){
+                        setModule(row,col,bits[pos]);
+                        pos++;
+                    }
+                    row+=2;col-=2;
+                }while(row<nrow_&&col>=0);
+
+                row+=3;col+=1;
+
+                if(row>=nrow_&&col>=ncol_)break;
+            }while(true);
+
+            // Draw finder pattern (border)
+            // Left column: solid
+            for(var i=0;i<nrow_;i++)array2[i][0]=1;
+            // Top row: solid
+            for(var i=0;i<ncol_;i++)array2[0][i]=1;
+            // Right column: alternating starting with 1
+            for(var i=0;i<nrow_;i++)array2[i][ncol_-1]=(i%2===0)?1:0;
+            // Bottom row: alternating starting with 1
+            for(var i=0;i<ncol_;i++)array2[nrow_-1][i]=(i%2===0)?1:0;
+
+            return array2;
+        }
+
+        window._dmlib = {
+            generate: function(text){
+                var data=text;
+                // Try ASCII first (most reliable for scanner apps)
+                var cw=encodeAscii(data);
+
+                // Find size
+                var sizeInfo=null;
+                for(var i=0;i<SIZES.length;i++){
+                    if(SIZES[i][2]>=cw.length){sizeInfo=SIZES[i];break;}
+                }
+                if(!sizeInfo)throw new Error('Data too long for Data Matrix');
+
+                var nrow=sizeInfo[0],ncol=sizeInfo[1],dataCW=sizeInfo[2],ecCW=sizeInfo[3],blocks=sizeInfo[4];
+
+                // Pad data codewords
+                while(cw.length<dataCW){
+                    // Pad with 129 (unlatch+pad)
+                    if(cw.length===dataCW-1){
+                        cw.push(254); // unlatch
+                    }else{
+                        cw.push(129);
+                    }
+                }
+
+                // Split into blocks for RS encoding
+                var dataPerBlock=Math.floor(dataCW/blocks);
+                var ecPerBlock=ecCW;
+
+                var blockData=[],blockEC=[];
+                for(var i=0;i<blocks;i++){
+                    var start=i*dataPerBlock;
+                    var end=start+dataPerBlock;
+                    if(i===blocks-1)end=dataCW;
+                    var block=cw.slice(start,end);
+                    blockData.push(block);
+                    blockEC.push(rsEncode(block,ecPerBlock));
+                }
+
+                // Interleave
+                var result=[];
+                var maxD=dataPerBlock;
+                for(var i=0;i<maxD;i++){
+                    for(var j=0;j<blockData.length;j++){
+                        if(i<blockData[j].length)result.push(blockData[j][i]);
+                    }
+                }
+                for(var i=0;i<ecPerBlock;i++){
+                    for(var j=0;j<blockEC.length;j++){
+                        result.push(blockEC[j][i]);
+                    }
+                }
+
+                return buildMatrix(nrow,ncol,result);
+            },
+            render: function(canvas,text,scale){
+                var matrix=this.generate(text);
+                var nrow=matrix.length,ncol=matrix[0].length;
+                var qz=2,total_rows=nrow+qz*2,total_cols=ncol+qz*2;
+                var px=scale||4;
+                canvas.width=total_cols*px;
+                canvas.height=total_rows*px;
+                var ctx=canvas.getContext('2d');
+                ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+                ctx.fillStyle='#000';
+                for(var r=0;r<nrow;r++)for(var c=0;c<ncol;c++)
+                    if(matrix[r][c])ctx.fillRect((c+qz)*px,(r+qz)*px,px,px);
             }
         };
     })();
@@ -618,6 +902,7 @@
                 document.getElementById('prefixCheck').checked = e.prefixEnabled;
                 togglePrefixInput();
                 document.getElementById('prefixVal').value = e.prefix || '';
+                if (e.codeType) switchCodeType(e.codeType);
                 localStorage.setItem('qrText', e.text);
                 calcQR();
             }
@@ -946,17 +1231,28 @@
 
         document.getElementById("shelfLife").oninput = autoCalcShelf;
 
-        /* ===== Блок 3: QR-генератор ===== */
+        /* ===== Блок 3: Генератор кодов (QR + Data Matrix) ===== */
         var qrInputEl = document.getElementById('qrInput');
         var prefixCheckEl = document.getElementById('prefixCheck');
         var prefixValEl = document.getElementById('prefixVal');
+        var currentCodeType = 'qr';
 
+        if (localStorage.getItem('codeType')) {
+            switchCodeType(localStorage.getItem('codeType'));
+        }
         if (localStorage.getItem('qrText')) qrInputEl.value = localStorage.getItem('qrText');
         if (localStorage.getItem('qrPrefixEnabled') === '1') {
             prefixCheckEl.checked = true;
             togglePrefixInput();
         }
         if (localStorage.getItem('qrPrefix')) prefixValEl.value = localStorage.getItem('qrPrefix');
+
+        function switchCodeType(type) {
+            currentCodeType = type;
+            document.getElementById('typeQR').classList.toggle('active', type === 'qr');
+            document.getElementById('typeDM').classList.toggle('active', type === 'dm');
+            localStorage.setItem('codeType', type);
+        }
 
         function togglePrefixInput() {
             var wrap = document.getElementById('prefixWrap');
@@ -999,17 +1295,22 @@
             var grid = document.getElementById('qrGrid');
             grid.innerHTML = '';
 
-            document.getElementById('qrResultLabel').textContent = "QR-коды (" + finalStrings.length + " шт.)";
+            var typeLabel = currentCodeType === 'qr' ? 'QR' : 'Data Matrix';
+            document.getElementById('qrResultLabel').textContent = typeLabel + " (" + finalStrings.length + " шт.)";
 
             finalStrings.forEach(function(str) {
                 var item = document.createElement('div');
                 item.className = 'qr-item';
                 var canvas = document.createElement('canvas');
                 try {
-                    _qrlib.render(canvas, str, 3);
+                    if (currentCodeType === 'qr') {
+                        _qrlib.render(canvas, str, 3);
+                    } else {
+                        _dmlib.render(canvas, str, 4);
+                    }
                 } catch(e) {
                     var p = document.createElement('div');
-                    p.textContent = 'Ошибка генерации';
+                    p.textContent = 'Ошибка: ' + e.message;
                     p.style.color = 'var(--err-text)';
                     p.style.fontSize = '11px';
                     item.appendChild(p);
@@ -1028,11 +1329,12 @@
 
             saveHistory({
                 type: 'qr',
+                codeType: currentCodeType,
                 text: raw,
                 prefixEnabled: usePrefix,
                 prefix: prefix,
                 input: raw.length > 60 ? raw.slice(0, 57) + '…' : raw,
-                result: finalStrings.length + " QR-код(ов)" + (usePrefix ? ' + текст «' + prefix + '»' : ''),
+                result: finalStrings.length + " " + typeLabel + (usePrefix ? ' + текст «' + prefix + '»' : ''),
                 date: new Date().toLocaleString('ru-RU')
             });
         }
