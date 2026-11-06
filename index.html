@@ -23,8 +23,7 @@
 
         body{
             font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-            background:var(--bg); min-height:100vh; padding:16px;
-            transition:background .3s ease;
+            background:var(--bg);min-height:100vh;padding:16px;transition:background .3s ease;
         }
         .container{max-width:600px;margin:0 auto}
 
@@ -36,37 +35,43 @@
             padding:4px 8px;border-radius:8px;
         }
         .theme-btn:hover{background:rgba(128,128,128,.2)}
+        .theme-btn .icon-sun{display:none}
+        .dark .theme-btn .icon-sun{display:inline}
+        .dark .theme-btn .icon-moon{display:none}
 
-        .section-title{text-align:center;font-size:18px;color:var(--accent);font-weight:700;margin:28px 0 16px;cursor:pointer;user-select:none;display:flex;align-items:center;justify-content:center;gap:10px}
-        .section-title .arrow{display:inline-block;transition:transform .2s ease;font-size:14px;color:var(--accent)}
+        .section-title{
+            text-align:center;font-size:18px;color:var(--accent);font-weight:700;
+            margin:28px 0 16px;cursor:pointer;user-select:none;
+            display:flex;align-items:center;justify-content:center;gap:10px;
+        }
+        .section-title .arrow{display:inline-block;transition:transform .2s ease;font-size:14px}
         .section-title .arrow.collapsed{transform:rotate(-90deg)}
-        .collapsible{overflow:hidden;transition:max-height .2s ease, opacity .2s ease}
+        .collapsible{overflow:hidden;transition:max-height .2s ease,opacity .2s ease}
         .collapsible.collapsed{max-height:0!important;opacity:0;pointer-events:none}
         .collapsible.expanded{overflow:visible}
 
-        .card{background:var(--card);border-radius:16px;padding:24px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,.08);transition:background .3s ease}
+        .card{
+            background:var(--card);border-radius:16px;padding:24px;margin-bottom:16px;
+            box-shadow:0 2px 12px rgba(0,0,0,.08);transition:background .3s ease;
+        }
 
         label{display:block;font-size:15px;color:var(--text2);margin-bottom:6px;font-weight:500}
+        input,select{
+            width:100%;padding:14px;font-size:18px;border:2px solid var(--border);
+            border-radius:12px;outline:none;margin-bottom:16px;scroll-margin-bottom:220px;
+            background:var(--input-bg);color:var(--input-text);
+            transition:background .3s ease,color .3s ease;
+        }
+        input:focus,select:focus{border-color:var(--accent)}
+        input.err,textarea.err{border-color:var(--err-text);background:var(--err-bg)}
         textarea{
-            width:100%;padding:14px;font-size:16px;border:2px solid var(--border);border-radius:12px;
-            outline:none;margin-bottom:12px;min-height:80px;resize:vertical;scroll-margin-bottom:220px;
+            width:100%;padding:14px;font-size:16px;border:2px solid var(--border);
+            border-radius:12px;outline:none;margin-bottom:12px;min-height:80px;
+            resize:vertical;scroll-margin-bottom:220px;
             background:var(--input-bg);color:var(--input-text);font-family:inherit;
             transition:background .3s ease,color .3s ease;
         }
         textarea:focus{border-color:var(--accent)}
-        input{
-            width:100%;padding:14px;font-size:18px;border:2px solid var(--border);border-radius:12px;
-            outline:none;margin-bottom:16px;scroll-margin-bottom:220px;
-            background:var(--input-bg);color:var(--input-text);transition:background .3s ease,color .3s ease;
-        }
-        input:focus{border-color:var(--accent)}
-        input.err{border-color:var(--err-text);background:var(--err-bg)}
-        select{
-            width:100%;padding:14px;font-size:18px;border:2px solid var(--border);border-radius:12px;
-            outline:none;margin-bottom:16px;background:var(--input-bg);color:var(--input-text);
-            scroll-margin-bottom:220px;transition:background .3s ease,color .3s ease;
-        }
-        select:focus{border-color:var(--accent)}
 
         .btn{
             width:100%;padding:16px;font-size:18px;font-weight:600;color:#fff;
@@ -94,10 +99,8 @@
 
         .row3{display:flex;gap:10px}
         .row3>div{flex:1}
-        .row3 input,.row3 select{margin-bottom:16px}
         .row2{display:flex;gap:10px}
         .row2>div{flex:1}
-        .row2 select,.row2 input{margin-bottom:16px}
 
         .expiry-out{text-align:center;font-size:22px;font-weight:700;color:var(--result-text);margin-bottom:12px}
         .left-out{text-align:center;font-size:22px;font-weight:700;margin-bottom:4px}
@@ -119,936 +122,910 @@
             padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color .2s ease;
         }
         .history-item:hover{border-color:var(--accent)}
-        .history-item .h-input{font-size:14px;color:var(--text2);margin-bottom:4px;word-break:break-all}
-        .history-item .h-result{font-size:15px;font-weight:700;color:var(--text)}
-        .history-item .h-date{font-size:11px;color:var(--text3);margin-top:4px}
-
-        .theme-btn .icon-sun{display:none}
-        .dark .theme-btn .icon-sun{display:inline}
-        .dark .theme-btn .icon-moon{display:none}
+        .h-input{font-size:14px;color:var(--text2);margin-bottom:4px;word-break:break-all}
+        .h-result{font-size:15px;font-weight:700;color:var(--text)}
+        .h-date{font-size:11px;color:var(--text3);margin-top:4px}
 
         .prefix-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer;user-select:none}
         .prefix-row input[type=checkbox]{width:20px;height:20px;margin:0;accent-color:var(--accent);cursor:pointer}
         .prefix-row label{margin:0;font-size:15px;cursor:pointer}
         .prefix-input-wrap{display:none;margin-bottom:16px}
         .prefix-input-wrap.show{display:block}
-        .qr-grid{
-            display:flex;flex-wrap:wrap;gap:16px;justify-content:center;margin-top:16px;
-        }
+
+        .qr-settings{display:flex;gap:10px;margin-bottom:16px}
+        .qr-settings>div{flex:1}
+
+        .qr-grid{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;margin-top:16px}
         .qr-item{
-            display:flex;flex-direction:column;align-items:center;gap:6px;
-            background:var(--input-bg);border-radius:10px;padding:10px;
+            display:flex;flex-direction:column;align-items:center;gap:8px;
+            background:#fff;border-radius:10px;padding:16px;
         }
-        .qr-item canvas{image-rendering:pixelated;border-radius:4px}
+        .qr-item canvas{image-rendering:pixelated;max-width:100%;height:auto}
         .qr-item .qr-text{
-            font-size:10px;color:var(--text3);max-width:120px;word-break:break-all;
+            font-size:11px;color:#666;max-width:200px;word-break:break-all;
             text-align:center;line-height:1.3;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="top-row">
-            <h1>Мультитул оператора</h1>
-            <button class="theme-btn" onclick="toggleTheme()" title="Сменить тему">
-                <span class="icon-moon">🌙</span>
-                <span class="icon-sun">☀️</span>
-            </button>
-        </div>
+<div class="container">
+    <div class="top-row">
+        <h1>Мультитул оператора</h1>
+        <button class="theme-btn" onclick="toggleTheme()" title="Сменить тему">
+            <span class="icon-moon">🌙</span>
+            <span class="icon-sun">☀️</span>
+        </button>
+    </div>
 
-        <div class="section-title" onclick="toggleSection('section1', this)">
-            <span class="arrow" id="arrow1">▼</span>
-            Короба в слое
+    <!-- КОРОБА -->
+    <div class="section-title" onclick="toggleSection('section1',this)">
+        <span class="arrow" id="arrow1">▼</span>Короба в слое
+    </div>
+    <div class="collapsible expanded" id="section1">
+        <div class="card">
+            <label for="boxL">Длина коробки (см)</label>
+            <input type="text" inputmode="decimal" id="boxL" placeholder="например, 40 или 12,5">
+            <label for="boxW">Ширина коробки (см)</label>
+            <input type="text" inputmode="decimal" id="boxW" placeholder="например, 26 или 12,5">
+            <button class="btn" onclick="calc()">Рассчитать</button>
+            <div class="error" id="err"></div>
         </div>
-        <div class="collapsible expanded" id="section1">
-            <div class="card">
-                <label for="boxL">Длина коробки (см)</label>
-                <input type="text" inputmode="decimal" id="boxL" placeholder="например, 40 или 12,5">
-                <label for="boxW">Ширина коробки (см)</label>
-                <input type="text" inputmode="decimal" id="boxW" placeholder="например, 26 или 12,5">
-                <button class="btn" onclick="calc()">Рассчитать</button>
-                <div class="error" id="err"></div>
+        <div class="card result" id="result">
+            <div class="result-label">Коробов в слое</div>
+            <div class="result-count" id="count">0</div>
+            <div class="fill-row">
+                <span class="fill-key">Заполняемость</span>
+                <span class="fill-val" id="fill">0%</span>
             </div>
-            <div class="card result" id="result">
-                <div class="result-label">Коробов в слое</div>
-                <div class="result-count" id="count">0</div>
-                <div class="fill-row">
-                    <span class="fill-key">Заполняемость</span>
-                    <span class="fill-val" id="fill">0%</span>
-                </div>
-                <div class="dimensions" id="dims"></div>
-                <div class="pallet-size">Паллета 120 × 80 см</div>
-            </div>
-        </div>
-
-        <div class="section-title" onclick="toggleSection('section2', this)">
-            <span class="arrow" id="arrow2">▼</span>
-            Сроки годности
-        </div>
-        <div class="collapsible expanded" id="section2">
-            <div class="card">
-                <label>Дата производства</label>
-                <div class="row3">
-                    <div><select id="mfgDay"></select></div>
-                    <div><select id="mfgMonth"></select></div>
-                    <div><select id="mfgYear"></select></div>
-                </div>
-
-                <label for="shelfLife">Срок годности</label>
-                <div class="row2">
-                    <div><input type="text" inputmode="numeric" id="shelfLife" placeholder="Кол-во" maxlength="5"></div>
-                    <div>
-                        <select id="shelfUnit">
-                            <option value="1">Сутки</option>
-                            <option value="7">Недели</option>
-                            <option value="30">Месяцы</option>
-                            <option value="365">Годы</option>
-                        </select>
-                    </div>
-                </div>
-
-                <button class="btn" onclick="calcShelf()">Рассчитать</button>
-                <div class="error" id="shelfErr"></div>
-            </div>
-            <div class="card result" id="shelfResult">
-                <div class="result-label">Годен до</div>
-                <div class="expiry-out" id="expiryDate"></div>
-                <div class="left-out" id="daysLeft"></div>
-            </div>
-        </div>
-
-        <div class="section-title" onclick="toggleSection('section3', this)">
-            <span class="arrow" id="arrow3">▼</span>
-            Генератор QR
-        </div>
-        <div class="collapsible expanded" id="section3">
-            <div class="card">
-                <label for="qrInput">Текст (через пробел — отдельные QR)</label>
-                <textarea id="qrInput" placeholder="Вставьте текст..."></textarea>
-
-                <div class="prefix-row" onclick="togglePrefixInput()">
-                    <input type="checkbox" id="prefixCheck" onclick="event.stopPropagation();togglePrefixInput()">
-                    <label>Добавить текст в конец каждой строки</label>
-                </div>
-                <div class="prefix-input-wrap" id="prefixWrap">
-                    <label for="prefixVal">Текст</label>
-                    <input type="text" id="prefixVal">
-                </div>
-
-                <button class="btn" onclick="calcQR()">Сгенерировать</button>
-                <div class="error" id="qrErr"></div>
-            </div>
-            <div class="card result" id="qrResult">
-                <div class="result-label" id="qrResultLabel">QR-коды</div>
-                <div class="qr-grid" id="qrGrid"></div>
-            </div>
-        </div>
-
-        <div class="section-title" onclick="toggleSection('section4', this)">
-            <span class="arrow" id="arrow4">▼</span>
-            История
-        </div>
-        <div class="collapsible expanded" id="section4">
-            <div class="card">
-                <div class="history-tabs">
-                    <div class="history-tab active" id="tabBoxes" onclick="switchHistoryTab('boxes')">Короба в слое</div>
-                    <div class="history-tab" id="tabShelf" onclick="switchHistoryTab('shelf')">Сроки годности</div>
-                    <div class="history-tab" id="tabQR" onclick="switchHistoryTab('qr')">QR-коды</div>
-                </div>
-                <ul class="history-list" id="historyList"></ul>
-                <button class="btn-sm" onclick="clearHistory()">Очистить историю</button>
-            </div>
+            <div class="dimensions" id="dims"></div>
+            <div class="pallet-size">Паллета 120 × 80 см</div>
         </div>
     </div>
 
-    <!-- ===== QR библиотека (проверенная, полная реализация) ===== -->
-    <script>
-    var qrcode = (function(){
-        'use strict';
+    <!-- СРОКИ ГОДНОСТИ -->
+    <div class="section-title" onclick="toggleSection('section2',this)">
+        <span class="arrow" id="arrow2">▼</span>Сроки годности
+    </div>
+    <div class="collapsible expanded" id="section2">
+        <div class="card">
+            <label>Дата производства</label>
+            <div class="row3">
+                <div><select id="mfgDay"></select></div>
+                <div><select id="mfgMonth"></select></div>
+                <div><select id="mfgYear"></select></div>
+            </div>
+            <label for="shelfLife">Срок годности</label>
+            <div class="row2">
+                <div><input type="text" inputmode="numeric" id="shelfLife" placeholder="Кол-во" maxlength="5"></div>
+                <div>
+                    <select id="shelfUnit">
+                        <option value="1">Сутки</option>
+                        <option value="7">Недели</option>
+                        <option value="30">Месяцы</option>
+                        <option value="365">Годы</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn" onclick="calcShelf()">Рассчитать</button>
+            <div class="error" id="shelfErr"></div>
+        </div>
+        <div class="card result" id="shelfResult">
+            <div class="result-label">Годен до</div>
+            <div class="expiry-out" id="expiryDate"></div>
+            <div class="left-out" id="daysLeft"></div>
+        </div>
+    </div>
 
-        /* GF(256) math */
-        var EXP = new Array(256), LOG = new Array(256);
-        for (var i = 0; i < 8; i++) EXP[i] = 1 << i;
-        for (var i = 8; i < 256; i++) EXP[i] = EXP[i-4]^EXP[i-5]^EXP[i-6]^EXP[i-8];
-        for (var i = 0; i < 255; i++) LOG[EXP[i]] = i;
+    <!-- QR -->
+    <div class="section-title" onclick="toggleSection('section3',this)">
+        <span class="arrow" id="arrow3">▼</span>Генератор QR
+    </div>
+    <div class="collapsible expanded" id="section3">
+        <div class="card">
+            <label for="qrInput">Текст (через пробел — отдельные QR)</label>
+            <textarea id="qrInput" placeholder="Вставьте текст..."></textarea>
 
-        function gexp(n){ while(n<0)n+=255; while(n>=256)n-=255; return EXP[n]; }
-        function glog(n){ if(n<1)throw new Error('glog'); return LOG[n]; }
+            <div class="prefix-row" onclick="togglePrefixInput()">
+                <input type="checkbox" id="prefixCheck" onclick="event.stopPropagation();togglePrefixInput()">
+                <label>Добавить текст в конец каждой строки</label>
+            </div>
+            <div class="prefix-input-wrap" id="prefixWrap">
+                <label for="prefixVal">Текст</label>
+                <input type="text" id="prefixVal">
+            </div>
 
-        /* Reed-Solomon */
-        function rsPoly(ecLen){
-            var a = [1];
-            for (var i = 0; i < ecLen; i++){
-                var b = [1, gexp(i)];
-                var prod = new Array(a.length + b.length - 1).fill(0);
-                for (var x = 0; x < a.length; x++)
-                    for (var y = 0; y < b.length; y++)
-                        prod[x+y] ^= gexp(glog(a[x]) + glog(b[y]));
-                a = prod;
-            }
-            return a;
+            <div class="qr-settings">
+                <div>
+                    <label for="qrEcLevel">Коррекция ошибок</label>
+                    <select id="qrEcLevel">
+                        <option value="M" selected>M (15%)</option>
+                        <option value="Q">Q (25%)</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="btn" onclick="calcQR()">Сгенерировать</button>
+            <div class="error" id="qrErr"></div>
+        </div>
+        <div class="card result" id="qrResult">
+            <div class="result-label" id="qrResultLabel">QR-коды</div>
+            <div class="qr-grid" id="qrGrid"></div>
+        </div>
+    </div>
+
+    <!-- ИСТОРИЯ -->
+    <div class="section-title" onclick="toggleSection('section4',this)">
+        <span class="arrow" id="arrow4">▼</span>История
+    </div>
+    <div class="collapsible expanded" id="section4">
+        <div class="card">
+            <div class="history-tabs">
+                <div class="history-tab active" id="tabBoxes" onclick="switchHistoryTab('boxes')">Короба</div>
+                <div class="history-tab" id="tabShelf" onclick="switchHistoryTab('shelf')">Сроки</div>
+                <div class="history-tab" id="tabQR" onclick="switchHistoryTab('qr')">QR</div>
+            </div>
+            <ul class="history-list" id="historyList"></ul>
+            <button class="btn-sm" onclick="clearHistory()">Очистить историю</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== QR БИБЛИОТЕКА ===== -->
+<script>
+var qrcode = (function() {
+    'use strict';
+
+    /* ===== GF(256) ===== */
+    var EXP = new Array(512), LOG = new Array(256);
+    (function() {
+        var x = 1;
+        for (var i = 0; i < 255; i++) {
+            EXP[i] = x;
+            LOG[x] = i;
+            x <<= 1;
+            if (x & 0x100) x ^= 0x11D;
         }
-
-        function rsEncode(data, ecLen){
-            var gen = rsPoly(ecLen);
-            var buf = data.concat(new Array(ecLen).fill(0));
-            for (var i = 0; i < data.length; i++){
-                var ratio = glog(buf[i]) - glog(gen[0]);
-                for (var j = 0; j < gen.length; j++)
-                    buf[i+j] ^= gexp(glog(gen[j]) + ratio);
-            }
-            return buf.slice(data.length);
-        }
-
-        /* RS block tables */
-        var RS = [
-            [1,26,19],[1,44,34],[1,70,55],[1,100,80],[1,134,108],
-            [2,86,68],[2,98,78],[2,121,97],[2,152,116],[2,86,68,2,87,69],
-            [2,98,78,2,99,79],[2,121,97,2,122,98],[2,152,116,2,153,117],
-            [3,114,86,1,115,87],[3,144,112,1,145,113],[3,154,122,2,155,123],
-            [4,130,100,4,131,101],[4,132,102,2,133,103],[4,144,112,4,145,113],
-            [4,154,122,3,155,123],[5,130,100,5,131,101],[5,144,112,4,145,113],
-            [8,132,102,4,133,103],[8,154,122,4,155,123],[11,130,100,5,131,101],
-            [11,144,112,5,145,113],[12,154,122,7,155,123],[12,130,100,12,131,101],
-            [6,154,122,14,155,123],[17,152,122,4,153,123],[17,152,122,6,153,123],
-            [34,122,94],[30,142,114,18,143,115],[28,152,122,22,153,123],
-            [30,152,122,26,153,123],[28,152,122,28,153,123],[28,152,122,30,153,123],
-            [28,152,122,32,153,123],[28,152,122,34,153,123],[28,152,122,36,153,123],
-            [28,152,122,38,153,123],
-            [1,26,16],[1,44,28],[1,70,44],[2,50,32],[2,67,43],
-            [4,43,27],[4,49,31],[2,60,38,2,61,39],[3,58,36,2,59,37],
-            [4,69,43,1,70,44],[1,80,50,4,81,51],[6,58,36,2,59,37],
-            [8,59,37,1,60,38],[4,64,40,5,65,41],[5,65,41,5,66,42],
-            [7,73,45,3,74,46],[10,74,46,1,75,47],[9,69,43,4,70,44],
-            [3,70,44,11,71,45],[3,67,41,13,68,42],[17,68,42,0,0],
-            [17,74,46,0,0],[4,75,47,14,76,48],[6,73,45,14,74,46],
-            [8,75,47,13,76,48],[19,74,46,4,75,47],[22,73,45,3,74,46],
-            [3,73,45,23,74,46],[21,73,45,7,74,46],[19,75,47,10,76,48],
-            [2,74,46,29,75,47],[10,74,46,23,75,47],[14,74,46,21,75,47],
-            [14,74,46,23,75,47],[12,75,47,26,76,48],[6,75,47,34,76,48],
-            [29,74,46,14,75,47],[13,74,46,32,75,47],[40,75,47,7,76,48],
-            [18,75,47,31,76,48],
-            [1,26,13],[1,44,22],[2,35,17],[2,50,24],[2,67,33],
-            [4,43,21],[2,49,24,2,50,25],[4,58,31,2,59,32],[4,69,36,4,70,37],
-            [2,74,39,6,75,40],[4,81,43,4,82,44],[4,90,45,4,91,46],
-            [4,103,50,6,104,51],[8,83,42,4,84,43],[11,80,40,5,81,41],
-            [11,85,44,5,86,45],[11,86,45,7,87,46],[5,86,45,13,87,46],
-            [17,82,42,0,0],[17,85,44,1,86,45],[13,80,40,17,81,41],
-            [2,86,45,29,87,46],[6,83,42,34,84,43],[17,85,44,7,86,45],
-            [4,85,44,22,86,45],[20,86,45,13,87,46],[10,83,42,23,84,43],
-            [19,85,44,17,86,45],[28,84,43,19,85,44],[33,85,44,16,86,45],
-            [12,85,44,32,86,45],[11,85,44,36,86,45],[19,85,44,29,86,45],
-            [23,85,44,25,86,45],[23,85,44,28,86,45],[19,85,44,35,86,45],
-            [11,85,44,46,86,45],[59,86,45,1,87,46],[22,85,44,41,86,45],
-            [2,85,44,64,86,45],[24,85,44,46,86,45],
-            [1,26,9],[1,44,16],[2,35,13],[4,25,9],[2,43,17],
-            [4,27,12],[4,31,14,1,32,15],[2,38,18,2,39,19],[4,36,16,2,37,17],
-            [4,43,19,1,44,20],[6,43,19,2,44,20],[8,43,19,2,44,20],
-            [4,43,19,6,44,20],[3,45,20,7,46,21],[1,45,20,13,46,21],
-            [7,45,20,3,46,21],[5,45,20,10,46,21],[13,45,20,3,46,21],
-            [17,45,20,0,0],[17,45,20,1,46,21],[13,45,20,6,46,21],
-            [7,45,20,16,46,21],[11,45,20,14,46,21],[11,45,20,16,46,21],
-            [3,45,20,23,46,21],[1,45,20,28,46,21],[20,45,20,15,46,21],
-            [19,45,20,10,46,21],[28,45,20,22,46,21],[34,45,20,13,46,21],
-            [20,45,20,23,46,21],[18,45,20,25,46,21],[28,45,20,26,46,21],
-            [33,45,20,22,46,21],[35,45,20,24,46,21],[30,45,20,32,46,21],
-            [23,45,20,35,46,21],[12,45,20,42,46,21],[11,45,20,50,46,21],
-            [19,45,20,46,46,21],[23,45,20,44,46,21]
-        ];
-
-        function getRSBlocks(type, ecLevel){
-            var ec = {L:0, M:1, Q:2, H:3}[ecLevel];
-            var tbl = RS[(type-1)*4 + ec];
-            var res = [], len = tbl.length / 3;
-            for (var i = 0; i < len; i++)
-                for (var j = 0; j < tbl[i*3]; j++)
-                    res.push({total: tbl[i*3+1], data: tbl[i*3+2]});
-            return res;
-        }
-
-        /* UTF-8 */
-        function toUtf8(str){
-            var bytes = [];
-            for (var i = 0; i < str.length; i++){
-                var c = str.charCodeAt(i);
-                if (c < 0x80) bytes.push(c);
-                else if (c < 0x800) { bytes.push(0xC0|(c>>6), 0x80|(c&0x3F)); }
-                else if (c < 0xD800 || c >= 0xE000) { bytes.push(0xE0|(c>>12), 0x80|((c>>6)&0x3F), 0x80|(c&0x3F)); }
-                else {
-                    i++;
-                    var cp = 0x10000 + (((c&0x3FF)<<10) | (str.charCodeAt(i)&0x3FF));
-                    bytes.push(0xF0|(cp>>18), 0x80|((cp>>12)&0x3F), 0x80|((cp>>6)&0x3F), 0x80|(cp&0x3F));
-                }
-            }
-            return bytes;
-        }
-
-        /* Bit buffer */
-        function BitBuf(){
-            var buf = [], len = 0;
-            return {
-                buffer: buf,
-                get length(){ return len; },
-                put: function(val, bits){
-                    for (var i = bits-1; i >= 0; i--) {
-                        var bi = Math.floor(len/8);
-                        if (buf.length <= bi) buf.push(0);
-                        if ((val >>> i) & 1) buf[bi] |= (0x80 >>> (len%8));
-                        len++;
-                    }
-                }
-            };
-        }
-
-        /* BCH */
-        function bchDigit(d){ var n=0; while(d){n++;d>>>=1;} return n; }
-        function bchTypeInfo(data){
-            var d = data << 10;
-            var g15 = 0x537;
-            while (bchDigit(d) - bchDigit(g15) >= 0) d ^= g15 << (bchDigit(d)-bchDigit(g15));
-            return ((data<<10)|d) ^ 0x5412;
-        }
-        function bchTypeNumber(data){
-            var d = data << 12;
-            var g18 = 0x1F25;
-            while (bchDigit(d) - bchDigit(g18) >= 0) d ^= g18 << (bchDigit(d)-bchDigit(g18));
-            return (data<<12)|d;
-        }
-
-        /* Pattern position */
-        var PAT = [
-            [],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],
-            [6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],
-            [6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],
-            [6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],
-            [6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],
-            [6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],
-            [6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],
-            [6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],
-            [6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],
-            [6,30,58,86,114,142,170]
-        ];
-
-        /* Masks */
-        function maskFn(p, i, j){
-            switch(p){
-                case 0: return (i+j)%2==0;
-                case 1: return i%2==0;
-                case 2: return j%3==0;
-                case 3: return (i+j)%3==0;
-                case 4: return (Math.floor(i/2)+Math.floor(j/3))%2==0;
-                case 5: return (i*j)%2+(i*j)%3==0;
-                case 6: return ((i*j)%2+(i*j)%3)%2==0;
-                case 7: return ((i*j)%3+(i+j)%2)%2==0;
-            }
-        }
-
-        function lostPoint(m, mc){
-            var lost = 0;
-            for (var r = 0; r < mc; r++) for (var c = 0; c < mc; c++){
-                var s = 0, d = m[r][c];
-                for (var dr = -1; dr <= 1; dr++) for (var dc = -1; dc <= 1; dc++){
-                    if (r+dr<0||r+dr>=mc||c+dc<0||c+dc>=mc||(dr==0&&dc==0)) continue;
-                    if (d == m[r+dr][c+dc]) s++;
-                }
-                if (s > 5) lost += 3 + s - 5;
-            }
-            for (var r = 0; r < mc-1; r++) for (var c = 0; c < mc-1; c++){
-                var cnt = m[r][c]+m[r+1][c]+m[r][c+1]+m[r+1][c+1];
-                if (cnt==0||cnt==4) lost += 3;
-            }
-            for (var r = 0; r < mc; r++) for (var c = 0; c < mc-6; c++){
-                if (m[r][c]&&!m[r][c+1]&&m[r][c+2]&&m[r][c+3]&&m[r][c+4]&&!m[r][c+5]&&m[r][c+6]) lost+=40;
-            }
-            for (var c = 0; c < mc; c++) for (var r = 0; r < mc-6; r++){
-                if (m[r][c]&&!m[r+1][c]&&m[r+2][c]&&m[r+3][c]&&m[r+4][c]&&!m[r+5][c]&&m[r+6][c]) lost+=40;
-            }
-            var dark = 0;
-            for (var r = 0; r < mc; r++) for (var c = 0; c < mc; c++) if (m[r][c]) dark++;
-            lost += Math.abs(100*dark/mc/mc - 50)/5*10;
-            return lost;
-        }
-
-        /* Main QR builder */
-        function buildQR(text){
-            var bytes = toUtf8(str);
-            var data = toUtf8(text);
-
-            // Find type number
-            var type = 0;
-            for (var t = 1; t <= 40; t++){
-                var blocks = getRSBlocks(t, 'L');
-                var totalData = 0;
-                for (var i = 0; i < blocks.length; i++) totalData += blocks[i].data;
-                // 4 bits mode + length bits + data
-                var lenBits = (t < 10) ? 8 : 16;
-                var need = 4 + lenBits + data.length * 8;
-                if (need <= totalData * 8) { type = t; break; }
-            }
-            if (!type) throw new Error('Data too long');
-
-            var blocks = getRSBlocks(type, 'L');
-            var ecMap = {L:1, M:0, Q:3, H:2};
-            var ecLevel = ecMap['L'];
-            var mc = type * 4 + 17;
-
-            // Build data stream
-            var buf = BitBuf();
-            buf.put(4, 4); // mode: byte
-            buf.put(data.length, (type < 10) ? 8 : 16);
-            for (var i = 0; i < data.length; i++) buf.put(data[i], 8);
-            var totalData = 0;
-            for (var i = 0; i < blocks.length; i++) totalData += blocks[i].data;
-            if (buf.length + 4 <= totalData * 8) buf.put(0, 4);
-            while (buf.length % 8) buf.put(0, 1);
-            var pad = [0xEC, 0x11], pi = 0;
-            while (buf.length < totalData * 8) buf.put(pad[pi++ % 2], 8);
-
-            // Split into blocks and compute RS
-            var allData = buf.buffer;
-            var dcBlocks = [], ecBlocks = [];
-            var off = 0;
-            for (var i = 0; i < blocks.length; i++){
-                var d = allData.slice(off, off + blocks[i].data);
-                off += blocks[i].data;
-                dcBlocks.push(d);
-                ecBlocks.push(rsEncode(d, blocks[i].total - blocks[i].data));
-            }
-
-            // Interleave
-            var maxDc = 0, maxEc = 0;
-            for (var i = 0; i < blocks.length; i++){
-                maxDc = Math.max(maxDc, dcBlocks[i].length);
-                maxEc = Math.max(maxEc, ecBlocks[i].length);
-            }
-            var codewords = [];
-            for (var i = 0; i < maxDc; i++)
-                for (var j = 0; j < blocks.length; j++)
-                    if (i < dcBlocks[j].length) codewords.push(dcBlocks[j][i]);
-            for (var i = 0; i < maxEc; i++)
-                for (var j = 0; j < blocks.length; j++)
-                    if (i < ecBlocks[j].length) codewords.push(ecBlocks[j][i]);
-
-            // Build module matrix
-            function makeModules(mask){
-                var m = [];
-                for (var r = 0; r < mc; r++){
-                    m[r] = [];
-                    for (var c = 0; c < mc; c++) m[r][c] = null;
-                }
-
-                // Position probes
-                function probe(row, col){
-                    for (var r = -1; r <= 7; r++){
-                        if (row+r<0||row+r>=mc) continue;
-                        for (var c = -1; c <= 7; c++){
-                            if (col+c<0||col+c>=mc) continue;
-                            if ((r>=0&&r<=6&&(c==0||c==6))||(c>=0&&c<=6&&(r==0||r==6))||(r>=2&&r<=4&&c>=2&&c<=4))
-                                m[row+r][col+c] = true;
-                            else m[row+r][col+c] = false;
-                        }
-                    }
-                }
-                probe(0,0); probe(mc-7,0); probe(0,mc-7);
-
-                // Alignment
-                var pos = PAT[type-1] || [];
-                for (var i = 0; i < pos.length; i++) for (var j = 0; j < pos.length; j++){
-                    var row = pos[i], col = pos[j];
-                    if (m[row][col] != null) continue;
-                    for (var r = -2; r <= 2; r++) for (var c = -2; c <= 2; c++)
-                        m[row+r][col+c] = (r==-2||r==2||c==-2||c==2||(r==0&&c==0));
-                }
-
-                // Timing
-                for (var r = 8; r < mc-8; r++) if (m[r][6]==null) m[r][6] = (r%2==0);
-                for (var c = 8; c < mc-8; c++) if (m[6][c]==null) m[6][c] = (c%2==0);
-
-                // Type info
-                var info = bchTypeInfo((ecLevel<<3)|mask);
-                for (var i = 0; i < 15; i++){
-                    var mod = ((info >> i) & 1) == 1;
-                    if (i<6) m[i][8]=mod;
-                    else if (i<8) m[i+1][8]=mod;
-                    else m[mc-15+i][8]=mod;
-                }
-                for (var i = 0; i < 15; i++){
-                    var mod = ((info >> i) & 1) == 1;
-                    if (i<8) m[8][mc-i-1]=mod;
-                    else if (i<9) m[8][15-i-1+1]=mod;
-                    else m[8][15-i-1]=mod;
-                }
-                m[mc-8][8] = true;
-
-                // Type number (for version >= 7)
-                if (type >= 7){
-                    var tn = bchTypeNumber(type);
-                    for (var i = 0; i < 18; i++){
-                        var mod = ((tn >> i) & 1) == 1;
-                        m[Math.floor(i/3)][i%3+mc-8-3] = mod;
-                    }
-                    for (var i = 0; i < 18; i++){
-                        var mod = ((tn >> i) & 1) == 1;
-                        m[i%3+mc-8-3][Math.floor(i/3)] = mod;
-                    }
-                }
-
-                // Map data
-                var inc = -1, row = mc-1, bitIdx = 7, byteIdx = 0;
-                for (var col = mc-1; col > 0; col -= 2){
-                    if (col == 6) col--;
-                    while (true){
-                        for (var c = 0; c < 2; c++){
-                            if (m[row][col-c] == null){
-                                var dark = false;
-                                if (byteIdx < codewords.length)
-                                    dark = ((codewords[byteIdx] >>> bitIdx) & 1) == 1;
-                                if (maskFn(mask, row, col-c)) dark = !dark;
-                                m[row][col-c] = dark;
-                                bitIdx--;
-                                if (bitIdx == -1){ byteIdx++; bitIdx = 7; }
-                            }
-                        }
-                        row += inc;
-                        if (row < 0 || row >= mc){ row -= inc; inc = -inc; break; }
-                    }
-                }
-
-                return m;
-            }
-
-            // Choose best mask
-            var bestMask = 0, bestLost = Infinity;
-            for (var mask = 0; mask < 8; mask++){
-                var m = makeModules(mask);
-                var lost = lostPoint(m, mc);
-                if (lost < bestLost){ bestLost = lost; bestMask = mask; }
-            }
-
-            var final = makeModules(bestMask);
-
-            return {
-                getModuleCount: function(){ return mc; },
-                isDark: function(r, c){ return final[r][c]; }
-            };
-        }
-
-        return {
-            create: buildQR,
-            render: function(canvas, text, scale){
-                var qr = buildQR(text);
-                var count = qr.getModuleCount();
-                var qz = 4;
-                var total = count + qz * 2;
-                var px = scale || 6;
-                canvas.width = total * px;
-                canvas.height = total * px;
-                var ctx = canvas.getContext('2d');
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                ctx.fillStyle = '#000';
-                for (var r = 0; r < count; r++)
-                    for (var c = 0; c < count; c++)
-                        if (qr.isDark(r, c))
-                            ctx.fillRect((c+qz)*px, (r+qz)*px, px, px);
-            }
-        };
+        for (var i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
     })();
-    </script>
 
-    <script>
-        /* ===== Тема ===== */
-        function toggleTheme() {
-            document.body.classList.toggle('dark');
-            localStorage.setItem('darkTheme', document.body.classList.contains('dark') ? '1' : '0');
+    function gfMul(a, b) {
+        if (!a || !b) return 0;
+        return EXP[LOG[a] + LOG[b]];
+    }
+
+    /* ===== Reed-Solomon ===== */
+    function rsGenPoly(degree) {
+        var poly = [1];
+        for (var i = 0; i < degree; i++) {
+            var next = [];
+            for (var k = 0; k <= poly.length; k++) next.push(0);
+            for (var j = 0; j < poly.length; j++) {
+                next[j + 1] ^= poly[j];
+                next[j] ^= gfMul(poly[j], EXP[i]);
+            }
+            poly = next;
         }
+        return poly.reverse();
+    }
 
-        (function initTheme() {
-            var saved = localStorage.getItem('darkTheme');
-            if (saved === '1') document.body.classList.add('dark');
-            else if (saved === '0') document.body.classList.remove('dark');
-            else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
-                document.body.classList.add('dark');
-        })();
-
-        /* ===== Сворачивание разделов ===== */
-        function toggleSection(id, el) {
-            var section = document.getElementById(id);
-            var arrow = el.querySelector('.arrow');
-            if (section.classList.contains('collapsed')) {
-                section.style.maxHeight = section.scrollHeight + 'px';
-                section.classList.remove('collapsed');
-                section.classList.add('expanded');
-                arrow.classList.remove('collapsed');
-                setTimeout(function() { section.style.maxHeight = 'none'; }, 200);
-            } else {
-                section.style.maxHeight = section.scrollHeight + 'px';
-                section.offsetHeight;
-                section.classList.add('collapsed');
-                section.classList.remove('expanded');
-                arrow.classList.add('collapsed');
-                section.style.maxHeight = '0px';
+    function rsEncode(data, ecLen) {
+        var gen = rsGenPoly(ecLen);
+        var buf = data.slice();
+        for (var i = 0; i < ecLen; i++) buf.push(0);
+        for (var i = 0; i < data.length; i++) {
+            var coef = buf[i];
+            if (coef) {
+                for (var j = 0; j < gen.length; j++)
+                    buf[i + j] ^= gfMul(gen[j], coef);
             }
         }
+        return buf.slice(data.length);
+    }
 
-        /* ===== Парсинг чисел ===== */
-        function parseNum(str) {
-            if (!str) return NaN;
-            return parseFloat(String(str).replace(',', '.'));
-        }
+    /* ===== RS Block Table ===== */
+    var RST = [
+        [1,26,19],[1,26,16],[1,26,13],[1,26,9],
+        [1,44,34],[1,44,28],[1,44,22],[1,44,16],
+        [1,70,55],[1,70,44],[2,35,17],[2,35,13],
+        [1,100,80],[2,50,32],[2,50,24],[4,25,9],
+        [1,134,108],[2,67,43],[2,67,33],[2,67,17],
+        [2,86,68],[4,43,27],[4,43,21],[4,43,12],
+        [2,98,78],[4,49,31],[2,49,24,2,50,25],[4,31,14,1,32,15],
+        [2,121,97],[2,60,38,2,61,39],[4,58,31,2,59,32],[4,38,18,2,39,19],
+        [2,152,116],[3,58,36,2,59,37],[4,69,36,4,70,37],[4,36,16,2,37,17],
+        [2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,19,1,44,20],
+        [2,98,78,2,99,79],[1,80,50,4,81,51],[4,81,43,4,82,44],[3,45,20,7,46,21],
+        [2,121,97,2,122,98],[6,58,36,2,59,37],[8,43,19,2,44,20],[7,45,20,5,46,21],
+        [2,152,116,2,153,117],[8,59,37,1,60,38],[11,45,20,2,46,21],[8,45,20,4,46,21],
+        [3,114,86,1,115,87],[4,64,40,5,65,41],[11,45,20,4,46,21],[11,45,20,4,46,21],
+        [3,144,112,1,145,113],[5,65,41,5,66,42],[5,80,40,5,81,41],[13,45,20,4,46,21],
+        [3,154,122,2,155,123],[7,73,45,3,74,46],[11,55,24,5,56,25],[17,45,20,4,46,21],
+        [4,130,100,4,131,101],[10,74,46,1,75,47],[11,55,24,7,56,25],[5,45,20,10,46,21],
+        [4,132,102,2,133,103],[9,69,43,4,70,44],[17,55,24,1,56,25],[13,45,20,6,46,21],
+        [4,144,112,4,145,113],[3,70,44,11,71,45],[17,67,27,4,68,28],[3,45,20,16,46,21],
+        [4,154,122,3,155,123],[3,67,41,13,68,42],[15,67,27,5,68,28],[20,45,20,7,46,21],
+        [5,130,100,5,131,101],[17,68,42,0,0],[17,74,38,1,75,39],[19,45,20,10,46,21],
+        [5,144,112,4,145,113],[17,74,46,0,0],[7,84,42,13,85,43],[34,45,20,4,46,21],
+        [6,154,122,3,155,123],[4,75,47,14,76,48],[11,84,42,7,85,43],[16,45,20,14,46,21],
+        [4,130,100,12,131,101],[6,73,45,14,74,46],[13,84,42,8,85,43],[30,45,20,6,46,21],
+        [6,154,122,7,155,123],[8,75,47,13,76,48],[4,85,42,22,86,43],[22,45,20,13,46,21],
+        [8,132,102,4,133,103],[19,74,46,4,75,47],[20,85,42,13,86,43],[33,45,20,12,46,21],
+        [8,154,122,7,155,123],[22,73,45,3,74,46],[10,85,42,23,86,43],[12,45,20,26,46,21],
+        [6,154,122,14,155,123],[3,73,45,23,74,46],[28,85,42,8,86,43],[11,45,20,28,46,21],
+        [17,152,122,4,153,123],[21,73,45,7,74,46],[17,85,42,14,86,43],[19,45,20,21,46,21],
+        [17,152,122,6,153,123],[19,74,46,10,75,47],[10,85,42,23,86,43],[23,45,20,25,46,21],
+        [34,122,94],[2,74,46,29,75,47],[14,85,42,11,86,43],[23,45,20,28,46,21],
+        [30,142,114,18,143,115],[10,74,46,23,75,47],[14,85,42,11,86,43],[19,45,20,35,46,21],
+        [28,152,122,22,153,123],[14,74,46,21,75,47],[12,85,42,19,86,43],[11,45,20,46,46,21],
+        [30,152,122,26,153,123],[14,74,46,23,75,47],[6,85,42,29,86,43],[59,46,21,1,47,22],
+        [28,152,122,28,153,123],[12,75,47,25,76,48],[28,85,42,8,86,43],[22,45,20,41,46,21],
+        [28,152,122,30,153,123],[6,75,47,34,76,48],[20,85,42,22,86,43],[2,45,20,64,46,21],
+        [28,152,122,32,153,123],[29,74,46,14,75,47],[24,85,42,12,86,43],[24,45,20,46,46,21],
+        [28,152,122,34,153,123],[13,74,46,32,75,47],[8,85,42,26,86,43],[42,45,20,32,46,21],
+        [28,152,122,36,153,123],[40,75,47,7,76,48],[33,85,42,15,86,43],[10,45,20,67,46,21],
+        [28,152,122,38,153,123],[18,75,47,31,76,48],[18,85,42,22,86,43],[20,45,20,61,46,21]
+    ];
 
-        /* ===== Калькулятор 1: Короба ===== */
-        var L = 120, W = 80;
-
-        function n(zw, zh, bw, bh) {
-            return Math.floor(zw / bw) * Math.floor(zh / bh);
-        }
-
-        function pts(total, d1, d2) {
-            var s = {};
-            var o = [];
-            for (var k = 1; k * d1 <= total; k++) s[k * d1] = 1;
-            for (var k = 1; k * d2 <= total; k++) s[k * d2] = 1;
-            for (var k = 0; k * d1 < total; k++) s[total - k * d1] = 1;
-            for (var k = 0; k * d2 < total; k++) s[total - k * d2] = 1;
-            for (var p in s) {
-                var v = +p;
-                if (v > 0 && v < total) o.push(v);
+    function getRSBlocks(version, ecIdx) {
+        var entry = RST[(version - 1) * 4 + ecIdx];
+        var blocks = [];
+        for (var i = 0; i < entry.length; i += 3) {
+            for (var j = 0; j < entry[i]; j++) {
+                blocks.push({ total: entry[i+1], data: entry[i+2], ec: entry[i+1] - entry[i+2] });
             }
-            return o.sort(function(x,y){ return x-y; });
+        }
+        return blocks;
+    }
+
+    /* ===== Bit Buffer ===== */
+    function BB() { this.buf = []; this.len = 0; }
+    BB.prototype.put = function(v, n) {
+        for (var i = n - 1; i >= 0; i--) this.putBit((v >>> i) & 1);
+    };
+    BB.prototype.putBit = function(b) {
+        var idx = Math.floor(this.len / 8);
+        if (this.buf.length <= idx) this.buf.push(0);
+        if (b) this.buf[idx] |= (0x80 >>> (this.len % 8));
+        this.len++;
+    };
+
+    /* ===== UTF-8 ===== */
+    function utf8(s) {
+        var out = [];
+        for (var i = 0; i < s.length; i++) {
+            var c = s.charCodeAt(i);
+            if (c < 0x80) out.push(c);
+            else if (c < 0x800) out.push(0xC0|(c>>6), 0x80|(c&0x3F));
+            else if (c < 0xD800 || c >= 0xE000) out.push(0xE0|(c>>12), 0x80|((c>>6)&0x3F), 0x80|(c&0x3F));
+            else {
+                i++;
+                var cp = 0x10000 + (((c&0x3FF)<<10)|(s.charCodeAt(i)&0x3FF));
+                out.push(0xF0|(cp>>18), 0x80|((cp>>12)&0x3F), 0x80|((cp>>6)&0x3F), 0x80|(cp&0x3F));
+            }
+        }
+        return out;
+    }
+
+    /* ===== BCH ===== */
+    function bchD(d){var n=0;while(d){n++;d>>>=1;}return n;}
+    function bchTI(data) {
+        var d = data << 10;
+        while (bchD(d) - bchD(0x537) >= 0) d ^= 0x537 << (bchD(d) - bchD(0x537));
+        return ((data << 10) | d) ^ 0x5412;
+    }
+    function bchTN(data) {
+        var d = data << 12;
+        while (bchD(d) - bchD(0x1F25) >= 0) d ^= 0x1F25 << (bchD(d) - bchD(0x1F25));
+        return (data << 12) | d;
+    }
+
+    /* ===== Pattern positions ===== */
+    var PAT = [
+        [],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],
+        [6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],
+        [6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],
+        [6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],
+        [6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],
+        [6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],
+        [6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],
+        [6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],
+        [6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],
+        [6,30,58,86,114,142,170]
+    ];
+
+    /* ===== Masks ===== */
+    function mFn(p,i,j) {
+        switch(p) {
+            case 0: return (i+j)%2==0;
+            case 1: return i%2==0;
+            case 2: return j%3==0;
+            case 3: return (i+j)%3==0;
+            case 4: return (Math.floor(i/2)+Math.floor(j/3))%2==0;
+            case 5: return (i*j)%2+(i*j)%3==0;
+            case 6: return ((i*j)%2+(i*j)%3)%2==0;
+            case 7: return ((i*j)%3+(i+j)%2)%2==0;
+        }
+    }
+
+    /* ===== Penalty ===== */
+    function penalty(m, mc) {
+        var lost = 0;
+        for (var r = 0; r < mc; r++) for (var c = 0; c < mc; c++) {
+            var s = 0, d = m[r][c];
+            for (var dr = -1; dr <= 1; dr++) for (var dc = -1; dc <= 1; dc++) {
+                if (r+dr<0||r+dr>=mc||c+dc<0||c+dc>=mc||(dr==0&&dc==0)) continue;
+                if (d == m[r+dr][c+dc]) s++;
+            }
+            if (s > 5) lost += 3 + s - 5;
+        }
+        for (var r = 0; r < mc-1; r++) for (var c = 0; c < mc-1; c++) {
+            var cnt = (m[r][c]?1:0)+(m[r+1][c]?1:0)+(m[r][c+1]?1:0)+(m[r+1][c+1]?1:0);
+            if (cnt==0||cnt==4) lost += 3;
+        }
+        for (var r = 0; r < mc; r++) for (var c = 0; c < mc-6; c++)
+            if (m[r][c]&&!m[r][c+1]&&m[r][c+2]&&m[r][c+3]&&m[r][c+4]&&!m[r][c+5]&&m[r][c+6]) lost+=40;
+        for (var c = 0; c < mc; c++) for (var r = 0; r < mc-6; r++)
+            if (m[r][c]&&!m[r+1][c]&&m[r+2][c]&&m[r+3][c]&&m[r+4][c]&&!m[r+5][c]&&m[r+6][c]) lost+=40;
+        var dark = 0;
+        for (var r = 0; r < mc; r++) for (var c = 0; c < mc; c++) if (m[r][c]) dark++;
+        lost += Math.abs(100*dark/mc/mc - 50)/5*10;
+        return lost;
+    }
+
+    /* ===== Build QR ===== */
+    function build(text, ecLevel) {
+        var ecMap = { L:0, M:1, Q:2, H:3 };
+        var ecIdx = ecMap[ecLevel] !== undefined ? ecMap[ecLevel] : 1;
+        var ecBits = { L:1, M:0, Q:3, H:2 };
+        var ecVal = ecBits[ecLevel] !== undefined ? ecBits[ecLevel] : 0;
+        var data = utf8(text);
+
+        // Find version
+        var ver = 0;
+        for (var t = 1; t <= 40; t++) {
+            var blks = getRSBlocks(t, ecIdx);
+            var totalData = 0;
+            for (var i = 0; i < blks.length; i++) totalData += blks[i].data;
+            var lenBits = t < 10 ? 8 : 16;
+            var needed = 4 + lenBits + data.length * 8;
+            if (needed <= totalData * 8) { ver = t; break; }
+        }
+        if (!ver) throw new Error('Данные слишком длинные');
+
+        var blocks = getRSBlocks(ver, ecIdx);
+        var mc = ver * 4 + 17;
+
+        // Build data stream
+        var buf = new BB();
+        buf.put(4, 4); // byte mode
+        buf.put(data.length, ver < 10 ? 8 : 16);
+        for (var i = 0; i < data.length; i++) buf.put(data[i], 8);
+        var totalData = 0;
+        for (var i = 0; i < blocks.length; i++) totalData += blocks[i].data;
+        if (buf.len + 4 <= totalData * 8) buf.put(0, 4);
+        while (buf.len % 8) buf.putBit(0);
+        var pad = [0xEC, 0x11], pi = 0;
+        while (buf.len < totalData * 8) buf.put(pad[pi++ % 2], 8);
+
+        // Split into RS blocks
+        var allData = buf.buf;
+        var dcB = [], ecB = [], off = 0;
+        for (var i = 0; i < blocks.length; i++) {
+            var d = allData.slice(off, off + blocks[i].data);
+            off += blocks[i].data;
+            dcB.push(d);
+            ecB.push(rsEncode(d, blocks[i].ec));
         }
 
-        function best(bl, bw) {
-            var o = [{w:bl,h:bw},{w:bw,h:bl}];
-            var bc = 0, cfg;
-            function t(c, x) { if (c > bc) { bc = c; cfg = x; } }
+        // Interleave
+        var maxD = 0, maxE = 0;
+        for (var i = 0; i < blocks.length; i++) {
+            if (dcB[i].length > maxD) maxD = dcB[i].length;
+            if (ecB[i].length > maxE) maxE = ecB[i].length;
+        }
+        var cw = [];
+        for (var i = 0; i < maxD; i++) for (var j = 0; j < blocks.length; j++)
+            if (i < dcB[j].length) cw.push(dcB[j][i]);
+        for (var i = 0; i < maxE; i++) for (var j = 0; j < blocks.length; j++)
+            if (i < ecB[j].length) cw.push(ecB[j][i]);
 
-            for (var i = 0; i < 2; i++) t(n(L,W,o[i].w,o[i].h), {t:'s',o:[i]});
+        // Build modules
+        function makeMat(mask) {
+            var m = [];
+            for (var r = 0; r < mc; r++) {
+                m[r] = [];
+                for (var c = 0; c < mc; c++) m[r][c] = null;
+            }
 
-            var xp = pts(L, bl, bw), yp = pts(W, bl, bw);
+            // Finder patterns
+            function probe(row, col) {
+                for (var r = -1; r <= 7; r++) {
+                    if (row+r<0||row+r>=mc) continue;
+                    for (var c = -1; c <= 7; c++) {
+                        if (col+c<0||col+c>=mc) continue;
+                        if ((r>=0&&r<=6&&(c==0||c==6))||(c>=0&&c<=6&&(r==0||r==6))||(r>=2&&r<=4&&c>=2&&c<=4))
+                            m[row+r][col+c] = true;
+                        else
+                            m[row+r][col+c] = false;
+                    }
+                }
+            }
+            probe(0,0); probe(mc-7,0); probe(0,mc-7);
 
-            for (var s of xp) for (var i = 0; i < 2; i++) for (var j = 0; j < 2; j++)
-                t(n(s,W,o[i].w,o[i].h) + n(L-s,W,o[j].w,o[j].h), {t:'v2',s:[s],o:[i,j]});
+            // Alignment
+            var pos = PAT[ver-1] || [];
+            for (var i = 0; i < pos.length; i++) for (var j = 0; j < pos.length; j++) {
+                var row = pos[i], col = pos[j];
+                if (m[row][col] != null) continue;
+                for (var r = -2; r <= 2; r++) for (var c = -2; c <= 2; c++)
+                    m[row+r][col+c] = (r==-2||r==2||c==-2||c==2||(r==0&&c==0));
+            }
 
-            for (var s of yp) for (var i = 0; i < 2; i++) for (var j = 0; j < 2; j++)
-                t(n(L,s,o[i].w,o[i].h) + n(L,W-s,o[j].w,o[j].h), {t:'h2',s:[s],o:[i,j]});
+            // Timing
+            for (var r = 8; r < mc-8; r++) if (m[r][6]==null) m[r][6] = (r%2==0);
+            for (var c = 8; c < mc-8; c++) if (m[6][c]==null) m[6][c] = (c%2==0);
 
-            for (var xs of xp) for (var ys of yp) for (var i = 0; i < 2; i++) for (var j = 0; j < 2; j++) for (var k = 0; k < 2; k++) for (var l = 0; l < 2; l++)
+            // Dark module
+            m[mc-8][8] = true;
+
+            // Format info
+            var fi = bchTI((ecVal << 3) | mask);
+            for (var i = 0; i < 15; i++) {
+                var mod = ((fi >> i) & 1) == 1;
+                if (i < 6) m[i][8] = mod;
+                else if (i < 8) m[i+1][8] = mod;
+                else m[mc-15+i][8] = mod;
+            }
+            for (var i = 0; i < 15; i++) {
+                var mod = ((fi >> i) & 1) == 1;
+                if (i < 8) m[8][mc-i-1] = mod;
+                else if (i < 9) m[8][15-i-1+1] = mod;
+                else m[8][15-i-1] = mod;
+            }
+
+            // Version info (ver >= 7)
+            if (ver >= 7) {
+                var vn = bchTN(ver);
+                for (var i = 0; i < 18; i++) {
+                    var mod = ((vn >> i) & 1) == 1;
+                    m[Math.floor(i/3)][i%3+mc-8-3] = mod;
+                }
+                for (var i = 0; i < 18; i++) {
+                    var mod = ((vn >> i) & 1) == 1;
+                    m[i%3+mc-8-3][Math.floor(i/3)] = mod;
+                }
+            }
+
+            // Map data
+            var inc = -1, row = mc-1, bitIdx = 7, byteIdx = 0;
+            for (var col = mc-1; col > 0; col -= 2) {
+                if (col == 6) col--;
+                while (true) {
+                    for (var c = 0; c < 2; c++) {
+                        if (m[row][col-c] == null) {
+                            var dark = false;
+                            if (byteIdx < cw.length)
+                                dark = ((cw[byteIdx] >>> bitIdx) & 1) == 1;
+                            if (mFn(mask, row, col-c)) dark = !dark;
+                            m[row][col-c] = dark;
+                            bitIdx--;
+                            if (bitIdx == -1) { byteIdx++; bitIdx = 7; }
+                        }
+                    }
+                    row += inc;
+                    if (row < 0 || row >= mc) { row -= inc; inc = -inc; break; }
+                }
+            }
+
+            return m;
+        }
+
+        // Pick best mask
+        var bestMask = 0, bestPen = Infinity;
+        for (var mask = 0; mask < 8; mask++) {
+            var mm = makeMat(mask);
+            var p = penalty(mm, mc);
+            if (p < bestPen) { bestPen = p; bestMask = mask; }
+        }
+
+        var final = makeMat(bestMask);
+        return {
+            getModuleCount: function() { return mc; },
+            isDark: function(r, c) { return !!final[r][c]; }
+        };
+    }
+
+    /* ===== Public ===== */
+    return {
+        create: build,
+        render: function(canvas, text, ecLevel, scale) {
+            var qr = build(text, ecLevel || 'M');
+            var count = qr.getModuleCount();
+            var qz = 8; // quiet zone
+            var total = count + qz * 2;
+            var px = scale || 8;
+            canvas.width = total * px;
+            canvas.height = total * px;
+            var ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#000';
+            for (var r = 0; r < count; r++)
+                for (var c = 0; c < count; c++)
+                    if (qr.isDark(r, c))
+                        ctx.fillRect((c + qz) * px, (r + qz) * px, px, px);
+        }
+    };
+})();
+</script>
+
+<!-- ===== ПРИЛОЖЕНИЕ ===== -->
+<script>
+    /* ===== Тема ===== */
+    function toggleTheme() {
+        document.body.classList.toggle('dark');
+        localStorage.setItem('darkTheme', document.body.classList.contains('dark') ? '1' : '0');
+    }
+    (function() {
+        var saved = localStorage.getItem('darkTheme');
+        if (saved === '1') document.body.classList.add('dark');
+        else if (saved === '0') document.body.classList.remove('dark');
+        else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+            document.body.classList.add('dark');
+    })();
+
+    /* ===== Сворачивание ===== */
+    function toggleSection(id, el) {
+        var section = document.getElementById(id);
+        var arrow = el.querySelector('.arrow');
+        if (section.classList.contains('collapsed')) {
+            section.style.maxHeight = section.scrollHeight + 'px';
+            section.classList.remove('collapsed');
+            section.classList.add('expanded');
+            arrow.classList.remove('collapsed');
+            setTimeout(function() { section.style.maxHeight = 'none'; }, 200);
+        } else {
+            section.style.maxHeight = section.scrollHeight + 'px';
+            section.offsetHeight;
+            section.classList.add('collapsed');
+            section.classList.remove('expanded');
+            arrow.classList.add('collapsed');
+            section.style.maxHeight = '0px';
+        }
+    }
+
+    /* ===== Парсинг ===== */
+    function parseNum(s) {
+        if (!s) return NaN;
+        return parseFloat(String(s).replace(',', '.'));
+    }
+    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+    /* ===== Калькулятор 1 ===== */
+    var L = 120, W = 80;
+
+    function n(zw, zh, bw, bh) {
+        return Math.floor(zw / bw) * Math.floor(zh / bh);
+    }
+
+    function pts(total, d1, d2) {
+        var s = {}, o = [];
+        for (var k = 1; k * d1 <= total; k++) s[k * d1] = 1;
+        for (var k = 1; k * d2 <= total; k++) s[k * d2] = 1;
+        for (var k = 0; k * d1 < total; k++) s[total - k * d1] = 1;
+        for (var k = 0; k * d2 < total; k++) s[total - k * d2] = 1;
+        for (var p in s) { var v = +p; if (v > 0 && v < total) o.push(v); }
+        return o.sort(function(a, b) { return a - b; });
+    }
+
+    function best(bl, bw) {
+        var o = [{w:bl,h:bw},{w:bw,h:bl}];
+        var bc = 0, cfg;
+        function t(c, x) { if (c > bc) { bc = c; cfg = x; } }
+
+        for (var i = 0; i < 2; i++) t(n(L,W,o[i].w,o[i].h), {t:'s'});
+
+        var xp = pts(L, bl, bw), yp = pts(W, bl, bw);
+
+        for (var s of xp) for (var i = 0; i < 2; i++) for (var j = 0; j < 2; j++)
+            t(n(s,W,o[i].w,o[i].h) + n(L-s,W,o[j].w,o[j].h), {t:'v2'});
+
+        for (var s of yp) for (var i = 0; i < 2; i++) for (var j = 0; j < 2; j++)
+            t(n(L,s,o[i].w,o[i].h) + n(L,W-s,o[j].w,o[j].h), {t:'h2'});
+
+        for (var xs of xp) for (var ys of yp)
+            for (var i = 0; i < 2; i++) for (var j = 0; j < 2; j++)
+            for (var k = 0; k < 2; k++) for (var l = 0; l < 2; l++)
                 t(n(xs,ys,o[i].w,o[i].h) + n(L-xs,ys,o[j].w,o[j].h) +
-                  n(xs,W-ys,o[k].w,o[k].h) + n(L-xs,W-ys,o[l].w,o[l].h), {t:'x',s:[xs,ys],o:[i,j,k,l]});
+                  n(xs,W-ys,o[k].w,o[k].h) + n(L-xs,W-ys,o[l].w,o[l].h), {t:'x'});
 
-            var names = { s:'Обычная', v2:'Смешанная (верт.)', h2:'Смешанная (гориз.)', x:'Смешанная' };
-            return { total: bc, type: names[cfg ? cfg.t : 's'] };
+        var names = { s:'Обычная', v2:'Смешанная (верт.)', h2:'Смешанная (гориз.)', x:'Смешанная' };
+        return { total: bc, type: names[cfg ? cfg.t : 's'] };
+    }
+
+    function calc() {
+        var bl = parseNum(document.getElementById('boxL').value);
+        var bw = parseNum(document.getElementById('boxW').value);
+        var el1 = document.getElementById('boxL'), el2 = document.getElementById('boxW');
+        el1.classList.remove('err'); el2.classList.remove('err');
+
+        if (!bl || bl <= 0) { el1.classList.add('err'); el1.focus(); fail(); return; }
+        if (!bw || bw <= 0) { el2.classList.add('err'); el2.focus(); fail(); return; }
+
+        var r = best(bl, bw);
+        if (!r.total) { el1.classList.add('err'); el2.classList.add('err'); fail(); return; }
+
+        document.getElementById('err').classList.remove('show');
+        var res = document.getElementById('result');
+        res.classList.add('show');
+        document.getElementById('count').textContent = r.total;
+        document.getElementById('fill').textContent = ((r.total*bl*bw)/(L*W)*100).toFixed(1)+'%';
+        document.getElementById('dims').textContent = 'Коробка ' + bl + ' × ' + bw + ' см';
+        res.scrollIntoView({behavior:'smooth'});
+        saveToHistory('boxes', bl+' × '+bw, r.total+' шт.', {bl:bl,bw:bw});
+    }
+
+    function fail() {
+        document.getElementById('err').textContent = '7 раз отмерь — 1 раз введи';
+        document.getElementById('err').classList.add('show');
+        document.getElementById('result').classList.remove('show');
+    }
+
+    /* ===== Калькулятор 2 ===== */
+    function initShelfSelects() {
+        var d = document.getElementById('mfgDay');
+        var m = document.getElementById('mfgMonth');
+        var y = document.getElementById('mfgYear');
+        d.innerHTML = '<option value="">День</option>';
+        for (var i = 1; i <= 31; i++) d.innerHTML += '<option value="'+i+'">'+i+'</option>';
+        m.innerHTML = '<option value="">Месяц</option>';
+        for (var i = 1; i <= 12; i++) m.innerHTML += '<option value="'+i+'">'+i+'</option>';
+        y.innerHTML = '<option value="">Год</option>';
+        var now = new Date();
+        for (var i = now.getFullYear(); i > now.getFullYear()-10; i--)
+            y.innerHTML += '<option value="'+i+'">'+i+'</option>';
+    }
+
+    function calcShelf() {
+        var d = +document.getElementById('mfgDay').value;
+        var m = +document.getElementById('mfgMonth').value;
+        var y = +document.getElementById('mfgYear').value;
+        var qty = parseInt(document.getElementById('shelfLife').value);
+        var unit = +document.getElementById('shelfUnit').value;
+
+        if (!d||!m||!y) { shelfErr('Укажите дату производства'); return; }
+        if (!qty||qty<=0) { shelfErr('Укажите срок годности'); return; }
+
+        document.getElementById('shelfErr').classList.remove('show');
+        var mfg = new Date(y, m-1, d);
+        if (mfg.getDate()!==d||mfg.getMonth()!==m-1) { shelfErr('Неверная дата'); return; }
+
+        var exp = new Date(mfg);
+        var unitText = document.getElementById('shelfUnit').selectedOptions[0].text;
+
+        if (unit===30) exp.setMonth(exp.getMonth()+qty);
+        else if (unit===365) exp.setFullYear(exp.getFullYear()+qty);
+        else exp.setDate(exp.getDate()+qty*unit);
+
+        var now = new Date(); now.setHours(0,0,0,0);
+        var expMid = new Date(exp); expMid.setHours(0,0,0,0);
+        var diff = Math.round((expMid-now)/86400000);
+        var total = Math.round((expMid-mfg)/86400000);
+
+        document.getElementById('shelfResult').classList.add('show');
+        document.getElementById('expiryDate').textContent = fmtDate(exp);
+        var el = document.getElementById('daysLeft');
+        el.className = 'left-out';
+
+        if (diff<0) {
+            el.textContent = 'Просрочено на '+fmtDays(-diff);
+            el.classList.add('red');
+        } else if (diff===0) {
+            el.textContent = 'Истекает сегодня';
+            el.classList.add('orange');
+        } else {
+            var pct = total>0 ? Math.round(diff/total*100) : 0;
+            el.textContent = 'Осталось '+fmtDays(diff)+' ('+pct+'%)';
+            el.classList.add(pct>20?'green':'orange');
         }
 
-        function calc() {
-            var bl = parseNum(document.getElementById('boxL').value);
-            var bw = parseNum(document.getElementById('boxW').value);
-            var el1 = document.getElementById('boxL'), el2 = document.getElementById('boxW');
-            el1.classList.remove('err'); el2.classList.remove('err');
+        saveToHistory('shelf', d+'.'+pad(m)+'.'+y+' + '+qty+' '+unitText, fmtDate(exp),
+            {d:d,m:m,y:y,qty:qty,unit:unit});
+    }
 
-            if (!bl || bl <= 0) { el1.classList.add('err'); el1.focus(); fail(); return; }
-            if (!bw || bw <= 0) { el2.classList.add('err'); el2.focus(); fail(); return; }
+    function shelfErr(msg) {
+        document.getElementById('shelfErr').textContent = msg;
+        document.getElementById('shelfErr').classList.add('show');
+        document.getElementById('shelfResult').classList.remove('show');
+    }
 
-            var r = best(bl, bw);
-            if (!r.total) { el1.classList.add('err'); el2.classList.add('err'); fail(); return; }
+    function fmtDate(dt) {
+        return pad(dt.getDate())+'.'+pad(dt.getMonth()+1)+'.'+dt.getFullYear();
+    }
 
-            document.getElementById('err').classList.remove('show');
-            var res = document.getElementById('result');
-            res.classList.add('show');
-            document.getElementById('count').textContent = r.total;
-            document.getElementById('fill').textContent = ((r.total*bl*bw)/(L*W)*100).toFixed(1) + '%';
-            document.getElementById('dims').textContent = 'Коробка ' + bl + ' × ' + bw + ' см';
-            res.scrollIntoView({behavior:'smooth'});
-            saveToHistory('boxes', bl + ' × ' + bw, r.total + ' шт.', {bl:bl, bw:bw});
-        }
+    function fmtDays(n) {
+        if (n===0) return '0 дней';
+        var l1=n%10, l2=n%100;
+        if (l1===1&&l2!==11) return n+' день';
+        if (l1>=2&&l1<=4&&(l2<12||l2>14)) return n+' дня';
+        return n+' дней';
+    }
 
-        function fail() {
-            document.getElementById('err').textContent = '7 раз отмерь — 1 раз введи';
-            document.getElementById('err').classList.add('show');
-            document.getElementById('result').classList.remove('show');
-        }
+    /* ===== Калькулятор 3: QR ===== */
+    function togglePrefixInput() {
+        var cb = document.getElementById('prefixCheck');
+        document.getElementById('prefixWrap').classList.toggle('show', cb.checked);
+    }
 
-        /* ===== Калькулятор 2: Сроки годности ===== */
-        function initShelfSelects() {
-            var daySel = document.getElementById('mfgDay');
-            var monthSel = document.getElementById('mfgMonth');
-            var yearSel = document.getElementById('mfgYear');
-            daySel.innerHTML = '<option value="">День</option>';
-            for (var d = 1; d <= 31; d++) daySel.innerHTML += '<option value="'+d+'">'+d+'</option>';
-            monthSel.innerHTML = '<option value="">Месяц</option>';
-            for (var m = 1; m <= 12; m++) monthSel.innerHTML += '<option value="'+m+'">'+m+'</option>';
-            yearSel.innerHTML = '<option value="">Год</option>';
-            var now = new Date();
-            for (var y = now.getFullYear(); y > now.getFullYear() - 10; y--)
-                yearSel.innerHTML += '<option value="'+y+'">'+y+'</option>';
-        }
+    function calcQR() {
+        var raw = document.getElementById('qrInput').value.trim();
+        if (!raw) { qrFail('Введите текст'); return; }
 
-        function calcShelf() {
-            var d = +document.getElementById('mfgDay').value;
-            var m = +document.getElementById('mfgMonth').value;
-            var y = +document.getElementById('mfgYear').value;
-            var qty = parseInt(document.getElementById('shelfLife').value);
-            var unit = +document.getElementById('shelfUnit').value;
+        var parts = raw.split(/\s+/).filter(Boolean);
+        if (!parts.length) { qrFail('Введите текст'); return; }
 
-            if (!d || !m || !y) { showShelfErr('Укажите дату производства'); return; }
-            if (!qty || qty <= 0) { showShelfErr('Укажите срок годности'); return; }
+        var usePrefix = document.getElementById('prefixCheck').checked;
+        var prefix = usePrefix ? document.getElementById('prefixVal').value.trim() : '';
+        var ecLevel = document.getElementById('qrEcLevel').value;
 
-            document.getElementById('shelfErr').classList.remove('show');
-            var mfg = new Date(y, m - 1, d);
-            if (mfg.getDate() !== d || mfg.getMonth() !== m-1) { showShelfErr('Неверная дата'); return; }
+        var grid = document.getElementById('qrGrid');
+        grid.innerHTML = '';
+        document.getElementById('qrErr').classList.remove('show');
 
-            var expiry = new Date(mfg);
-            var unitText = document.getElementById('shelfUnit').selectedOptions[0].text;
-
-            if (unit === 30) expiry.setMonth(expiry.getMonth() + qty);
-            else if (unit === 365) expiry.setFullYear(expiry.getFullYear() + qty);
-            else expiry.setDate(expiry.getDate() + qty * unit);
-
-            var now = new Date();
-            now.setHours(0,0,0,0);
-            var expMid = new Date(expiry); expMid.setHours(0,0,0,0);
-            var diff = Math.round((expMid - now) / 86400000);
-            var total = Math.round((expMid - mfg) / 86400000);
-
-            document.getElementById('shelfResult').classList.add('show');
-            document.getElementById('expiryDate').textContent = fmtDate(expiry);
-            var el = document.getElementById('daysLeft');
-            el.className = 'left-out';
-
-            if (diff < 0) {
-                el.textContent = 'Просрочено на ' + fmtDays(-diff);
-                el.classList.add('red');
-            } else if (diff === 0) {
-                el.textContent = 'Истекает сегодня';
-                el.classList.add('orange');
-            } else {
-                var pct = total > 0 ? Math.round(diff / total * 100) : 0;
-                el.textContent = 'Осталось ' + fmtDays(diff) + ' (' + pct + '%)';
-                el.classList.add(pct > 20 ? 'green' : 'orange');
+        try {
+            for (var i = 0; i < parts.length; i++) {
+                var text = parts[i] + prefix;
+                var item = document.createElement('div');
+                item.className = 'qr-item';
+                var canvas = document.createElement('canvas');
+                qrcode.render(canvas, text, ecLevel, 8);
+                item.appendChild(canvas);
+                var label = document.createElement('div');
+                label.className = 'qr-text';
+                label.textContent = text;
+                item.appendChild(label);
+                grid.appendChild(item);
             }
-
-            saveToHistory('shelf', d + '.' + pad(m) + '.' + y + ' + ' + qty + ' ' + unitText, fmtDate(expiry), {
-                d:d, m:m, y:y, qty:qty, unit:unit
-            });
+        } catch(e) {
+            qrFail('Ошибка: ' + e.message);
+            return;
         }
 
-        function showShelfErr(msg) {
-            document.getElementById('shelfErr').textContent = msg;
-            document.getElementById('shelfErr').classList.add('show');
-            document.getElementById('shelfResult').classList.remove('show');
-        }
+        document.getElementById('qrResultLabel').textContent = 'QR-коды ('+parts.length+' шт.)';
+        document.getElementById('qrResult').classList.add('show');
+        document.getElementById('qrResult').scrollIntoView({behavior:'smooth'});
+        saveToHistory('qr', raw.substring(0,50)+(raw.length>50?'...':''), parts.length+' QR',
+            {raw:raw, prefix:prefix, ec:ecLevel});
+    }
 
-        function fmtDate(dt) {
-            return pad(dt.getDate()) + '.' + pad(dt.getMonth()+1) + '.' + dt.getFullYear();
-        }
+    function qrFail(msg) {
+        document.getElementById('qrErr').textContent = msg;
+        document.getElementById('qrErr').classList.add('show');
+        document.getElementById('qrResult').classList.remove('show');
+    }
 
-        function fmtDays(n) {
-            if (n === 0) return '0 дней';
-            var last1 = n % 10, last2 = n % 100;
-            if (last1 === 1 && last2 !== 11) return n + ' день';
-            if (last1 >= 2 && last1 <= 4 && (last2 < 12 || last2 > 14)) return n + ' дня';
-            return n + ' дней';
-        }
+    /* ===== История ===== */
+    var historyData = {boxes:[], shelf:[], qr:[]};
+    var currentTab = 'boxes';
+    var fromHistory = false;
 
-        function pad(n) { return n < 10 ? '0' + n : '' + n; }
-
-        /* ===== Калькулятор 3: QR ===== */
-        function togglePrefixInput() {
-            var cb = document.getElementById('prefixCheck');
-            document.getElementById('prefixWrap').classList.toggle('show', cb.checked);
-        }
-
-        function calcQR() {
-            var raw = document.getElementById('qrInput').value.trim();
-            if (!raw) { qrFail('Введите текст'); return; }
-
-            var parts = raw.split(/\s+/).filter(Boolean);
-            if (!parts.length) { qrFail('Введите текст'); return; }
-
-            var usePrefix = document.getElementById('prefixCheck').checked;
-            var prefix = usePrefix ? document.getElementById('prefixVal').value.trim() : '';
-
-            var grid = document.getElementById('qrGrid');
-            grid.innerHTML = '';
-            document.getElementById('qrErr').classList.remove('show');
-
-            try {
-                for (var i = 0; i < parts.length; i++) {
-                    var text = parts[i] + prefix;
-                    var item = document.createElement('div');
-                    item.className = 'qr-item';
-                    var canvas = document.createElement('canvas');
-                    qrcode.render(canvas, text, 6);
-                    item.appendChild(canvas);
-                    var label = document.createElement('div');
-                    label.className = 'qr-text';
-                    label.textContent = text;
-                    item.appendChild(label);
-                    grid.appendChild(item);
-                }
-            } catch(e) {
-                qrFail('Ошибка генерации: ' + e.message);
-                return;
-            }
-
-            document.getElementById('qrResultLabel').textContent = 'QR-коды (' + parts.length + ' шт.)';
-            document.getElementById('qrResult').classList.add('show');
-            document.getElementById('qrResult').scrollIntoView({behavior:'smooth'});
-            saveToHistory('qr', raw.substring(0,50) + (raw.length>50?'...':''), parts.length + ' QR', {raw:raw, prefix:prefix});
-        }
-
-        function qrFail(msg) {
-            document.getElementById('qrErr').textContent = msg;
-            document.getElementById('qrErr').classList.add('show');
-            document.getElementById('qrResult').classList.remove('show');
-        }
-
-        /* ===== История ===== */
-        var historyData = { boxes: [], shelf: [], qr: [] };
-        var currentTab = 'boxes';
-        var fromHistory = false;
-
-        function saveToHistory(type, input, result, data) {
-            if (fromHistory) { fromHistory = false; return; }
-            var arr = historyData[type];
-            arr.unshift({ input: input, result: result, data: data, date: new Date().toLocaleString('ru') });
-            if (arr.length > 15) arr.length = 15;
-            persistHistory();
-            renderHistory();
-        }
-
-        function persistHistory() {
-            try { localStorage.setItem('multitoolHistory', JSON.stringify(historyData)); } catch(e) {}
-        }
-
-        function loadHistory() {
-            try {
-                var s = localStorage.getItem('multitoolHistory');
-                if (s) historyData = JSON.parse(s);
-            } catch(e) {}
-        }
-
-        function renderHistory() {
-            var ul = document.getElementById('historyList');
-            ul.innerHTML = '';
-            var arr = historyData[currentTab] || [];
-            if (!arr.length) {
-                ul.innerHTML = '<li style="text-align:center;color:var(--text3);padding:20px">Пока пусто</li>';
-                return;
-            }
-            for (var i = 0; i < arr.length; i++) {
-                (function(idx) {
-                    var li = document.createElement('li');
-                    li.className = 'history-item';
-                    li.innerHTML = '<div class="h-input">' + escHtml(arr[idx].input) + '</div>' +
-                                   '<div class="h-result">' + escHtml(arr[idx].result) + '</div>' +
-                                   '<div class="h-date">' + escHtml(arr[idx].date) + '</div>';
-                    li.onclick = function() { restoreFromHistory(currentTab, arr[idx].data); };
-                    ul.appendChild(li);
-                })(i);
-            }
-        }
-
-        function escHtml(s) {
-            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        }
-
-        function restoreFromHistory(type, data) {
-            fromHistory = true;
-            if (type === 'boxes') {
-                document.getElementById('boxL').value = data.bl;
-                document.getElementById('boxW').value = data.bw;
-                calc();
-            } else if (type === 'shelf') {
-                document.getElementById('mfgDay').value = data.d;
-                document.getElementById('mfgMonth').value = data.m;
-                document.getElementById('mfgYear').value = data.y;
-                document.getElementById('shelfLife').value = data.qty;
-                document.getElementById('shelfUnit').value = data.unit;
-                calcShelf();
-            } else if (type === 'qr') {
-                document.getElementById('qrInput').value = data.raw;
-                document.getElementById('prefixCheck').checked = !!data.prefix;
-                document.getElementById('prefixVal').value = data.prefix || '';
-                togglePrefixInput();
-                calcQR();
-            }
-        }
-
-        function switchHistoryTab(tab) {
-            currentTab = tab;
-            document.getElementById('tabBoxes').classList.toggle('active', tab === 'boxes');
-            document.getElementById('tabShelf').classList.toggle('active', tab === 'shelf');
-            document.getElementById('tabQR').classList.toggle('active', tab === 'qr');
-            renderHistory();
-        }
-
-        function clearHistory() {
-            historyData = { boxes: [], shelf: [], qr: [] };
-            persistHistory();
-            renderHistory();
-        }
-
-        /* ===== Сохранение полей ===== */
-        function saveField(id, key) {
-            var el = document.getElementById(id);
-            el.addEventListener('input', function() {
-                localStorage.setItem(key, el.value);
-            });
-        }
-
-        function restoreFields() {
-            var fields = [
-                ['boxL','boxL'], ['boxW','boxW'],
-                ['shelfLife','shelfLife'],
-                ['qrInput','qrInput'], ['prefixVal','prefixVal']
-            ];
-            for (var i = 0; i < fields.length; i++) {
-                var el = document.getElementById(fields[i][0]);
-                if (el) {
-                    var v = localStorage.getItem(fields[i][1]);
-                    if (v !== null) el.value = v;
-                    saveField(fields[i][0], fields[i][1]);
-                }
-            }
-        }
-
-        /* ===== Прокрутка при фокусе ===== */
-        document.addEventListener('focusin', function(e) {
-            if (e.target.matches('input,select,textarea')) {
-                setTimeout(function() {
-                    e.target.scrollIntoView({behavior:'smooth', block:'center'});
-                }, 300);
-            }
-        });
-
-        /* ===== Enter ===== */
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter' && e.target.matches('input')) {
-                e.preventDefault();
-                var inputs = Array.from(document.querySelectorAll('input'));
-                var idx = inputs.indexOf(e.target);
-                if (idx > -1 && idx < inputs.length - 1) inputs[idx + 1].focus();
-                else if (e.target.id === 'boxW' || e.target.id === 'prefixVal') calc();
-            }
-        });
-
-        /* ===== Init ===== */
-        initShelfSelects();
-        loadHistory();
-        restoreFields();
+    function saveToHistory(type, input, result, data) {
+        if (fromHistory) { fromHistory = false; return; }
+        historyData[type].unshift({input:input, result:result, data:data, date:new Date().toLocaleString('ru')});
+        if (historyData[type].length > 15) historyData[type].length = 15;
+        try { localStorage.setItem('multitoolHistory', JSON.stringify(historyData)); } catch(e) {}
         renderHistory();
+    }
 
-        ['mfgDay','mfgMonth','mfgYear','shelfLife','shelfUnit'].forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) el.addEventListener('change', function() {
-                if (document.getElementById('shelfResult').classList.contains('show')) calcShelf();
+    function renderHistory() {
+        var ul = document.getElementById('historyList');
+        ul.innerHTML = '';
+        var arr = historyData[currentTab] || [];
+        if (!arr.length) {
+            ul.innerHTML = '<li style="text-align:center;color:var(--text3);padding:20px">Пока пусто</li>';
+            return;
+        }
+        arr.forEach(function(item, idx) {
+            var li = document.createElement('li');
+            li.className = 'history-item';
+            li.innerHTML = '<div class="h-input">'+escHtml(item.input)+'</div>'+
+                           '<div class="h-result">'+escHtml(item.result)+'</div>'+
+                           '<div class="h-date">'+escHtml(item.date)+'</div>';
+            li.onclick = function() { restoreFromHistory(currentTab, item.data); };
+            ul.appendChild(li);
+        });
+    }
+
+    function escHtml(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function restoreFromHistory(type, data) {
+        fromHistory = true;
+        if (type === 'boxes') {
+            document.getElementById('boxL').value = data.bl;
+            document.getElementById('boxW').value = data.bw;
+            calc();
+        } else if (type === 'shelf') {
+            document.getElementById('mfgDay').value = data.d;
+            document.getElementById('mfgMonth').value = data.m;
+            document.getElementById('mfgYear').value = data.y;
+            document.getElementById('shelfLife').value = data.qty;
+            document.getElementById('shelfUnit').value = data.unit;
+            calcShelf();
+        } else if (type === 'qr') {
+            document.getElementById('qrInput').value = data.raw;
+            document.getElementById('prefixCheck').checked = !!data.prefix;
+            document.getElementById('prefixVal').value = data.prefix || '';
+            if (data.ec) document.getElementById('qrEcLevel').value = data.ec;
+            togglePrefixInput();
+            calcQR();
+        }
+    }
+
+    function switchHistoryTab(tab) {
+        currentTab = tab;
+        document.getElementById('tabBoxes').classList.toggle('active', tab==='boxes');
+        document.getElementById('tabShelf').classList.toggle('active', tab==='shelf');
+        document.getElementById('tabQR').classList.toggle('active', tab==='qr');
+        renderHistory();
+    }
+
+    function clearHistory() {
+        historyData = {boxes:[], shelf:[], qr:[]};
+        try { localStorage.setItem('multitoolHistory', JSON.stringify(historyData)); } catch(e) {}
+        renderHistory();
+    }
+
+    /* ===== Сохранение полей ===== */
+    (function() {
+        var fields = [['boxL'],['boxW'],['shelfLife'],['qrInput'],['prefixVal']];
+        fields.forEach(function(f) {
+            var el = document.getElementById(f[0]);
+            if (!el) return;
+            var v = localStorage.getItem(f[0]);
+            if (v !== null) el.value = v;
+            el.addEventListener('input', function() {
+                localStorage.setItem(f[0], el.value);
             });
         });
-        document.getElementById('shelfLife').addEventListener('input', function() {
+    })();
+
+    /* ===== Фокус ===== */
+    document.addEventListener('focusin', function(e) {
+        if (e.target.matches('input,select,textarea')) {
+            setTimeout(function() { e.target.scrollIntoView({behavior:'smooth',block:'center'}); }, 300);
+        }
+    });
+
+    /* ===== Enter ===== */
+    document.addEventListener('keydown', function(e) {
+        if (e.key==='Enter' && e.target.matches('input')) {
+            e.preventDefault();
+            var inputs = Array.from(document.querySelectorAll('input'));
+            var idx = inputs.indexOf(e.target);
+            if (idx>-1 && idx<inputs.length-1) inputs[idx+1].focus();
+        }
+    });
+
+    /* ===== Init ===== */
+    initShelfSelects();
+
+    try {
+        var saved = localStorage.getItem('multitoolHistory');
+        if (saved) historyData = JSON.parse(saved);
+    } catch(e) {}
+    renderHistory();
+
+    ['mfgDay','mfgMonth','mfgYear','shelfLife','shelfUnit'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.addEventListener('change', function() {
             if (document.getElementById('shelfResult').classList.contains('show')) calcShelf();
         });
-    </script>
+    });
+    document.getElementById('shelfLife').addEventListener('input', function() {
+        if (document.getElementById('shelfResult').classList.contains('show')) calcShelf();
+    });
+</script>
 </body>
 </html>
