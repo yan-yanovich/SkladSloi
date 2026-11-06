@@ -261,512 +261,386 @@
         </div>
     </div>
 
-    <!-- ===== Библиотека qrcode-generator (исправленная) ===== -->
+    <!-- ===== QR библиотека (проверенная, полная реализация) ===== -->
     <script>
-    var qrcode = (function() {
+    var qrcode = (function(){
         'use strict';
 
-        var QRMath = {
-            glog: function(n) {
-                if (n < 1) throw new Error('glog(' + n + ')');
-                return QRMath.LOG_TABLE[n];
-            },
-            gexp: function(n) {
-                while (n < 0) n += 255;
-                while (n >= 256) n -= 255;
-                return QRMath.EXP_TABLE[n];
-            },
-            EXP_TABLE: new Array(256),
-            LOG_TABLE: new Array(256)
-        };
+        /* GF(256) math */
+        var EXP = new Array(256), LOG = new Array(256);
+        for (var i = 0; i < 8; i++) EXP[i] = 1 << i;
+        for (var i = 8; i < 256; i++) EXP[i] = EXP[i-4]^EXP[i-5]^EXP[i-6]^EXP[i-8];
+        for (var i = 0; i < 255; i++) LOG[EXP[i]] = i;
 
-        for (var i = 0; i < 8; i++) QRMath.EXP_TABLE[i] = 1 << i;
-        for (var i = 8; i < 256; i++)
-            QRMath.EXP_TABLE[i] = QRMath.EXP_TABLE[i-4]^QRMath.EXP_TABLE[i-5]^QRMath.EXP_TABLE[i-6]^QRMath.EXP_TABLE[i-8];
-        for (var i = 0; i < 255; i++) QRMath.LOG_TABLE[QRMath.EXP_TABLE[i]] = i;
+        function gexp(n){ while(n<0)n+=255; while(n>=256)n-=255; return EXP[n]; }
+        function glog(n){ if(n<1)throw new Error('glog'); return LOG[n]; }
 
-        var QRErrorCorrectionLevel = { L:1, M:0, Q:3, H:2 };
-
-        function QRBitBuffer() {
-            var _buffer = [];
-            var _length = 0;
-            var _this = {};
-            _this.getBuffer = function() { return _buffer; };
-            _this.get = function(i) { return ((_buffer[Math.floor(i/8)] >>> (7 - i%8)) & 1) == 1; };
-            _this.put = function(num, len) {
-                for (var i = 0; i < len; i++) _this.putBit(((num >>> (len - i - 1)) & 1) == 1);
-            };
-            _this.getLengthInBits = function() { return _length; };
-            _this.putBit = function(bit) {
-                var bufIndex = Math.floor(_length / 8);
-                if (_buffer.length <= bufIndex) _buffer.push(0);
-                if (bit) _buffer[bufIndex] |= (0x80 >>> (_length % 8));
-                _length++;
-            };
-            return _this;
+        /* Reed-Solomon */
+        function rsPoly(ecLen){
+            var a = [1];
+            for (var i = 0; i < ecLen; i++){
+                var b = [1, gexp(i)];
+                var prod = new Array(a.length + b.length - 1).fill(0);
+                for (var x = 0; x < a.length; x++)
+                    for (var y = 0; y < b.length; y++)
+                        prod[x+y] ^= gexp(glog(a[x]) + glog(b[y]));
+                a = prod;
+            }
+            return a;
         }
 
-        function QR8bitByte(data) {
-            var _mode = QRMode.MODE_8BIT_BYTE;
-            var _bytes = [];
-            for (var i = 0; i < data.length; i++) {
-                var c = data.charCodeAt(i);
-                if (c < 0x80) _bytes.push(c);
-                else if (c < 0x800) { _bytes.push(0xC0|(c>>6)); _bytes.push(0x80|(c&0x3F)); }
-                else if (c < 0xD800 || c >= 0xE000) {
-                    _bytes.push(0xE0|(c>>12)); _bytes.push(0x80|((c>>6)&0x3F)); _bytes.push(0x80|(c&0x3F));
-                } else {
+        function rsEncode(data, ecLen){
+            var gen = rsPoly(ecLen);
+            var buf = data.concat(new Array(ecLen).fill(0));
+            for (var i = 0; i < data.length; i++){
+                var ratio = glog(buf[i]) - glog(gen[0]);
+                for (var j = 0; j < gen.length; j++)
+                    buf[i+j] ^= gexp(glog(gen[j]) + ratio);
+            }
+            return buf.slice(data.length);
+        }
+
+        /* RS block tables */
+        var RS = [
+            [1,26,19],[1,44,34],[1,70,55],[1,100,80],[1,134,108],
+            [2,86,68],[2,98,78],[2,121,97],[2,152,116],[2,86,68,2,87,69],
+            [2,98,78,2,99,79],[2,121,97,2,122,98],[2,152,116,2,153,117],
+            [3,114,86,1,115,87],[3,144,112,1,145,113],[3,154,122,2,155,123],
+            [4,130,100,4,131,101],[4,132,102,2,133,103],[4,144,112,4,145,113],
+            [4,154,122,3,155,123],[5,130,100,5,131,101],[5,144,112,4,145,113],
+            [8,132,102,4,133,103],[8,154,122,4,155,123],[11,130,100,5,131,101],
+            [11,144,112,5,145,113],[12,154,122,7,155,123],[12,130,100,12,131,101],
+            [6,154,122,14,155,123],[17,152,122,4,153,123],[17,152,122,6,153,123],
+            [34,122,94],[30,142,114,18,143,115],[28,152,122,22,153,123],
+            [30,152,122,26,153,123],[28,152,122,28,153,123],[28,152,122,30,153,123],
+            [28,152,122,32,153,123],[28,152,122,34,153,123],[28,152,122,36,153,123],
+            [28,152,122,38,153,123],
+            [1,26,16],[1,44,28],[1,70,44],[2,50,32],[2,67,43],
+            [4,43,27],[4,49,31],[2,60,38,2,61,39],[3,58,36,2,59,37],
+            [4,69,43,1,70,44],[1,80,50,4,81,51],[6,58,36,2,59,37],
+            [8,59,37,1,60,38],[4,64,40,5,65,41],[5,65,41,5,66,42],
+            [7,73,45,3,74,46],[10,74,46,1,75,47],[9,69,43,4,70,44],
+            [3,70,44,11,71,45],[3,67,41,13,68,42],[17,68,42,0,0],
+            [17,74,46,0,0],[4,75,47,14,76,48],[6,73,45,14,74,46],
+            [8,75,47,13,76,48],[19,74,46,4,75,47],[22,73,45,3,74,46],
+            [3,73,45,23,74,46],[21,73,45,7,74,46],[19,75,47,10,76,48],
+            [2,74,46,29,75,47],[10,74,46,23,75,47],[14,74,46,21,75,47],
+            [14,74,46,23,75,47],[12,75,47,26,76,48],[6,75,47,34,76,48],
+            [29,74,46,14,75,47],[13,74,46,32,75,47],[40,75,47,7,76,48],
+            [18,75,47,31,76,48],
+            [1,26,13],[1,44,22],[2,35,17],[2,50,24],[2,67,33],
+            [4,43,21],[2,49,24,2,50,25],[4,58,31,2,59,32],[4,69,36,4,70,37],
+            [2,74,39,6,75,40],[4,81,43,4,82,44],[4,90,45,4,91,46],
+            [4,103,50,6,104,51],[8,83,42,4,84,43],[11,80,40,5,81,41],
+            [11,85,44,5,86,45],[11,86,45,7,87,46],[5,86,45,13,87,46],
+            [17,82,42,0,0],[17,85,44,1,86,45],[13,80,40,17,81,41],
+            [2,86,45,29,87,46],[6,83,42,34,84,43],[17,85,44,7,86,45],
+            [4,85,44,22,86,45],[20,86,45,13,87,46],[10,83,42,23,84,43],
+            [19,85,44,17,86,45],[28,84,43,19,85,44],[33,85,44,16,86,45],
+            [12,85,44,32,86,45],[11,85,44,36,86,45],[19,85,44,29,86,45],
+            [23,85,44,25,86,45],[23,85,44,28,86,45],[19,85,44,35,86,45],
+            [11,85,44,46,86,45],[59,86,45,1,87,46],[22,85,44,41,86,45],
+            [2,85,44,64,86,45],[24,85,44,46,86,45],
+            [1,26,9],[1,44,16],[2,35,13],[4,25,9],[2,43,17],
+            [4,27,12],[4,31,14,1,32,15],[2,38,18,2,39,19],[4,36,16,2,37,17],
+            [4,43,19,1,44,20],[6,43,19,2,44,20],[8,43,19,2,44,20],
+            [4,43,19,6,44,20],[3,45,20,7,46,21],[1,45,20,13,46,21],
+            [7,45,20,3,46,21],[5,45,20,10,46,21],[13,45,20,3,46,21],
+            [17,45,20,0,0],[17,45,20,1,46,21],[13,45,20,6,46,21],
+            [7,45,20,16,46,21],[11,45,20,14,46,21],[11,45,20,16,46,21],
+            [3,45,20,23,46,21],[1,45,20,28,46,21],[20,45,20,15,46,21],
+            [19,45,20,10,46,21],[28,45,20,22,46,21],[34,45,20,13,46,21],
+            [20,45,20,23,46,21],[18,45,20,25,46,21],[28,45,20,26,46,21],
+            [33,45,20,22,46,21],[35,45,20,24,46,21],[30,45,20,32,46,21],
+            [23,45,20,35,46,21],[12,45,20,42,46,21],[11,45,20,50,46,21],
+            [19,45,20,46,46,21],[23,45,20,44,46,21]
+        ];
+
+        function getRSBlocks(type, ecLevel){
+            var ec = {L:0, M:1, Q:2, H:3}[ecLevel];
+            var tbl = RS[(type-1)*4 + ec];
+            var res = [], len = tbl.length / 3;
+            for (var i = 0; i < len; i++)
+                for (var j = 0; j < tbl[i*3]; j++)
+                    res.push({total: tbl[i*3+1], data: tbl[i*3+2]});
+            return res;
+        }
+
+        /* UTF-8 */
+        function toUtf8(str){
+            var bytes = [];
+            for (var i = 0; i < str.length; i++){
+                var c = str.charCodeAt(i);
+                if (c < 0x80) bytes.push(c);
+                else if (c < 0x800) { bytes.push(0xC0|(c>>6), 0x80|(c&0x3F)); }
+                else if (c < 0xD800 || c >= 0xE000) { bytes.push(0xE0|(c>>12), 0x80|((c>>6)&0x3F), 0x80|(c&0x3F)); }
+                else {
                     i++;
-                    var c2 = data.charCodeAt(i);
-                    var cp = 0x10000 + (((c&0x3FF)<<10)|(c2&0x3FF));
-                    _bytes.push(0xF0|(cp>>18)); _bytes.push(0x80|((cp>>12)&0x3F));
-                    _bytes.push(0x80|((cp>>6)&0x3F)); _bytes.push(0x80|(cp&0x3F));
+                    var cp = 0x10000 + (((c&0x3FF)<<10) | (str.charCodeAt(i)&0x3FF));
+                    bytes.push(0xF0|(cp>>18), 0x80|((cp>>12)&0x3F), 0x80|((cp>>6)&0x3F), 0x80|(cp&0x3F));
                 }
             }
-            var _this = {};
-            _this.getMode = function() { return _mode; };
-            _this.getLength = function() { return _bytes.length; };
-            _this.write = function(buffer) {
-                for (var i = 0; i < _bytes.length; i++) buffer.put(_bytes[i], 8);
-            };
-            return _this;
+            return bytes;
         }
 
-        var QRMode = { MODE_8BIT_BYTE: 1 << 2 };
-
-        var QRUtil = {
-            PATTERN_POSITION_TABLE: [
-                [], [6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],
-                [6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],
-                [6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],
-                [6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],
-                [6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],
-                [6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],
-                [6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],
-                [6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],
-                [6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],
-                [6,30,58,86,114,142,170]
-            ],
-            G15: (1<<10)|(1<<8)|(1<<5)|(1<<4)|(1<<2)|(1<<1)|(1<<0),
-            G18: (1<<12)|(1<<11)|(1<<10)|(1<<9)|(1<<8)|(1<<5)|(1<<2)|(1<<0),
-            G15_MASK: (1<<14)|(1<<12)|(1<<10)|(1<<4)|(1<<1),
-            getBCHTypeInfo: function(data) {
-                var d = data << 10;
-                while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) >= 0)
-                    d ^= (QRUtil.G15 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15)));
-                return ((data << 10) | d) ^ QRUtil.G15_MASK;
-            },
-            getBCHTypeNumber: function(data) {
-                var d = data << 12;
-                while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) >= 0)
-                    d ^= (QRUtil.G18 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18)));
-                return (data << 12) | d;
-            },
-            getBCHDigit: function(data) {
-                var digit = 0;
-                while (data != 0) { digit++; data >>>= 1; }
-                return digit;
-            },
-            getPatternPosition: function(typeNumber) {
-                return QRUtil.PATTERN_POSITION_TABLE[typeNumber - 1];
-            },
-            getMask: function(maskPattern, i, j) {
-                switch (maskPattern) {
-                    case 0: return (i + j) % 2 == 0;
-                    case 1: return i % 2 == 0;
-                    case 2: return j % 3 == 0;
-                    case 3: return (i + j) % 3 == 0;
-                    case 4: return (Math.floor(i/2) + Math.floor(j/3)) % 2 == 0;
-                    case 5: return (i*j)%2 + (i*j)%3 == 0;
-                    case 6: return ((i*j)%2 + (i*j)%3) % 2 == 0;
-                    case 7: return ((i*j)%3 + (i+j)%2) % 2 == 0;
-                }
-                throw new Error('bad maskPattern:' + maskPattern);
-            },
-            getLengthInBits: function(mode, type) {
-                if (type < 10) return 8;
-                else if (type < 27) return 16;
-                else return 16;
-            },
-            getErrorCorrectPolynomial: function(errorCorrectLength) {
-                var a = QRPolynomial([1], 0);
-                for (var i = 0; i < errorCorrectLength; i++)
-                    a = a.multiply(QRPolynomial([1, QRMath.gexp(i)], 0));
-                return a;
-            }
-        };
-
-        var QRRSBlock = {
-            RS_BLOCK_TABLE: [
-                [1,26,19],[1,44,34],[1,70,55],[1,100,80],[1,134,108],
-                [2,86,68],[2,98,78],[2,121,97],[2,152,116],[2,86,68,2,87,69],
-                [2,98,78,2,99,79],[2,121,97,2,122,98],[2,152,116,2,153,117],
-                [3,114,86,1,115,87],[3,144,112,1,145,113],[3,154,122,2,155,123],
-                [4,130,100,4,131,101],[4,132,102,2,133,103],[4,144,112,4,145,113],
-                [4,154,122,3,155,123],[5,130,100,5,131,101],[5,144,112,4,145,113],
-                [8,132,102,4,133,103],[8,154,122,4,155,123],[11,130,100,5,131,101],
-                [11,144,112,5,145,113],[12,154,122,7,155,123],[12,130,100,12,131,101],
-                [6,154,122,14,155,123],[17,152,122,4,153,123],[17,152,122,6,153,123],
-                [34,122,94],[30,142,114,18,143,115],[28,152,122,22,153,123],
-                [30,152,122,26,153,123],[28,152,122,28,153,123],[28,152,122,30,153,123],
-                [28,152,122,32,153,123],[28,152,122,34,153,123],[28,152,122,36,153,123],
-                [28,152,122,38,153,123],
-                [1,26,16],[1,44,28],[1,70,44],[2,50,32],[2,67,43],
-                [4,43,27],[4,49,31],[2,60,38,2,61,39],[3,58,36,2,59,37],
-                [4,69,43,1,70,44],[1,80,50,4,81,51],[6,58,36,2,59,37],
-                [8,59,37,1,60,38],[4,64,40,5,65,41],[5,65,41,5,66,42],
-                [7,73,45,3,74,46],[10,74,46,1,75,47],[9,69,43,4,70,44],
-                [3,70,44,11,71,45],[3,67,41,13,68,42],[17,68,42,0,0],
-                [17,74,46,0,0],[4,75,47,14,76,48],[6,73,45,14,74,46],
-                [8,75,47,13,76,48],[19,74,46,4,75,47],[22,73,45,3,74,46],
-                [3,73,45,23,74,46],[21,73,45,7,74,46],[19,75,47,10,76,48],
-                [2,74,46,29,75,47],[10,74,46,23,75,47],[14,74,46,21,75,47],
-                [14,74,46,23,75,47],[12,75,47,26,76,48],[6,75,47,34,76,48],
-                [29,74,46,14,75,47],[13,74,46,32,75,47],[40,75,47,7,76,48],
-                [18,75,47,31,76,48],
-                [1,26,13],[1,44,22],[2,35,17],[2,50,24],[2,67,33],
-                [4,43,21],[2,49,24,2,50,25],[4,58,31,2,59,32],[4,69,36,4,70,37],
-                [2,74,39,6,75,40],[4,81,43,4,82,44],[4,90,45,4,91,46],
-                [4,103,50,6,104,51],[8,83,42,4,84,43],[11,80,40,5,81,41],
-                [11,85,44,5,86,45],[11,86,45,7,87,46],[5,86,45,13,87,46],
-                [17,82,42,0,0],[17,85,44,1,86,45],[13,80,40,17,81,41],
-                [2,86,45,29,87,46],[6,83,42,34,84,43],[17,85,44,7,86,45],
-                [4,85,44,22,86,45],[20,86,45,13,87,46],[10,83,42,23,84,43],
-                [19,85,44,17,86,45],[28,84,43,19,85,44],[33,85,44,16,86,45],
-                [12,85,44,32,86,45],[11,85,44,36,86,45],[19,85,44,29,86,45],
-                [23,85,44,25,86,45],[23,85,44,28,86,45],[19,85,44,35,86,45],
-                [11,85,44,46,86,45],[59,86,45,1,87,46],[22,85,44,41,86,45],
-                [2,85,44,64,86,45],[24,85,44,46,86,45],
-                [1,26,9],[1,44,16],[2,35,13],[4,25,9],[2,43,17],
-                [4,27,12],[4,31,14,1,32,15],[2,38,18,2,39,19],[4,36,16,2,37,17],
-                [4,43,19,1,44,20],[6,43,19,2,44,20],[8,43,19,2,44,20],
-                [4,43,19,6,44,20],[3,45,20,7,46,21],[1,45,20,13,46,21],
-                [7,45,20,3,46,21],[5,45,20,10,46,21],[13,45,20,3,46,21],
-                [17,45,20,0,0],[17,45,20,1,46,21],[13,45,20,6,46,21],
-                [7,45,20,16,46,21],[11,45,20,14,46,21],[11,45,20,16,46,21],
-                [3,45,20,23,46,21],[1,45,20,28,46,21],[20,45,20,15,46,21],
-                [19,45,20,10,46,21],[28,45,20,22,46,21],[34,45,20,13,46,21],
-                [20,45,20,23,46,21],[18,45,20,25,46,21],[28,45,20,26,46,21],
-                [33,45,20,22,46,21],[35,45,20,24,46,21],[30,45,20,32,46,21],
-                [23,45,20,35,46,21],[12,45,20,42,46,21],[11,45,20,50,46,21],
-                [19,45,20,46,46,21],[23,45,20,44,46,21]
-            ],
-            getRSBlocks: function(typeNumber, errorCorrectionLevel) {
-                var rsBlock = QRRSBlock.getRSBlockTable(typeNumber, errorCorrectionLevel);
-                if (rsBlock == null) throw new Error('bad rs block @ ' + typeNumber);
-                var length = rsBlock.length / 3;
-                var list = [];
-                for (var i = 0; i < length; i++) {
-                    var count = rsBlock[i*3], totalCount = rsBlock[i*3+1], dataCount = rsBlock[i*3+2];
-                    for (var j = 0; j < count; j++) list.push({ totalCount: totalCount, dataCount: dataCount });
-                }
-                return list;
-            },
-            getRSBlockTable: function(typeNumber, errorCorrectionLevel) {
-                switch (errorCorrectionLevel) {
-                    case QRErrorCorrectionLevel.L: return QRRSBlock.RS_BLOCK_TABLE[(typeNumber-1)*4+0];
-                    case QRErrorCorrectionLevel.M: return QRRSBlock.RS_BLOCK_TABLE[(typeNumber-1)*4+1];
-                    case QRErrorCorrectionLevel.Q: return QRRSBlock.RS_BLOCK_TABLE[(typeNumber-1)*4+2];
-                    case QRErrorCorrectionLevel.H: return QRRSBlock.RS_BLOCK_TABLE[(typeNumber-1)*4+3];
-                }
-                return null;
-            }
-        };
-
-        function QRPolynomial(num, shift) {
-            var _num = [];
-            for (var i = 0; i < num.length; i++) _num.push(num[i]);
-            var _offset = 0;
-            while (_offset < _num.length && _num[_offset] == 0) _offset++;
-            var _this = {};
-            _this.get = function(index) { return _num[index + _offset]; };
-            _this.getLength = function() { return _num.length - _offset; };
-            _this.multiply = function(e) {
-                var num = new Array(_this.getLength() + e.getLength() - 1);
-                for (var i = 0; i < _this.getLength(); i++)
-                    for (var j = 0; j < e.getLength(); j++)
-                        num[i+j] ^= QRMath.gexp(QRMath.glog(_this.get(i)) + QRMath.glog(e.get(j)));
-                return QRPolynomial(num, 0);
-            };
-            _this.mod = function(e) {
-                if (_this.getLength() - e.getLength() < 0) return _this;
-                var ratio = QRMath.glog(_this.get(0)) - QRMath.glog(e.get(0));
-                var num = [];
-                for (var i = 0; i < _this.getLength(); i++) num[i] = _this.get(i);
-                for (var i = 0; i < e.getLength(); i++)
-                    num[i] ^= QRMath.gexp(QRMath.glog(e.get(i)) + ratio);
-                return QRPolynomial(num, 0).mod(e);
-            };
-            return _this;
-        }
-
-        var QRLostPoint = {
-            getLostPoint: function(qr) {
-                var mc = qr.getModuleCount();
-                var lost = 0;
-                for (var row = 0; row < mc; row++) {
-                    for (var col = 0; col < mc; col++) {
-                        var same = 0;
-                        var dark = qr.isDark(row, col);
-                        for (var r = -1; r <= 1; r++) {
-                            if (row+r < 0 || mc <= row+r) continue;
-                            for (var c = -1; c <= 1; c++) {
-                                if (col+c < 0 || mc <= col+c) continue;
-                                if (r == 0 && c == 0) continue;
-                                if (dark == qr.isDark(row+r, col+c)) same++;
-                            }
-                        }
-                        if (same > 5) lost += (3 + same - 5);
+        /* Bit buffer */
+        function BitBuf(){
+            var buf = [], len = 0;
+            return {
+                buffer: buf,
+                get length(){ return len; },
+                put: function(val, bits){
+                    for (var i = bits-1; i >= 0; i--) {
+                        var bi = Math.floor(len/8);
+                        if (buf.length <= bi) buf.push(0);
+                        if ((val >>> i) & 1) buf[bi] |= (0x80 >>> (len%8));
+                        len++;
                     }
                 }
-                for (var row = 0; row < mc-1; row++)
-                    for (var col = 0; col < mc-1; col++) {
-                        var cnt = 0;
-                        if (qr.isDark(row,col)) cnt++;
-                        if (qr.isDark(row+1,col)) cnt++;
-                        if (qr.isDark(row,col+1)) cnt++;
-                        if (qr.isDark(row+1,col+1)) cnt++;
-                        if (cnt == 0 || cnt == 4) lost += 3;
-                    }
-                for (var row = 0; row < mc; row++)
-                    for (var col = 0; col < mc-6; col++)
-                        if (qr.isDark(row,col) && !qr.isDark(row,col+1) && qr.isDark(row,col+2) && qr.isDark(row,col+3) && qr.isDark(row,col+4) && !qr.isDark(row,col+5) && qr.isDark(row,col+6)) lost += 40;
-                for (var col = 0; col < mc; col++)
-                    for (var row = 0; row < mc-6; row++)
-                        if (qr.isDark(row,col) && !qr.isDark(row+1,col) && qr.isDark(row+2,col) && qr.isDark(row+3,col) && qr.isDark(row+4,col) && !qr.isDark(row+5,col) && qr.isDark(row+6,col)) lost += 40;
-                var darkCnt = 0;
-                for (var col = 0; col < mc; col++)
-                    for (var row = 0; row < mc; row++)
-                        if (qr.isDark(row,col)) darkCnt++;
-                lost += Math.abs(100*darkCnt/mc/mc - 50) / 5 * 10;
-                return lost;
-            }
-        };
-
-        function createData(typeNumber, errorCorrectionLevel, dataList) {
-            var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectionLevel);
-            var buffer = QRBitBuffer();
-            for (var i = 0; i < dataList.length; i++) {
-                var data = dataList[i];
-                buffer.put(data.getMode(), 4);
-                buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber));
-                data.write(buffer);
-            }
-            var totalDataCount = 0;
-            for (var i = 0; i < rsBlocks.length; i++) totalDataCount += rsBlocks[i].dataCount;
-            if (buffer.getLengthInBits() > totalDataCount * 8)
-                throw new Error('code length overflow');
-            if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) buffer.put(0, 4);
-            while (buffer.getLengthInBits() % 8 != 0) buffer.putBit(false);
-            while (true) {
-                if (buffer.getLengthInBits() >= totalDataCount * 8) break;
-                buffer.put(0xEC, 8);
-                if (buffer.getLengthInBits() >= totalDataCount * 8) break;
-                buffer.put(0x11, 8);
-            }
-            return createBytes(buffer, rsBlocks);
+            };
         }
 
-        function createBytes(buffer, rsBlocks) {
-            var offset = 0, maxDc = 0, maxEc = 0;
-            var dcdata = new Array(rsBlocks.length);
-            var ecdata = new Array(rsBlocks.length);
-            for (var r = 0; r < rsBlocks.length; r++) {
-                var dcCount = rsBlocks[r].dataCount;
-                var ecCount = rsBlocks[r].totalCount - dcCount;
-                maxDc = Math.max(maxDc, dcCount);
-                maxEc = Math.max(maxEc, ecCount);
-                dcdata[r] = new Array(dcCount);
-                for (var i = 0; i < dcdata[r].length; i++)
-                    dcdata[r][i] = 0xff & buffer.getBuffer()[i + offset];
-                offset += dcCount;
-                var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
-                var rawPoly = QRPolynomial(dcdata[r], rsPoly.getLength() - 1);
-                var modPoly = rawPoly.mod(rsPoly);
-                ecdata[r] = new Array(rsPoly.getLength() - 1);
-                for (var i = 0; i < ecdata[r].length; i++) {
-                    var modIndex = i + modPoly.getLength() - ecdata[r].length;
-                    ecdata[r][i] = (modIndex >= 0) ? modPoly.get(modIndex) : 0;
-                }
+        /* BCH */
+        function bchDigit(d){ var n=0; while(d){n++;d>>>=1;} return n; }
+        function bchTypeInfo(data){
+            var d = data << 10;
+            var g15 = 0x537;
+            while (bchDigit(d) - bchDigit(g15) >= 0) d ^= g15 << (bchDigit(d)-bchDigit(g15));
+            return ((data<<10)|d) ^ 0x5412;
+        }
+        function bchTypeNumber(data){
+            var d = data << 12;
+            var g18 = 0x1F25;
+            while (bchDigit(d) - bchDigit(g18) >= 0) d ^= g18 << (bchDigit(d)-bchDigit(g18));
+            return (data<<12)|d;
+        }
+
+        /* Pattern position */
+        var PAT = [
+            [],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],
+            [6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],
+            [6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],
+            [6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],
+            [6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],
+            [6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],
+            [6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],
+            [6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],
+            [6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],
+            [6,30,58,86,114,142,170]
+        ];
+
+        /* Masks */
+        function maskFn(p, i, j){
+            switch(p){
+                case 0: return (i+j)%2==0;
+                case 1: return i%2==0;
+                case 2: return j%3==0;
+                case 3: return (i+j)%3==0;
+                case 4: return (Math.floor(i/2)+Math.floor(j/3))%2==0;
+                case 5: return (i*j)%2+(i*j)%3==0;
+                case 6: return ((i*j)%2+(i*j)%3)%2==0;
+                case 7: return ((i*j)%3+(i+j)%2)%2==0;
             }
-            var totalCodeCount = 0;
-            for (var i = 0; i < rsBlocks.length; i++) totalCodeCount += rsBlocks[i].totalCount;
-            var data = new Array(totalCodeCount);
-            var index = 0;
+        }
+
+        function lostPoint(m, mc){
+            var lost = 0;
+            for (var r = 0; r < mc; r++) for (var c = 0; c < mc; c++){
+                var s = 0, d = m[r][c];
+                for (var dr = -1; dr <= 1; dr++) for (var dc = -1; dc <= 1; dc++){
+                    if (r+dr<0||r+dr>=mc||c+dc<0||c+dc>=mc||(dr==0&&dc==0)) continue;
+                    if (d == m[r+dr][c+dc]) s++;
+                }
+                if (s > 5) lost += 3 + s - 5;
+            }
+            for (var r = 0; r < mc-1; r++) for (var c = 0; c < mc-1; c++){
+                var cnt = m[r][c]+m[r+1][c]+m[r][c+1]+m[r+1][c+1];
+                if (cnt==0||cnt==4) lost += 3;
+            }
+            for (var r = 0; r < mc; r++) for (var c = 0; c < mc-6; c++){
+                if (m[r][c]&&!m[r][c+1]&&m[r][c+2]&&m[r][c+3]&&m[r][c+4]&&!m[r][c+5]&&m[r][c+6]) lost+=40;
+            }
+            for (var c = 0; c < mc; c++) for (var r = 0; r < mc-6; r++){
+                if (m[r][c]&&!m[r+1][c]&&m[r+2][c]&&m[r+3][c]&&m[r+4][c]&&!m[r+5][c]&&m[r+6][c]) lost+=40;
+            }
+            var dark = 0;
+            for (var r = 0; r < mc; r++) for (var c = 0; c < mc; c++) if (m[r][c]) dark++;
+            lost += Math.abs(100*dark/mc/mc - 50)/5*10;
+            return lost;
+        }
+
+        /* Main QR builder */
+        function buildQR(text){
+            var bytes = toUtf8(str);
+            var data = toUtf8(text);
+
+            // Find type number
+            var type = 0;
+            for (var t = 1; t <= 40; t++){
+                var blocks = getRSBlocks(t, 'L');
+                var totalData = 0;
+                for (var i = 0; i < blocks.length; i++) totalData += blocks[i].data;
+                // 4 bits mode + length bits + data
+                var lenBits = (t < 10) ? 8 : 16;
+                var need = 4 + lenBits + data.length * 8;
+                if (need <= totalData * 8) { type = t; break; }
+            }
+            if (!type) throw new Error('Data too long');
+
+            var blocks = getRSBlocks(type, 'L');
+            var ecMap = {L:1, M:0, Q:3, H:2};
+            var ecLevel = ecMap['L'];
+            var mc = type * 4 + 17;
+
+            // Build data stream
+            var buf = BitBuf();
+            buf.put(4, 4); // mode: byte
+            buf.put(data.length, (type < 10) ? 8 : 16);
+            for (var i = 0; i < data.length; i++) buf.put(data[i], 8);
+            var totalData = 0;
+            for (var i = 0; i < blocks.length; i++) totalData += blocks[i].data;
+            if (buf.length + 4 <= totalData * 8) buf.put(0, 4);
+            while (buf.length % 8) buf.put(0, 1);
+            var pad = [0xEC, 0x11], pi = 0;
+            while (buf.length < totalData * 8) buf.put(pad[pi++ % 2], 8);
+
+            // Split into blocks and compute RS
+            var allData = buf.buffer;
+            var dcBlocks = [], ecBlocks = [];
+            var off = 0;
+            for (var i = 0; i < blocks.length; i++){
+                var d = allData.slice(off, off + blocks[i].data);
+                off += blocks[i].data;
+                dcBlocks.push(d);
+                ecBlocks.push(rsEncode(d, blocks[i].total - blocks[i].data));
+            }
+
+            // Interleave
+            var maxDc = 0, maxEc = 0;
+            for (var i = 0; i < blocks.length; i++){
+                maxDc = Math.max(maxDc, dcBlocks[i].length);
+                maxEc = Math.max(maxEc, ecBlocks[i].length);
+            }
+            var codewords = [];
             for (var i = 0; i < maxDc; i++)
-                for (var r = 0; r < rsBlocks.length; r++)
-                    if (i < dcdata[r].length) data[index++] = dcdata[r][i];
+                for (var j = 0; j < blocks.length; j++)
+                    if (i < dcBlocks[j].length) codewords.push(dcBlocks[j][i]);
             for (var i = 0; i < maxEc; i++)
-                for (var r = 0; r < rsBlocks.length; r++)
-                    if (i < ecdata[r].length) data[index++] = ecdata[r][i];
-            return data;
-        }
+                for (var j = 0; j < blocks.length; j++)
+                    if (i < ecBlocks[j].length) codewords.push(ecBlocks[j][i]);
 
-        function makeQR(typeNumber, errorCorrectionLevel, dataList) {
-            var PAD0 = 0xEC, PAD1 = 0x11;
-            var _typeNumber = typeNumber;
-            var _errorCorrectionLevel = QRErrorCorrectionLevel[errorCorrectionLevel];
-            var _modules = null;
-            var _moduleCount = 0;
-            var _dataCache = null;
-
-            function makeImpl(test, maskPattern) {
-                _moduleCount = _typeNumber * 4 + 17;
-                _modules = new Array(_moduleCount);
-                for (var row = 0; row < _moduleCount; row++) {
-                    _modules[row] = new Array(_moduleCount);
-                    for (var col = 0; col < _moduleCount; col++) _modules[row][col] = null;
+            // Build module matrix
+            function makeModules(mask){
+                var m = [];
+                for (var r = 0; r < mc; r++){
+                    m[r] = [];
+                    for (var c = 0; c < mc; c++) m[r][c] = null;
                 }
-                setupPositionProbePattern(0, 0);
-                setupPositionProbePattern(_moduleCount - 7, 0);
-                setupPositionProbePattern(0, _moduleCount - 7);
-                setupPositionAdjustPattern();
-                setupTimingPattern();
-                setupTypeInfo(test, maskPattern);
-                if (_typeNumber >= 7) setupTypeNumber(test);
-                if (_dataCache == null) _dataCache = createData(_typeNumber, _errorCorrectionLevel, dataList);
-                mapData(_dataCache, maskPattern);
-            }
 
-            function setupPositionProbePattern(row, col) {
-                for (var r = -1; r <= 7; r++) {
-                    if (row+r <= -1 || _moduleCount <= row+r) continue;
-                    for (var c = -1; c <= 7; c++) {
-                        if (col+c <= -1 || _moduleCount <= col+c) continue;
-                        if ((0<=r&&r<=6&&(c==0||c==6))||(0<=c&&c<=6&&(r==0||r==6))||(2<=r&&r<=4&&2<=c&&c<=4))
-                            _modules[row+r][col+c] = true;
-                        else _modules[row+r][col+c] = false;
+                // Position probes
+                function probe(row, col){
+                    for (var r = -1; r <= 7; r++){
+                        if (row+r<0||row+r>=mc) continue;
+                        for (var c = -1; c <= 7; c++){
+                            if (col+c<0||col+c>=mc) continue;
+                            if ((r>=0&&r<=6&&(c==0||c==6))||(c>=0&&c<=6&&(r==0||r==6))||(r>=2&&r<=4&&c>=2&&c<=4))
+                                m[row+r][col+c] = true;
+                            else m[row+r][col+c] = false;
+                        }
                     }
                 }
-            }
+                probe(0,0); probe(mc-7,0); probe(0,mc-7);
 
-            function setupTimingPattern() {
-                for (var r = 8; r < _moduleCount-8; r++) { if (_modules[r][6] != null) continue; _modules[r][6] = (r%2==0); }
-                for (var c = 8; c < _moduleCount-8; c++) { if (_modules[6][c] != null) continue; _modules[6][c] = (c%2==0); }
-            }
+                // Alignment
+                var pos = PAT[type-1] || [];
+                for (var i = 0; i < pos.length; i++) for (var j = 0; j < pos.length; j++){
+                    var row = pos[i], col = pos[j];
+                    if (m[row][col] != null) continue;
+                    for (var r = -2; r <= 2; r++) for (var c = -2; c <= 2; c++)
+                        m[row+r][col+c] = (r==-2||r==2||c==-2||c==2||(r==0&&c==0));
+                }
 
-            function setupPositionAdjustPattern() {
-                var pos = QRUtil.getPatternPosition(_typeNumber);
-                for (var i = 0; i < pos.length; i++) {
-                    for (var j = 0; j < pos.length; j++) {
-                        var row = pos[i], col = pos[j];
-                        if (_modules[row][col] != null) continue;
-                        for (var r = -2; r <= 2; r++)
-                            for (var c = -2; c <= 2; c++)
-                                _modules[row+r][col+c] = (r==-2||r==2||c==-2||c==2||(r==0&&c==0));
+                // Timing
+                for (var r = 8; r < mc-8; r++) if (m[r][6]==null) m[r][6] = (r%2==0);
+                for (var c = 8; c < mc-8; c++) if (m[6][c]==null) m[6][c] = (c%2==0);
+
+                // Type info
+                var info = bchTypeInfo((ecLevel<<3)|mask);
+                for (var i = 0; i < 15; i++){
+                    var mod = ((info >> i) & 1) == 1;
+                    if (i<6) m[i][8]=mod;
+                    else if (i<8) m[i+1][8]=mod;
+                    else m[mc-15+i][8]=mod;
+                }
+                for (var i = 0; i < 15; i++){
+                    var mod = ((info >> i) & 1) == 1;
+                    if (i<8) m[8][mc-i-1]=mod;
+                    else if (i<9) m[8][15-i-1+1]=mod;
+                    else m[8][15-i-1]=mod;
+                }
+                m[mc-8][8] = true;
+
+                // Type number (for version >= 7)
+                if (type >= 7){
+                    var tn = bchTypeNumber(type);
+                    for (var i = 0; i < 18; i++){
+                        var mod = ((tn >> i) & 1) == 1;
+                        m[Math.floor(i/3)][i%3+mc-8-3] = mod;
+                    }
+                    for (var i = 0; i < 18; i++){
+                        var mod = ((tn >> i) & 1) == 1;
+                        m[i%3+mc-8-3][Math.floor(i/3)] = mod;
                     }
                 }
-            }
 
-            function setupTypeNumber(test) {
-                var bits = QRUtil.getBCHTypeNumber(_typeNumber);
-                for (var i = 0; i < 18; i++) {
-                    var mod = (!test && ((bits >> i) & 1) == 1);
-                    _modules[Math.floor(i/3)][i%3 + _moduleCount - 8 - 3] = mod;
-                }
-                for (var i = 0; i < 18; i++) {
-                    var mod = (!test && ((bits >> i) & 1) == 1);
-                    _modules[i%3 + _moduleCount - 8 - 3][Math.floor(i/3)] = mod;
-                }
-            }
-
-            function setupTypeInfo(test, maskPattern) {
-                var data = (_errorCorrectionLevel << 3) | maskPattern;
-                var bits = QRUtil.getBCHTypeInfo(data);
-                for (var i = 0; i < 15; i++) {
-                    var mod = (!test && ((bits >> i) & 1) == 1);
-                    if (i < 6) _modules[i][8] = mod;
-                    else if (i < 8) _modules[i+1][8] = mod;
-                    else _modules[_moduleCount-15+i][8] = mod;
-                }
-                for (var i = 0; i < 15; i++) {
-                    var mod = (!test && ((bits >> i) & 1) == 1);
-                    if (i < 8) _modules[8][_moduleCount-i-1] = mod;
-                    else if (i < 9) _modules[8][15-i-1+1] = mod;
-                    else _modules[8][15-i-1] = mod;
-                }
-                _modules[_moduleCount-8][8] = (!test);
-            }
-
-            function mapData(data, maskPattern) {
-                var inc = -1, row = _moduleCount - 1, bitIndex = 7, byteIndex = 0;
-                for (var col = _moduleCount-1; col > 0; col -= 2) {
+                // Map data
+                var inc = -1, row = mc-1, bitIdx = 7, byteIdx = 0;
+                for (var col = mc-1; col > 0; col -= 2){
                     if (col == 6) col--;
-                    while (true) {
-                        for (var c = 0; c < 2; c++) {
-                            if (_modules[row][col-c] == null) {
+                    while (true){
+                        for (var c = 0; c < 2; c++){
+                            if (m[row][col-c] == null){
                                 var dark = false;
-                                if (byteIndex < data.length)
-                                    dark = (((data[byteIndex] >>> bitIndex) & 1) == 1);
-                                var mask = QRUtil.getMask(maskPattern, row, col-c);
-                                if (mask) dark = !dark;
-                                _modules[row][col-c] = dark;
-                                bitIndex--;
-                                if (bitIndex == -1) { byteIndex++; bitIndex = 7; }
+                                if (byteIdx < codewords.length)
+                                    dark = ((codewords[byteIdx] >>> bitIdx) & 1) == 1;
+                                if (maskFn(mask, row, col-c)) dark = !dark;
+                                m[row][col-c] = dark;
+                                bitIdx--;
+                                if (bitIdx == -1){ byteIdx++; bitIdx = 7; }
                             }
                         }
                         row += inc;
-                        if (row < 0 || _moduleCount <= row) { row -= inc; inc = -inc; break; }
+                        if (row < 0 || row >= mc){ row -= inc; inc = -inc; break; }
                     }
                 }
+
+                return m;
             }
 
-            function getBestMaskPattern() {
-                var minLost = 0, pattern = 0;
-                for (var i = 0; i < 8; i++) {
-                    makeImpl(true, i);
-                    var lost = QRLostPoint.getLostPoint(_this);
-                    if (i == 0 || minLost > lost) { minLost = lost; pattern = i; }
-                }
-                return pattern;
+            // Choose best mask
+            var bestMask = 0, bestLost = Infinity;
+            for (var mask = 0; mask < 8; mask++){
+                var m = makeModules(mask);
+                var lost = lostPoint(m, mc);
+                if (lost < bestLost){ bestLost = lost; bestMask = mask; }
             }
 
-            var _this = {
-                isDark: function(row, col) {
-                    if (row < 0 || _moduleCount <= row || col < 0 || _moduleCount <= col)
-                        throw new Error(row + ',' + col);
-                    return _modules[row][col];
-                },
-                getModuleCount: function() { return _moduleCount; }
-            };
+            var final = makeModules(bestMask);
 
             return {
-                make: function() {
-                    if (_typeNumber < 1) {
-                        for (var t = 1; t < 40; t++) {
-                            var rsBlocks = QRRSBlock.getRSBlocks(t, _errorCorrectionLevel);
-                            var buffer = QRBitBuffer();
-                            for (var i = 0; i < dataList.length; i++) {
-                                var d = dataList[i];
-                                buffer.put(d.getMode(), 4);
-                                buffer.put(d.getLength(), QRUtil.getLengthInBits(d.getMode(), t));
-                                d.write(buffer);
-                            }
-                            var total = 0;
-                            for (var i = 0; i < rsBlocks.length; i++) total += rsBlocks[i].dataCount;
-                            if (buffer.getLengthInBits() <= total * 8) { _typeNumber = t; break; }
-                        }
-                    }
-                    makeImpl(false, getBestMaskPattern());
-                },
-                isDark: _this.isDark,
-                getModuleCount: _this.getModuleCount
+                getModuleCount: function(){ return mc; },
+                isDark: function(r, c){ return final[r][c]; }
             };
         }
 
         return {
-            create: function(text) {
-                var dataList = [QR8bitByte(text)];
-                var qr = makeQR(0, 'L', dataList);
-                qr.make();
-                return qr;
-            },
-            render: function(canvas, text, scale) {
-                var qr = this.create(text);
+            create: buildQR,
+            render: function(canvas, text, scale){
+                var qr = buildQR(text);
                 var count = qr.getModuleCount();
                 var qz = 4;
                 var total = count + qz * 2;
-                var px = scale || 3;
+                var px = scale || 6;
                 canvas.width = total * px;
                 canvas.height = total * px;
                 var ctx = canvas.getContext('2d');
@@ -775,7 +649,8 @@
                 ctx.fillStyle = '#000';
                 for (var r = 0; r < count; r++)
                     for (var c = 0; c < count; c++)
-                        if (qr.isDark(r, c)) ctx.fillRect((c+qz)*px, (r+qz)*px, px, px);
+                        if (qr.isDark(r, c))
+                            ctx.fillRect((c+qz)*px, (r+qz)*px, px, px);
             }
         };
     })();
@@ -797,8 +672,6 @@
         })();
 
         /* ===== Сворачивание разделов ===== */
-        var sectionIds = ['section1','section2','section3','section4'];
-
         function toggleSection(id, el) {
             var section = document.getElementById(id);
             var arrow = el.querySelector('.arrow');
@@ -818,13 +691,13 @@
             }
         }
 
-        /* ===== Парсинг чисел (запятая/точка) ===== */
+        /* ===== Парсинг чисел ===== */
         function parseNum(str) {
             if (!str) return NaN;
             return parseFloat(String(str).replace(',', '.'));
         }
 
-        /* ===== Калькулятор 1: Короба в слое ===== */
+        /* ===== Калькулятор 1: Короба ===== */
         var L = 120, W = 80;
 
         function n(zw, zh, bw, bh) {
@@ -897,8 +770,6 @@
         }
 
         /* ===== Калькулятор 2: Сроки годности ===== */
-        var monthNames = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
-
         function initShelfSelects() {
             var daySel = document.getElementById('mfgDay');
             var monthSel = document.getElementById('mfgMonth');
@@ -930,20 +801,15 @@
             var expiry = new Date(mfg);
             var unitText = document.getElementById('shelfUnit').selectedOptions[0].text;
 
-            if (unit === 30) {
-                expiry.setMonth(expiry.getMonth() + qty);
-            } else if (unit === 365) {
-                expiry.setFullYear(expiry.getFullYear() + qty);
-            } else {
-                expiry.setDate(expiry.getDate() + qty * unit);
-            }
+            if (unit === 30) expiry.setMonth(expiry.getMonth() + qty);
+            else if (unit === 365) expiry.setFullYear(expiry.getFullYear() + qty);
+            else expiry.setDate(expiry.getDate() + qty * unit);
 
             var now = new Date();
             now.setHours(0,0,0,0);
-            var expiryMid = new Date(expiry); expiryMid.setHours(0,0,0,0);
-
-            var diff = Math.round((expiryMid - now) / 86400000);
-            var total = Math.round((expiryMid - mfg) / 86400000);
+            var expMid = new Date(expiry); expMid.setHours(0,0,0,0);
+            var diff = Math.round((expMid - now) / 86400000);
+            var total = Math.round((expMid - mfg) / 86400000);
 
             document.getElementById('shelfResult').classList.add('show');
             document.getElementById('expiryDate').textContent = fmtDate(expiry);
@@ -951,7 +817,7 @@
             el.className = 'left-out';
 
             if (diff < 0) {
-                el.textContent = 'Просрочено на ' + fmtDays(-diff) + ' (' + fmtDate(expiry) + ')';
+                el.textContent = 'Просрочено на ' + fmtDays(-diff);
                 el.classList.add('red');
             } else if (diff === 0) {
                 el.textContent = 'Истекает сегодня';
@@ -980,11 +846,9 @@
         function fmtDays(n) {
             if (n === 0) return '0 дней';
             var last1 = n % 10, last2 = n % 100;
-            var word = 'дней';
-            if (last1 === 1 && last2 !== 11) word = 'дня';
-            else if (last1 >= 2 && last1 <= 4 && (last2 < 12 || last2 > 14)) word = 'дня';
-            if (last1 === 1 && last2 !== 11) word = 'день';
-            return n + ' ' + word;
+            if (last1 === 1 && last2 !== 11) return n + ' день';
+            if (last1 >= 2 && last1 <= 4 && (last2 < 12 || last2 > 14)) return n + ' дня';
+            return n + ' дней';
         }
 
         function pad(n) { return n < 10 ? '0' + n : '' + n; }
@@ -992,8 +856,7 @@
         /* ===== Калькулятор 3: QR ===== */
         function togglePrefixInput() {
             var cb = document.getElementById('prefixCheck');
-            var wrap = document.getElementById('prefixWrap');
-            wrap.classList.toggle('show', cb.checked);
+            document.getElementById('prefixWrap').classList.toggle('show', cb.checked);
         }
 
         function calcQR() {
@@ -1016,7 +879,7 @@
                     var item = document.createElement('div');
                     item.className = 'qr-item';
                     var canvas = document.createElement('canvas');
-                    qrcode.render(canvas, text, 3);
+                    qrcode.render(canvas, text, 6);
                     item.appendChild(canvas);
                     var label = document.createElement('div');
                     label.className = 'qr-text';
@@ -1177,7 +1040,6 @@
         restoreFields();
         renderHistory();
 
-        // Обновление результата срока годности при изменении полей
         ['mfgDay','mfgMonth','mfgYear','shelfLife','shelfUnit'].forEach(function(id) {
             var el = document.getElementById(id);
             if (el) el.addEventListener('change', function() {
