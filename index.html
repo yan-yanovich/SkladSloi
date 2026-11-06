@@ -132,18 +132,15 @@
         .prefix-input-wrap{display:none;margin-bottom:16px}
         .prefix-input-wrap.show{display:block}
 
-        .qr-settings{display:flex;gap:10px;margin-bottom:16px}
-        .qr-settings>div{flex:1}
-
-        .qr-grid{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;margin-top:16px}
+        .qr-grid{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:16px}
         .qr-item{
-            display:flex;flex-direction:column;align-items:center;gap:8px;
-            background:#fff;border-radius:10px;padding:16px;
+            display:flex;flex-direction:column;align-items:center;gap:6px;
+            background:#fff;border-radius:8px;padding:10px;
         }
         .qr-item canvas{image-rendering:pixelated;max-width:100%;height:auto}
         .qr-item .qr-text{
-            font-size:11px;color:#666;max-width:200px;word-break:break-all;
-            text-align:center;line-height:1.3;
+            font-size:10px;color:#666;max-width:150px;word-break:break-all;
+            text-align:center;line-height:1.2;
         }
     </style>
 </head>
@@ -220,7 +217,7 @@
     <div class="section-title" onclick="toggleSection('section3',this)">
         <span class="arrow" id="arrow3">▼</span>Генератор QR
     </div>
-    <div class="collapsible expanded" id="section3">
+    <div class="collapsible collapsed" id="section3">
         <div class="card">
             <label for="qrInput">Текст (через пробел — отдельные QR)</label>
             <textarea id="qrInput" placeholder="Вставьте текст..."></textarea>
@@ -232,16 +229,6 @@
             <div class="prefix-input-wrap" id="prefixWrap">
                 <label for="prefixVal">Текст</label>
                 <input type="text" id="prefixVal">
-            </div>
-
-            <div class="qr-settings">
-                <div>
-                    <label for="qrEcLevel">Коррекция ошибок</label>
-                    <select id="qrEcLevel">
-                        <option value="M" selected>M (15%)</option>
-                        <option value="Q">Q (25%)</option>
-                    </select>
-                </div>
             </div>
 
             <button class="btn" onclick="calcQR()">Сгенерировать</button>
@@ -883,7 +870,7 @@ var qrcode = (function() {
 
         var usePrefix = document.getElementById('prefixCheck').checked;
         var prefix = usePrefix ? document.getElementById('prefixVal').value.trim() : '';
-        var ecLevel = document.getElementById('qrEcLevel').value;
+        var ecLevel = 'M'; // Всегда M по умолчанию
 
         var grid = document.getElementById('qrGrid');
         grid.innerHTML = '';
@@ -898,7 +885,7 @@ var qrcode = (function() {
                     var item = document.createElement('div');
                     item.className = 'qr-item';
                     var canvas = document.createElement('canvas');
-                    qrcode.render(canvas, text, ecLevel, 8);
+                    qrcode.render(canvas, text, ecLevel, 4); // Размер 4 вместо 8
                     item.appendChild(canvas);
                     var label = document.createElement('div');
                     label.className = 'qr-text';
@@ -992,7 +979,6 @@ var qrcode = (function() {
             document.getElementById('qrInput').value = data.raw;
             document.getElementById('prefixCheck').checked = !!data.prefix;
             document.getElementById('prefixVal').value = data.prefix || '';
-            if (data.ec) document.getElementById('qrEcLevel').value = data.ec;
             togglePrefixInput();
             calcQR();
         }
