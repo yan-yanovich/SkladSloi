@@ -200,6 +200,7 @@
             display:flex;
             align-items:center;
             justify-content:center;
+            border:none;
         }
         .btn-download-icon:hover{transform:scale(1.1)}
 
@@ -402,8 +403,8 @@
     </div>
 
     <!-- КОРОБА -->
-    <div class="section-title" onclick="toggleSection('section1',this)">
-        <span class="arrow" id="arrow1">▼</span>Короба в слое
+    <div class="section-title" onclick="toggleSection(this)">
+        <span class="arrow">▼</span>Короба в слое
     </div>
     <div class="collapsible expanded" id="section1">
         <div class="card">
@@ -427,8 +428,8 @@
     </div>
 
     <!-- СРОКИ ГОДНОСТИ -->
-    <div class="section-title" onclick="toggleSection('section2',this)">
-        <span class="arrow" id="arrow2">▼</span>Сроки годности
+    <div class="section-title" onclick="toggleSection(this)">
+        <span class="arrow">▼</span>Сроки годности
     </div>
     <div class="collapsible expanded" id="section2">
         <div class="card">
@@ -461,8 +462,8 @@
     </div>
 
     <!-- ГЕНЕРАТОР QR -->
-    <div class="section-title" onclick="toggleSection('section3',this)">
-        <span class="arrow" id="arrow3">▼</span>Генератор QR-кодов
+    <div class="section-title" onclick="toggleSection(this)">
+        <span class="arrow">▼</span>Генератор QR-кодов
     </div>
     <div class="collapsible expanded" id="section3">
         <div class="card">
@@ -491,8 +492,8 @@
     </div>
 
     <!-- ИСТОРИЯ -->
-    <div class="section-title" onclick="toggleSection('section4',this)">
-        <span class="arrow" id="arrow4">▼</span>История
+    <div class="section-title" onclick="toggleSection(this)">
+        <span class="arrow">▼</span>История
     </div>
     <div class="collapsible expanded" id="section4">
         <div class="card">
@@ -926,23 +927,25 @@ var qrcode = (function() {
     };
 
     /* ===== Сворачивание ===== */
-    function toggleSection(id, el) {
-        var section = document.getElementById(id);
-        var arrow = el.querySelector('.arrow');
+    function toggleSection(titleEl) {
+        var section = titleEl.nextElementSibling;
+        var arrow = titleEl.querySelector('.arrow');
+        
         if (section.classList.contains('collapsed')) {
             section.style.maxHeight = section.scrollHeight + 'px';
             section.classList.remove('collapsed');
             section.classList.add('expanded');
             arrow.classList.remove('collapsed');
-            sectionStates[id] = true;
-            setTimeout(function() { section.style.maxHeight = 'none'; }, 200);
+            var sectionId = section.id;
+            sectionStates[sectionId] = true;
         } else {
             section.style.maxHeight = section.scrollHeight + 'px';
             section.offsetHeight;
             section.classList.add('collapsed');
             section.classList.remove('expanded');
             arrow.classList.add('collapsed');
-            sectionStates[id] = false;
+            var sectionId = section.id;
+            sectionStates[sectionId] = false;
             section.style.maxHeight = '0px';
         }
         saveSectionStates();
@@ -959,21 +962,21 @@ var qrcode = (function() {
             var saved = localStorage.getItem('sectionStates');
             if (saved) {
                 sectionStates = JSON.parse(saved);
-                for (var sectionId in sectionStates) {
+                ['section1', 'section2', 'section3', 'section4'].forEach(function(sectionId) {
                     var section = document.getElementById(sectionId);
-                    var arrow = document.querySelector('[onclick*="toggleSection(\''+sectionId+'\'"] .arrow');
-                    if (section && arrow) {
-                        if (sectionStates[sectionId]) {
-                            section.classList.remove('collapsed');
-                            section.classList.add('expanded');
-                            arrow.classList.remove('collapsed');
-                        } else {
-                            section.classList.add('collapsed');
-                            section.classList.remove('expanded');
-                            arrow.classList.add('collapsed');
-                        }
+                    var titleEl = section.previousElementSibling;
+                    var arrow = titleEl.querySelector('.arrow');
+                    
+                    if (sectionStates[sectionId]) {
+                        section.classList.remove('collapsed');
+                        section.classList.add('expanded');
+                        arrow.classList.remove('collapsed');
+                    } else {
+                        section.classList.add('collapsed');
+                        section.classList.remove('expanded');
+                        arrow.classList.add('collapsed');
                     }
-                }
+                });
             }
         } catch(e) {}
     }
@@ -1324,10 +1327,13 @@ var qrcode = (function() {
             data: data,
             time: new Date().toLocaleString('ru-RU')
         };
+        
+        if (!history[type]) history[type] = [];
         history[type].unshift(entry);
         
         try { 
             localStorage.setItem('history', JSON.stringify(history)); 
+            console.log('History saved:', type, entry);
         } catch(e) {
             console.error('LocalStorage error:', e);
         }
@@ -1341,20 +1347,36 @@ var qrcode = (function() {
         if (type === 'boxes') {
             document.getElementById('boxL').value = data.bl;
             document.getElementById('boxW').value = data.bw;
+            
+            // Открыть раздел
+            var section = document.getElementById('section1');
+            if (section.classList.contains('collapsed')) {
+                toggleSection(section.previousElementSibling);
+            }
+            
             setTimeout(function() {
                 calc();
                 skipHistorySave = false;
-            }, 50);
+            }, 100);
+            
         } else if (type === 'shelf') {
             document.getElementById('mfgDay').value = data.d;
             document.getElementById('mfgMonth').value = data.m;
             document.getElementById('mfgYear').value = data.y;
             document.getElementById('shelfLife').value = data.qty;
             document.getElementById('shelfUnit').value = data.unit;
+            
+            // Открыть раздел
+            var section = document.getElementById('section2');
+            if (section.classList.contains('collapsed')) {
+                toggleSection(section.previousElementSibling);
+            }
+            
             setTimeout(function() {
                 calcShelf();
                 skipHistorySave = false;
-            }, 50);
+            }, 100);
+            
         } else if (type === 'code') {
             document.getElementById('codeInput').value = data.raw;
             document.getElementById('prefixCheck').checked = data.prefix ? true : false;
@@ -1364,10 +1386,17 @@ var qrcode = (function() {
             } else {
                 document.getElementById('prefixWrap').classList.remove('show');
             }
+            
+            // Открыть раздел
+            var section = document.getElementById('section3');
+            if (section.classList.contains('collapsed')) {
+                toggleSection(section.previousElementSibling);
+            }
+            
             setTimeout(function() {
                 generateCode();
                 skipHistorySave = false;
-            }, 50);
+            }, 100);
         }
     }
 
