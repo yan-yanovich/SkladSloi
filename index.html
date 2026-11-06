@@ -161,7 +161,7 @@
             border-radius:8px;
             padding:12px;
             flex: 0 0 calc(25% - 12px);
-            min-width:140px;
+            min-width:160px;
         }
 
         .code-item canvas{
@@ -177,6 +177,7 @@
             width:100%;
             height:auto;
             display:block;
+            min-height:120px;
             border:1px solid #ddd;
             border-radius:4px;
         }
@@ -974,9 +975,7 @@ var qrcode = (function() {
     var currentCodeType = 'qr';
 
     function switchCodeType(type) {
-        // Просто переключаемся - текст остается без изменений
         currentCodeType = type;
-        
         document.getElementById('btnQR').classList.toggle('active', type === 'qr');
         document.getElementById('btnBarcode').classList.toggle('active', type === 'barcode');
     }
@@ -1027,22 +1026,35 @@ var qrcode = (function() {
                     try {
                         var item = document.createElement('div');
                         item.className = 'code-item';
+                        
+                        var container = document.createElement('div');
+                        container.style.width = '100%';
+                        container.style.minHeight = '140px';
+                        container.style.display = 'flex';
+                        container.style.alignItems = 'center';
+                        container.style.justifyContent = 'center';
+                        container.style.border = '1px solid #ddd';
+                        container.style.borderRadius = '4px';
+                        container.style.backgroundColor = '#fff';
+                        
                         var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                        svg.style.maxWidth = '100%';
+                        svg.style.height = 'auto';
                         
-                        // Вычисляем размер в зависимости от длины текста через CSS стили
-                        var svgWidth = Math.max(150, text.length * 12);
-                        svg.style.width = svgWidth + 'px';
-                        svg.style.height = '100px';
+                        container.appendChild(svg);
+                        item.appendChild(container);
                         
-                        item.appendChild(svg);
                         JsBarcode(svg, text, {
                             format: 'CODE128',
-                            width: 3,
-                            height: 80,
-                            margin: 5,
+                            width: 2.5,
+                            height: 100,
+                            margin: 10,
                             lineColor: '#000',
-                            background: '#fff'
+                            background: '#fff',
+                            displayValue: true,
+                            fontSize: 16
                         });
+                        
                         var label = document.createElement('div');
                         label.className = 'code-text';
                         label.textContent = text;
@@ -1077,7 +1089,8 @@ var qrcode = (function() {
         document.getElementById('codeResult').scrollIntoView({behavior:'smooth'});
         
         if (!skipHistorySave) {
-            saveToHistory('code', raw, successCount + ' ' + (successCount%10===1?'код':'кодов'), {});
+            saveToHistory('code', raw, successCount + ' ' + typeLabel.toLowerCase(),
+                {raw:raw, prefix:prefix, type:currentCodeType});
         }
     }
 
@@ -1087,86 +1100,143 @@ var qrcode = (function() {
         document.getElementById('codeResult').classList.remove('show');
     }
 
-    function downloadAllPNG() {
-        var grid = document.getElementById('codeGrid');
-        var items = grid.querySelectorAll('.code-item');
+    /* ===== История ===== */
+    var currentHistoryTab = 'boxes';
+    var history = { boxes: [], shelf: [], code: [] };
+
+    function saveToHistory(type, input, result, data) {
+        if (skipHistorySave) return;
+        var entry = {
+            input: input,
+            result: result,
+            data: data,
+            time: new Date().toLocaleString('ru-RU')
+        };
+        history[type].unshift(entry);
+        try { localStorage.setItem('history', JSON.stringify(history)); } catch(e) {}
+        updateHistoryList();
+    }
+
+    function loadFromHistory(type, data) {
+        skipHistorySave = true;
+        
+        if (type === 'boxes') {
+            document.getElementById('boxL').value = data.bl;
+            document.getElementById('boxW').value = data.bw;
+            calc();
+        } else if (type === 'shelf') {
+            document.getElementById('mfgDay').value = data.d;
+            document.getElementById('mfgMonth').value = data.m;
+            document.getElementById('mfgYear').value = data.y;
+            document.getElementById('shelfLife').value = data.qty;
+            document.getElementById('shelfUnit').value = data.unit;
+            calcShelf();
+        } else if (type === 'code') {
+            document.getElementById('codeInput').value = data.raw;
+            document.getElementById('prefixCheck').checked = data.prefix ? true : false;
+            if (data.prefix) {
+                document.getElementById('prefixVal').value = data.prefix;
+                document.getElementById('prefixWrap').classList.add('show');
+            }
+            switchCodeType(data.type);
+            generateCode();
+        }
+        
+        skipHistorySave = false;
+    }
+
+    function switchHistoryTab(tab) {
+        currentHistoryTab = tab;
+        document.querySelectorAll('.history-tab').forEach(function(el) {
+            el.classList.remove('active');
+        });
+        document.getElementById('tab' + (tab==='boxes'?'Boxes':tab==='shelf'?'Shelf':'Code')).classList.add('active');
+        updateHistoryList();
+    }
+
+    function updateHistoryList() {
+        var list = document.getElementById('historyList');
+        var items = history[currentHistoryTab] || [];
+        list.innerHTML = '';
         
         if (items.length === 0) {
-            alert('Коды не сгенерированы');
+            var li = document.createElement('li');
+            li.textContent = 'История пуста';
+            li.style.color = 'var(--text3)';
+            li.style.textAlign = 'center';
+            li.style.padding = '20px';
+            list.appendChild(li);
             return;
         }
 
-        var itemWidth = 160;
-        var itemHeight = 160;
-        var gap = 16;
-        var cols = 4;
-        var rows = Math.ceil(items.length / cols);
+        items.forEach(function(entry) {
+            var li = document.createElement('li');
+            li.className = 'history-item';
+            li.innerHTML = 
+                '<div class="h-input">'+escapeHtml(entry.input)+'</div>'+
+                '<div class="h-result">'+escapeHtml(entry.result)+'</div>'+
+                '<div class="h-date">'+entry.time+'</div>';
+            li.onclick = function() { loadFromHistory(currentHistoryTab, entry.data); };
+            list.appendChild(li);
+        });
+    }
 
-        var canvasWidth = cols * itemWidth + (cols - 1) * gap;
-        var canvasHeight = rows * itemHeight + (rows - 1) * gap;
+    function clearHistory() {
+        if (confirm('Вы уверены?')) {
+            history = { boxes: [], shelf: [], code: [] };
+            try { localStorage.removeItem('history'); } catch(e) {}
+            updateHistoryList();
+        }
+    }
+
+    function escapeHtml(text) {
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    /* ===== Скачивание PNG ===== */
+    function downloadAllPNG() {
+        var items = document.querySelectorAll('.code-item');
+        if (!items.length) { alert('Нет кодов для скачивания'); return; }
 
         var canvas = document.createElement('canvas');
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
+        var cols = window.innerWidth > 900 ? 4 : window.innerWidth > 600 ? 3 : 2;
+        var rows = Math.ceil(items.length / cols);
+        var itemSize = 200;
+        var gap = 16;
+        var totalW = cols * itemSize + (cols - 1) * gap;
+        var totalH = rows * itemSize + (rows - 1) * gap;
+        
+        canvas.width = totalW;
+        canvas.height = totalH;
         var ctx = canvas.getContext('2d');
-
         ctx.fillStyle = '#fff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        var promises = [];
 
         items.forEach(function(item, idx) {
             var row = Math.floor(idx / cols);
             var col = idx % cols;
-            var x = col * (itemWidth + gap);
-            var y = row * (itemHeight + gap);
+            var x = col * (itemSize + gap);
+            var y = row * (itemSize + gap);
 
-            var codeElem = item.querySelector('canvas');
-            var svgElem = item.querySelector('svg');
-            var textElem = item.querySelector('.code-text');
+            var img = item.querySelector('canvas') || item.querySelector('svg');
+            if (!img) return;
 
-            if (codeElem) {
-                ctx.drawImage(codeElem, x + 20, y + 10, 120, 120);
-                
-                if (textElem) {
-                    ctx.fillStyle = '#000';
-                    ctx.font = 'bold 10px Arial';
-                    ctx.textAlign = 'center';
-                    var text = textElem.textContent;
-                    ctx.fillText(text.substring(0, 16), x + itemWidth / 2, y + 145);
-                }
-            } else if (svgElem) {
-                var svgString = new XMLSerializer().serializeToString(svgElem);
-                var svg = new Blob([svgString], { type: 'image/svg+xml' });
-                var url = URL.createObjectURL(svg);
-                var img = new Image();
-                
-                promises.push(new Promise(function(resolve) {
-                    img.onload = function() {
-                        ctx.drawImage(img, x + 15, y + 20, 130, 90);
-                        if (textElem) {
-                            ctx.fillStyle = '#000';
-                            ctx.font = 'bold 10px Arial';
-                            ctx.textAlign = 'center';
-                            ctx.fillText(textElem.textContent.substring(0, 16), x + itemWidth / 2, y + 145);
-                        }
-                        URL.revokeObjectURL(url);
-                        resolve();
-                    };
-                    img.onerror = function() {
-                        URL.revokeObjectURL(url);
-                        resolve();
-                    };
-                    img.src = url;
-                }));
+            if (img.tagName === 'CANVAS') {
+                ctx.drawImage(img, x, y, itemSize, itemSize);
+            } else if (img.tagName === 'svg') {
+                var xml = new XMLSerializer().serializeToString(img);
+                var svg = new Image();
+                svg.onload = function() {
+                    ctx.drawImage(svg, x, y, itemSize, itemSize);
+                    if (idx === items.length - 1) downloadCanvas(canvas);
+                };
+                svg.src = 'data:image/svg+xml;base64,' + btoa(xml);
             }
         });
 
-        if (promises.length > 0) {
-            Promise.all(promises).then(function() {
-                downloadCanvas(canvas);
-            });
-        } else {
+        if (!items.some(function(el) { return el.querySelector('svg'); })) {
             downloadCanvas(canvas);
         }
     }
@@ -1175,133 +1245,19 @@ var qrcode = (function() {
         var link = document.createElement('a');
         link.href = canvas.toDataURL('image/png');
         link.download = 'codes_' + new Date().getTime() + '.png';
-        document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
-    }
-
-    /* ===== История ===== */
-    var currentHistoryTab = 'boxes';
-
-    function getHistoryData() {
-        try {
-            var data = localStorage.getItem('historyData');
-            return data ? JSON.parse(data) : {boxes:[], shelf:[], code:[]};
-        } catch(e) {
-            return {boxes:[], shelf:[], code:[]};
-        }
-    }
-
-    function saveHistoryData(data) {
-        try {
-            localStorage.setItem('historyData', JSON.stringify(data));
-        } catch(e) {}
-    }
-
-    function saveToHistory(type, input, result, data) {
-        var historyData = getHistoryData();
-        
-        if (!historyData[type]) {
-            historyData[type] = [];
-        }
-        
-        var entry = {
-            input: input,
-            result: result,
-            date: new Date().toLocaleString('ru-RU'),
-            data: data
-        };
-        
-        historyData[type].unshift(entry);
-        if (historyData[type].length > 50) historyData[type].pop();
-        
-        saveHistoryData(historyData);
-        renderHistory();
-    }
-
-    function loadFromHistory(type, data) {
-        // Включаем флаг чтобы не сохранять при загрузке
-        skipHistorySave = true;
-        
-        if (type === 'boxes') {
-            document.getElementById('boxL').value = data.bl || '';
-            document.getElementById('boxW').value = data.bw || '';
-            calc();
-        } else if (type === 'shelf') {
-            document.getElementById('mfgDay').value = data.d || '';
-            document.getElementById('mfgMonth').value = data.m || '';
-            document.getElementById('mfgYear').value = data.y || '';
-            document.getElementById('shelfLife').value = data.qty || '';
-            document.getElementById('shelfUnit').value = data.unit || '1';
-            calcShelf();
-        } else if (type === 'code') {
-            // Для кодов просто показываем результат
-            document.getElementById('codeResult').classList.add('show');
-        }
-        
-        // Отключаем флаг после загрузки
-        skipHistorySave = false;
-    }
-
-    function renderHistory() {
-        var historyData = getHistoryData();
-        var type = currentHistoryTab;
-        var list = document.getElementById('historyList');
-        list.innerHTML = '';
-        
-        var items = historyData[type] || [];
-        if (items.length === 0) {
-            list.innerHTML = '<li style="text-align:center;color:var(--text3);padding:20px">История пуста</li>';
-            return;
-        }
-        
-        for (var i = 0; i < items.length; i++) {
-            var item = items[i];
-            var li = document.createElement('li');
-            li.className = 'history-item';
-            li.setAttribute('data-type', type);
-            li.setAttribute('data-data', JSON.stringify(item.data));
-            li.onclick = function() {
-                var t = this.getAttribute('data-type');
-                var d = JSON.parse(this.getAttribute('data-data'));
-                loadFromHistory(t, d);
-            };
-            li.innerHTML = 
-                '<div class="h-input">Ввод: ' + (item.input || '') + '</div>' +
-                '<div class="h-result">Результат: ' + (item.result || '') + '</div>' +
-                '<div class="h-date">' + (item.date || '') + '</div>';
-            list.appendChild(li);
-        }
-    }
-
-    function switchHistoryTab(tab) {
-        currentHistoryTab = tab;
-        document.querySelectorAll('.history-tab').forEach(function(el) {
-            el.classList.toggle('active', el.id === 'tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
-        });
-        renderHistory();
-    }
-
-    function clearHistory() {
-        if (confirm('Очистить всю историю?')) {
-            localStorage.removeItem('historyData');
-            renderHistory();
-        }
     }
 
     /* ===== Инициализация ===== */
-    function initApp() {
+    (function() {
         initShelfSelects();
+        try {
+            var saved = localStorage.getItem('history');
+            if (saved) history = JSON.parse(saved);
+        } catch(e) {}
+        updateHistoryList();
         loadSectionStates();
-        renderHistory();
-        
-        var historyData = getHistoryData();
-        if (!historyData.code) historyData.code = [];
-        saveHistoryData(historyData);
-    }
-
-    window.addEventListener('DOMContentLoaded', initApp);
+    })();
 </script>
-
 </body>
 </html>
