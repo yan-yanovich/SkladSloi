@@ -1019,12 +1019,17 @@ var qrcode = (function() {
                         var item = document.createElement('div');
                         item.className = 'code-item';
                         var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                        
+                        // Явно устанавливаем размеры на SVG
+                        svg.setAttribute('width', '200');
+                        svg.setAttribute('height', '150');
+                        
                         item.appendChild(svg);
                         JsBarcode(svg, text, {
                             format: 'CODE128',
-                            width: 4,
-                            height: 100,
-                            margin: 8,
+                            width: 3,
+                            height: 80,
+                            margin: 5,
                             lineColor: '#000',
                             background: '#fff'
                         });
