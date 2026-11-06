@@ -943,13 +943,23 @@ var qrcode = (function() {
     };
 
     function switchCodeType(type) {
+        // Сохраняем текущее состояние ДО переключения
+        if (currentCodeType) {
+            codeHistory[currentCodeType] = [{
+                input: document.getElementById('codeInput').value,
+                prefix: document.getElementById('prefixVal').value,
+                prefixUsed: document.getElementById('prefixCheck').checked
+            }];
+        }
+
         currentCodeType = type;
         
         document.getElementById('btnQR').classList.toggle('active', type === 'qr');
         document.getElementById('btnBarcode').classList.toggle('active', type === 'barcode');
 
-        if (codeHistory[type].length > 0) {
-            var saved = codeHistory[type][codeHistory[type].length - 1];
+        // Восстанавливаем сохраненное состояние
+        if (codeHistory[type] && codeHistory[type].length > 0) {
+            var saved = codeHistory[type][0];
             document.getElementById('codeInput').value = saved.input || '';
             document.getElementById('prefixCheck').checked = saved.prefixUsed || false;
             document.getElementById('prefixVal').value = saved.prefix || '';
@@ -959,6 +969,7 @@ var qrcode = (function() {
                 document.getElementById('prefixWrap').classList.remove('show');
             }
         } else {
+            // Если для этого типа кода нет истории, очищаем
             document.getElementById('codeInput').value = '';
             document.getElementById('prefixCheck').checked = false;
             document.getElementById('prefixVal').value = '';
@@ -997,7 +1008,7 @@ var qrcode = (function() {
                         var item = document.createElement('div');
                         item.className = 'code-item';
                         var canvas = document.createElement('canvas');
-                        qrcode.render(canvas, text, 'M', 5);
+                        qrcode.render(canvas, text, 'M', 10);
                         item.appendChild(canvas);
                         var label = document.createElement('div');
                         label.className = 'code-text';
@@ -1018,9 +1029,9 @@ var qrcode = (function() {
                         item.appendChild(svg);
                         JsBarcode(svg, text, {
                             format: 'CODE128',
-                            width: 2,
-                            height: 50,
-                            margin: 5,
+                            width: 3,
+                            height: 80,
+                            margin: 8,
                             lineColor: '#000',
                             background: '#fff'
                         });
@@ -1051,19 +1062,18 @@ var qrcode = (function() {
         }];
 
         var typeLabel = currentCodeType === 'qr' ? 'QR-коды' : 'Штрихкоды';
+        var successCount = grid.children.length;
+        
         if (failedItems.length > 0) {
-            var successCount = grid.children.length;
             document.getElementById('codeResultLabel').textContent = 
-                typeLabel + ' ('+successCount+' из '+parts.length+' шт.) – '+failedItems.length+' не влезло';
+                typeLabel + ' ('+successCount+' из '+(parts.length)+' успешно)';
         } else {
-            document.getElementById('codeResultLabel').textContent = typeLabel + ' ('+parts.length+' шт.)';
+            document.getElementById('codeResultLabel').textContent = typeLabel + ' ('+successCount+' шт.)';
         }
 
         document.getElementById('codeResult').classList.add('show');
         document.getElementById('codeResult').scrollIntoView({behavior:'smooth'});
-        
-        saveToHistory('code', raw.substring(0,50)+(raw.length>50?'...':''), grid.children.length+' '+(currentCodeType==='qr'?'QR':'ШК'),
-            {raw:raw, prefix:prefix, type:currentCodeType});
+        saveToHistory('code', raw, successCount + ' ' + (successCount%10===1?'код':'кодов'), {});
     }
 
     function codeFail(msg) {
@@ -1074,204 +1084,199 @@ var qrcode = (function() {
 
     function downloadAllPNG() {
         var grid = document.getElementById('codeGrid');
-        if (!grid.children.length) return;
+        var items = grid.querySelectorAll('.code-item');
+        
+        if (items.length === 0) {
+            alert('Коды не сгенерированы');
+            return;
+        }
+
+        // Параметры сетки
+        var itemsPerRow = 10;
+        var itemWidth = 120;
+        var itemHeight = 140;
+        var gap = 8;
+
+        var cols = Math.min(itemsPerRow, items.length);
+        var rows = Math.ceil(items.length / itemsPerRow);
+
+        var canvasWidth = cols * itemWidth + (cols - 1) * gap;
+        var canvasHeight = rows * itemHeight + (rows - 1) * gap;
 
         var canvas = document.createElement('canvas');
-        var padding = 20;
-        var itemSize = 120;
-        var itemsPerRow = 10;
-        var cols = Math.min(grid.children.length, itemsPerRow);
-        var rows = Math.ceil(grid.children.length / itemsPerRow);
-
-        canvas.width = cols * itemSize + padding * 2;
-        canvas.height = rows * itemSize + padding * 2;
-
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
         var ctx = canvas.getContext('2d');
+
+        // Белый фон
         ctx.fillStyle = '#fff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        var itemIndex = 0;
-        for (var row = 0; row < rows; row++) {
-            for (var col = 0; col < cols; col++) {
-                if (itemIndex >= grid.children.length) break;
+        var promises = [];
+        var drawCount = 0;
 
-                var x = padding + col * itemSize;
-                var y = padding + row * itemSize;
+        items.forEach(function(item, idx) {
+            var row = Math.floor(idx / itemsPerRow);
+            var col = idx % itemsPerRow;
+            var x = col * (itemWidth + gap);
+            var y = row * (itemHeight + gap);
 
-                var sourceItem = grid.children[itemIndex];
-                var sourceCanvas = sourceItem.querySelector('canvas');
-                var sourceSvg = sourceItem.querySelector('svg');
+            var codeElem = item.querySelector('canvas');
+            var svgElem = item.querySelector('svg');
+            var textElem = item.querySelector('.code-text');
 
-                if (sourceCanvas) {
-                    var scaledSize = Math.min(itemSize - 20, sourceCanvas.width, sourceCanvas.height);
-                    var offsetX = x + (itemSize - scaledSize) / 2;
-                    var offsetY = y + (itemSize - scaledSize) / 2;
-                    ctx.drawImage(sourceCanvas, offsetX, offsetY, scaledSize, scaledSize);
-                } else if (sourceSvg) {
-                    var svgCanvas = document.createElement('canvas');
-                    svgCanvas.width = 300;
-                    svgCanvas.height = 100;
-                    var svgCtx = svgCanvas.getContext('2d');
-                    var svgData = new XMLSerializer().serializeToString(sourceSvg);
-                    var img = new Image();
-                    img.onload = function() {
-                        ctx.drawImage(img, x + 10, y + 30, itemSize - 20, 50);
-                    };
-                    img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+            if (codeElem) {
+                // Для QR-кода (canvas)
+                ctx.drawImage(codeElem, x + 10, y + 5, 100, 100);
+                
+                // Текст под кодом
+                if (textElem) {
+                    ctx.fillStyle = '#000';
+                    ctx.font = 'bold 10px Arial';
+                    ctx.textAlign = 'center';
+                    var text = textElem.textContent;
+                    ctx.fillText(text.substring(0, 14), x + itemWidth / 2, y + 125);
                 }
-
-                itemIndex++;
+            } else if (svgElem) {
+                // Для штрихкода (svg) - конвертируем в canvas
+                var svgString = new XMLSerializer().serializeToString(svgElem);
+                var svg = new Blob([svgString], { type: 'image/svg+xml' });
+                var url = URL.createObjectURL(svg);
+                var img = new Image();
+                
+                promises.push(new Promise(function(resolve) {
+                    img.onload = function() {
+                        ctx.drawImage(img, x + 10, y + 10, 100, 80);
+                        if (textElem) {
+                            ctx.fillStyle = '#000';
+                            ctx.font = 'bold 10px Arial';
+                            ctx.textAlign = 'center';
+                            ctx.fillText(textElem.textContent.substring(0, 14), x + itemWidth / 2, y + 125);
+                        }
+                        URL.revokeObjectURL(url);
+                        resolve();
+                    };
+                    img.onerror = function() {
+                        URL.revokeObjectURL(url);
+                        resolve();
+                    };
+                    img.src = url;
+                }));
             }
-        }
-
-        canvas.toBlob(function(blob) {
-            var url = URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            a.href = url;
-            a.download = (currentCodeType === 'qr' ? 'qr-codes' : 'barcodes') + '_' + new Date().toISOString().slice(0,10) + '.png';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
         });
+
+        // Ждем загрузки всех SVG
+        if (promises.length > 0) {
+            Promise.all(promises).then(function() {
+                downloadCanvas(canvas);
+            });
+        } else {
+            downloadCanvas(canvas);
+        }
+    }
+
+    function downloadCanvas(canvas) {
+        var link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = 'codes_' + new Date().getTime() + '.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
 
     /* ===== История ===== */
-    var historyData = {boxes:[], shelf:[], code:[]};
-    var currentTab = 'boxes';
-    var fromHistory = false;
+    var currentHistoryTab = 'boxes';
+
+    function getHistoryData() {
+        try {
+            var data = localStorage.getItem('historyData');
+            return data ? JSON.parse(data) : {boxes:[], shelf:[], code:[]};
+        } catch(e) {
+            return {boxes:[], shelf:[], code:[]};
+        }
+    }
+
+    function saveHistoryData(data) {
+        try {
+            localStorage.setItem('historyData', JSON.stringify(data));
+        } catch(e) {}
+    }
 
     function saveToHistory(type, input, result, data) {
-        if (fromHistory) { fromHistory = false; return; }
+        var historyData = getHistoryData();
         
+        // Инициализируем массив если не существует
         if (!historyData[type]) {
             historyData[type] = [];
         }
         
-        historyData[type].unshift({input:input, result:result, data:data, date:new Date().toLocaleString('ru')});
-        if (historyData[type].length > 15) historyData[type].length = 15;
-        try { localStorage.setItem('multitoolHistory', JSON.stringify(historyData)); } catch(e) {}
+        var entry = {
+            input: input,
+            result: result,
+            date: new Date().toLocaleString('ru-RU'),
+            data: data
+        };
+        
+        historyData[type].unshift(entry);
+        if (historyData[type].length > 50) historyData[type].pop();
+        
+        saveHistoryData(historyData);
         renderHistory();
     }
 
     function renderHistory() {
-        var ul = document.getElementById('historyList');
-        ul.innerHTML = '';
-        var arr = historyData[currentTab] || [];
-        if (!arr.length) {
-            ul.innerHTML = '<li style="text-align:center;color:var(--text3);padding:20px">Пока пусто</li>';
+        var historyData = getHistoryData();
+        var type = currentHistoryTab;
+        var list = document.getElementById('historyList');
+        list.innerHTML = '';
+        
+        var items = historyData[type] || [];
+        if (items.length === 0) {
+            list.innerHTML = '<li style="text-align:center;color:var(--text3);padding:20px">История пуста</li>';
             return;
         }
-        arr.forEach(function(item, idx) {
+        
+        for (var i = 0; i < items.length; i++) {
+            var item = items[i];
             var li = document.createElement('li');
             li.className = 'history-item';
-            li.innerHTML = '<div class="h-input">'+escHtml(item.input)+'</div>'+
-                           '<div class="h-result">'+escHtml(item.result)+'</div>'+
-                           '<div class="h-date">'+escHtml(item.date)+'</div>';
-            li.onclick = function() { restoreFromHistory(currentTab, item.data); };
-            ul.appendChild(li);
-        });
-    }
-
-    function escHtml(s) {
-        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    }
-
-    function restoreFromHistory(type, data) {
-        fromHistory = true;
-        if (type === 'boxes') {
-            document.getElementById('boxL').value = data.bl;
-            document.getElementById('boxW').value = data.bw;
-            calc();
-        } else if (type === 'shelf') {
-            document.getElementById('mfgDay').value = data.d;
-            document.getElementById('mfgMonth').value = data.m;
-            document.getElementById('mfgYear').value = data.y;
-            document.getElementById('shelfLife').value = data.qty;
-            document.getElementById('shelfUnit').value = data.unit;
-            calcShelf();
-        } else if (type === 'code') {
-            switchCodeType(data.type);
-            document.getElementById('codeInput').value = data.raw;
-            document.getElementById('prefixCheck').checked = !!data.prefix;
-            document.getElementById('prefixVal').value = data.prefix || '';
-            if (data.prefix) {
-                document.getElementById('prefixWrap').classList.add('show');
-            }
-            generateCode();
+            li.innerHTML = 
+                '<div class="h-input">Ввод: ' + (item.input || '') + '</div>' +
+                '<div class="h-result">Результат: ' + (item.result || '') + '</div>' +
+                '<div class="h-date">' + (item.date || '') + '</div>';
+            list.appendChild(li);
         }
     }
 
     function switchHistoryTab(tab) {
-        currentTab = tab;
-        document.getElementById('tabBoxes').classList.toggle('active', tab==='boxes');
-        document.getElementById('tabShelf').classList.toggle('active', tab==='shelf');
-        document.getElementById('tabCode').classList.toggle('active', tab==='code');
+        currentHistoryTab = tab;
+        document.querySelectorAll('.history-tab').forEach(function(el) {
+            el.classList.toggle('active', el.id === 'tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+        });
         renderHistory();
     }
 
     function clearHistory() {
-        historyData = {boxes:[], shelf:[], code:[]};
-        try { localStorage.setItem('multitoolHistory', JSON.stringify(historyData)); } catch(e) {}
+        if (confirm('Очистить всю историю?')) {
+            localStorage.removeItem('historyData');
+            renderHistory();
+        }
+    }
+
+    /* ===== Инициализация ===== */
+    function initApp() {
+        initShelfSelects();
+        loadSectionStates();
         renderHistory();
+        
+        // Инициализируем пустую историю если нужно
+        var historyData = getHistoryData();
+        if (!historyData.code) historyData.code = [];
+        saveHistoryData(historyData);
     }
 
-    /* ===== Сохранение полей ===== */
-    (function() {
-        var fields = [['boxL'],['boxW'],['shelfLife'],['codeInput'],['prefixVal']];
-        fields.forEach(function(f) {
-            var el = document.getElementById(f[0]);
-            if (!el) return;
-            var v = localStorage.getItem(f[0]);
-            if (v !== null) el.value = v;
-            el.addEventListener('input', function() {
-                localStorage.setItem(f[0], el.value);
-            });
-        });
-    })();
-
-    /* ===== Фокус ===== */
-    document.addEventListener('focusin', function(e) {
-        if (e.target.matches('input,select,textarea')) {
-            setTimeout(function() { e.target.scrollIntoView({behavior:'smooth',block:'center'}); }, 300);
-        }
-    });
-
-    /* ===== Enter ===== */
-    document.addEventListener('keydown', function(e) {
-        if (e.key==='Enter' && e.target.matches('input')) {
-            e.preventDefault();
-            var inputs = Array.from(document.querySelectorAll('input'));
-            var idx = inputs.indexOf(e.target);
-            if (idx>-1 && idx<inputs.length-1) inputs[idx+1].focus();
-        }
-    });
-
-    /* ===== Init ===== */
-    initShelfSelects();
-
-    try {
-        var saved = localStorage.getItem('multitoolHistory');
-        if (saved) {
-            var parsed = JSON.parse(saved);
-            historyData = parsed;
-        }
-    } catch(e) {
-        console.error('Ошибка при загрузке истории:', e);
-    }
-    renderHistory();
-
-    loadSectionStates();
-
-    ['mfgDay','mfgMonth','mfgYear','shelfLife','shelfUnit'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (el) el.addEventListener('change', function() {
-            if (document.getElementById('shelfResult').classList.contains('show')) calcShelf();
-        });
-    });
-    document.getElementById('shelfLife').addEventListener('input', function() {
-        if (document.getElementById('shelfResult').classList.contains('show')) calcShelf();
-    });
+    window.addEventListener('DOMContentLoaded', initApp);
 </script>
+
 </body>
 </html>
