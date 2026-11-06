@@ -86,13 +86,6 @@
         }
         .btn-sm:hover{background:var(--err-bg)}
 
-        .btn-download{
-            width:auto;padding:12px 24px;font-size:14px;font-weight:600;
-            color:#fff;background:var(--green);border:none;border-radius:10px;
-            cursor:pointer;transition:background .3s ease;
-        }
-        .btn-download:hover{background:#1e5a28}
-
         .result{display:none}.result.show{display:block}
         .result-label{text-align:center;font-size:16px;color:var(--text3);margin-bottom:8px}
         .result-count{text-align:center;font-size:48px;font-weight:700;color:var(--accent)}
@@ -150,15 +143,25 @@
         }
         .code-type-btn:hover{border-color:var(--accent)}
 
-        .code-grid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px}
+        .code-grid{
+            display:grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap:8px;
+            margin-top:16px;
+        }
         .code-item{
-            display:flex;flex-direction:column;align-items:center;gap:4px;
-            background:#fff;border-radius:8px;padding:8px;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            gap:4px;
+            background:#fff;
+            border-radius:8px;
+            padding:8px;
         }
         .code-item canvas{image-rendering:pixelated;max-width:100%;height:auto}
         .code-item svg{max-width:100%;height:auto}
         .code-item .code-text{
-            font-size:10px;color:#666;max-width:120px;word-break:break-all;
+            font-size:10px;color:#666;max-width:100%;word-break:break-all;
             text-align:center;line-height:1.2;
         }
 
@@ -167,16 +170,26 @@
             margin:12px 0;flex-wrap:wrap;
         }
 
-        @media (max-width: 800px) {
-            .code-grid{gap:6px}
-            .code-item{padding:6px}
+        .btn-download-icon{
+            font-size:20px;cursor:pointer;transition:transform .2s ease;
+        }
+        .btn-download-icon:hover{transform:scale(1.2)}
+
+        @media (max-width: 1200px) {
+            .code-grid{grid-template-columns: repeat(8, 1fr)}
+        }
+        @media (max-width: 900px) {
+            .code-grid{grid-template-columns: repeat(6, 1fr)}
+        }
+        @media (max-width: 600px) {
+            .code-grid{grid-template-columns: repeat(4, 1fr)}
         }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="top-row">
-        <h1>[jg:last_name_2][jg:first_name_1]</h1>
+        <h1>Мультитул оператора</h1>
         <button class="theme-btn" onclick="toggleTheme()" title="Сменить тему">
             <span class="icon-moon">🌙</span>
             <span class="icon-sun">☀️</span>
@@ -272,7 +285,7 @@
         <div class="card result" id="codeResult">
             <div class="download-row">
                 <div class="result-label" id="codeResultLabel" style="flex:1;margin:0">QR-коды (0 шт.)</div>
-                <button class="btn-download" onclick="downloadAllPDF()">📥 Скачать PDF</button>
+                <span class="btn-download-icon" title="Скачать PNG" onclick="downloadAllPNG()">⤓</span>
             </div>
             <div class="code-grid" id="codeGrid"></div>
         </div>
@@ -300,7 +313,6 @@
 var qrcode = (function() {
     'use strict';
 
-    /* ===== GF(256) ===== */
     var EXP = new Array(512), LOG = new Array(256);
     (function() {
         var x = 1;
@@ -664,9 +676,6 @@ var qrcode = (function() {
 <!-- ===== BARCODE БИБЛИОТЕКА (CODE128) ===== -->
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 
-<!-- ===== PDF БИБЛИОТЕКА ===== -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
 <!-- ===== ПРИЛОЖЕНИЕ ===== -->
 <script>
     /* ===== Форматирование чисел ===== */
@@ -755,6 +764,13 @@ var qrcode = (function() {
     }
     function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
+    /* ===== Месяцы ===== */
+    var months = [
+        'Январь (01)', 'Февраль (02)', 'Март (03)', 'Апрель (04)',
+        'Май (05)', 'Июнь (06)', 'Июль (07)', 'Август (08)',
+        'Сентябрь (09)', 'Октябрь (10)', 'Ноябрь (11)', 'Декабрь (12)'
+    ];
+
     /* ===== Калькулятор 1 ===== */
     var L = 120, W = 80;
     var calcCache = {};
@@ -840,7 +856,9 @@ var qrcode = (function() {
         d.innerHTML = '<option value="">День</option>';
         for (var i = 1; i <= 31; i++) d.innerHTML += '<option value="'+i+'">'+i+'</option>';
         m.innerHTML = '<option value="">Месяц</option>';
-        for (var i = 1; i <= 12; i++) m.innerHTML += '<option value="'+i+'">'+i+'</option>';
+        for (var i = 0; i < 12; i++) {
+            m.innerHTML += '<option value="'+(i+1)+'">'+months[i]+'</option>';
+        }
         y.innerHTML = '<option value="">Год</option>';
         var now = new Date();
         for (var i = now.getFullYear(); i > now.getFullYear()-10; i--)
@@ -927,11 +945,9 @@ var qrcode = (function() {
     function switchCodeType(type) {
         currentCodeType = type;
         
-        // Обновляем активную кнопку
         document.getElementById('btnQR').classList.toggle('active', type === 'qr');
         document.getElementById('btnBarcode').classList.toggle('active', type === 'barcode');
 
-        // Загружаем сохранённые данные для этого типа
         if (codeHistory[type].length > 0) {
             var saved = codeHistory[type][codeHistory[type].length - 1];
             document.getElementById('codeInput').value = saved.input || '';
@@ -939,7 +955,14 @@ var qrcode = (function() {
             document.getElementById('prefixVal').value = saved.prefix || '';
             if (saved.prefixUsed) {
                 document.getElementById('prefixWrap').classList.add('show');
+            } else {
+                document.getElementById('prefixWrap').classList.remove('show');
             }
+        } else {
+            document.getElementById('codeInput').value = '';
+            document.getElementById('prefixCheck').checked = false;
+            document.getElementById('prefixVal').value = '';
+            document.getElementById('prefixWrap').classList.remove('show');
         }
         
         saveSectionStates();
@@ -1021,7 +1044,6 @@ var qrcode = (function() {
             return;
         }
 
-        // Сохраняем историю для этого типа
         codeHistory[currentCodeType] = [{
             input: raw,
             prefix: prefix,
@@ -1050,72 +1072,68 @@ var qrcode = (function() {
         document.getElementById('codeResult').classList.remove('show');
     }
 
-    function downloadAllPDF() {
+    function downloadAllPNG() {
         var grid = document.getElementById('codeGrid');
         if (!grid.children.length) return;
 
-        var element = document.createElement('div');
-        element.style.padding = '20px';
-        element.style.backgroundColor = '#fff';
+        var canvas = document.createElement('canvas');
+        var padding = 20;
+        var itemSize = 120;
+        var itemsPerRow = 10;
+        var cols = Math.min(grid.children.length, itemsPerRow);
+        var rows = Math.ceil(grid.children.length / itemsPerRow);
 
-        var title = document.createElement('h1');
-        title.textContent = currentCodeType === 'qr' ? 'QR-коды' : 'Штрихкоды (CODE128)';
-        title.style.textAlign = 'center';
-        title.style.marginBottom = '30px';
-        title.style.fontSize = '24px';
-        element.appendChild(title);
+        canvas.width = cols * itemSize + padding * 2;
+        canvas.height = rows * itemSize + padding * 2;
 
-        var codesContainer = document.createElement('div');
-        codesContainer.style.display = 'flex';
-        codesContainer.style.flexWrap = 'wrap';
-        codesContainer.style.gap = '20px';
-        codesContainer.style.justifyContent = 'center';
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        for (var i = 0; i < grid.children.length; i++) {
-            var item = grid.children[i];
-            var codeWrapper = document.createElement('div');
-            codeWrapper.style.textAlign = 'center';
-            codeWrapper.style.pageBreakInside = 'avoid';
+        var itemIndex = 0;
+        for (var row = 0; row < rows; row++) {
+            for (var col = 0; col < cols; col++) {
+                if (itemIndex >= grid.children.length) break;
 
-            var canvas = item.querySelector('canvas');
-            var svg = item.querySelector('svg');
-            var text = item.querySelector('.code-text').textContent;
+                var x = padding + col * itemSize;
+                var y = padding + row * itemSize;
 
-            if (canvas) {
-                var img = document.createElement('img');
-                img.src = canvas.toDataURL();
-                img.style.width = 'auto';
-                img.style.height = 'auto';
-                img.style.maxWidth = '200px';
-                codeWrapper.appendChild(img);
-            } else if (svg) {
-                var clonedSvg = svg.cloneNode(true);
-                clonedSvg.style.width = '200px';
-                clonedSvg.style.height = 'auto';
-                codeWrapper.appendChild(clonedSvg);
+                var sourceItem = grid.children[itemIndex];
+                var sourceCanvas = sourceItem.querySelector('canvas');
+                var sourceSvg = sourceItem.querySelector('svg');
+
+                if (sourceCanvas) {
+                    var scaledSize = Math.min(itemSize - 20, sourceCanvas.width, sourceCanvas.height);
+                    var offsetX = x + (itemSize - scaledSize) / 2;
+                    var offsetY = y + (itemSize - scaledSize) / 2;
+                    ctx.drawImage(sourceCanvas, offsetX, offsetY, scaledSize, scaledSize);
+                } else if (sourceSvg) {
+                    var svgCanvas = document.createElement('canvas');
+                    svgCanvas.width = 300;
+                    svgCanvas.height = 100;
+                    var svgCtx = svgCanvas.getContext('2d');
+                    var svgData = new XMLSerializer().serializeToString(sourceSvg);
+                    var img = new Image();
+                    img.onload = function() {
+                        ctx.drawImage(img, x + 10, y + 30, itemSize - 20, 50);
+                    };
+                    img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+                }
+
+                itemIndex++;
             }
-
-            var label = document.createElement('p');
-            label.textContent = text;
-            label.style.fontSize = '12px';
-            label.style.marginTop = '8px';
-            label.style.wordBreak = 'break-all';
-            codeWrapper.appendChild(label);
-
-            codesContainer.appendChild(codeWrapper);
         }
 
-        element.appendChild(codesContainer);
-
-        var opt = {
-            margin: 10,
-            filename: (currentCodeType === 'qr' ? 'qr-codes' : 'barcodes') + '_' + new Date().toISOString().slice(0,10) + '.pdf',
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-        };
-
-        html2pdf().set(opt).from(element).save();
+        canvas.toBlob(function(blob) {
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = (currentCodeType === 'qr' ? 'qr-codes' : 'barcodes') + '_' + new Date().toISOString().slice(0,10) + '.png';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
     }
 
     /* ===== История ===== */
@@ -1125,6 +1143,11 @@ var qrcode = (function() {
 
     function saveToHistory(type, input, result, data) {
         if (fromHistory) { fromHistory = false; return; }
+        
+        if (!historyData[type]) {
+            historyData[type] = [];
+        }
+        
         historyData[type].unshift({input:input, result:result, data:data, date:new Date().toLocaleString('ru')});
         if (historyData[type].length > 15) historyData[type].length = 15;
         try { localStorage.setItem('multitoolHistory', JSON.stringify(historyData)); } catch(e) {}
@@ -1229,8 +1252,13 @@ var qrcode = (function() {
 
     try {
         var saved = localStorage.getItem('multitoolHistory');
-        if (saved) historyData = JSON.parse(saved);
-    } catch(e) {}
+        if (saved) {
+            var parsed = JSON.parse(saved);
+            historyData = parsed;
+        }
+    } catch(e) {
+        console.error('Ошибка при загрузке истории:', e);
+    }
     renderHistory();
 
     loadSectionStates();
