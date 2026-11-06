@@ -160,12 +160,12 @@
             border-radius:8px;
             padding:12px;
             flex: 0 0 calc(25% - 12px);
-            max-width:160px;
+            min-width:140px;
         }
 
         .code-item canvas{
             image-rendering:pixelated;
-            max-width:100%;
+            width:100%;
             height:auto;
             display:block;
             border:1px solid #ddd;
@@ -173,7 +173,7 @@
         }
 
         .code-item svg{
-            max-width:100%;
+            width:100%;
             height:auto;
             display:block;
             border:1px solid #ddd;
@@ -963,37 +963,13 @@ var qrcode = (function() {
 
     /* ===== Калькулятор 3: ШК И QR ===== */
     var currentCodeType = 'qr';
-    var codeInputState = {
-        qr: { input: '', prefix: '', prefixUsed: false },
-        barcode: { input: '', prefix: '', prefixUsed: false }
-    };
 
     function switchCodeType(type) {
-        // Сохраняем состояние текущего типа
-        codeInputState[currentCodeType] = {
-            input: document.getElementById('codeInput').value,
-            prefix: document.getElementById('prefixVal').value,
-            prefixUsed: document.getElementById('prefixCheck').checked
-        };
-
-        // Переключаемся на новый тип
+        // Просто переключаемся - текст остается без изменений
         currentCodeType = type;
-
-        // Обновляем кнопки
+        
         document.getElementById('btnQR').classList.toggle('active', type === 'qr');
         document.getElementById('btnBarcode').classList.toggle('active', type === 'barcode');
-
-        // Восстанавливаем состояние для нового типа
-        var state = codeInputState[type];
-        document.getElementById('codeInput').value = state.input;
-        document.getElementById('prefixVal').value = state.prefix;
-        document.getElementById('prefixCheck').checked = state.prefixUsed;
-        
-        if (state.prefixUsed) {
-            document.getElementById('prefixWrap').classList.add('show');
-        } else {
-            document.getElementById('prefixWrap').classList.remove('show');
-        }
     }
 
     function togglePrefixInput() {
@@ -1046,9 +1022,9 @@ var qrcode = (function() {
                         item.appendChild(svg);
                         JsBarcode(svg, text, {
                             format: 'CODE128',
-                            width: 2,
-                            height: 50,
-                            margin: 5,
+                            width: 4,
+                            height: 100,
+                            margin: 8,
                             lineColor: '#000',
                             background: '#fff'
                         });
