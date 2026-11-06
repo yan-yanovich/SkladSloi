@@ -261,231 +261,11 @@
         </div>
     </div>
 
-    <!-- ===== Библиотека qrcode-generator v1.4.4 (Kazuhiko Arase) ===== -->
+    <!-- ===== Библиотека qrcode-generator (исправленная) ===== -->
     <script>
-    /*
-     * qrcode-generator
-     * Copyright (c) 2006 Kazuhiko Arase
-     * URL: http://www.d-project.com/
-     * MIT License
-     */
-    var qrcode = function() {
-        function qrcode(typeNumber, errorCorrectionLevel) {
-            var PAD0 = 0xEC;
-            var PAD1 = 0x11;
+    var qrcode = (function() {
+        'use strict';
 
-            var _typeNumber = typeNumber;
-            var _errorCorrectionLevel = QRErrorCorrectionLevel[errorCorrectionLevel];
-            var _modules = null;
-            var _moduleCount = 0;
-            var _dataCache = null;
-            var _dataList = new Array();
-
-            var _this = {};
-
-            function makeImpl(test, maskPattern) {
-                _moduleCount = _typeNumber * 4 + 17;
-                _modules = new Array(_moduleCount);
-                for (var row = 0; row < _moduleCount; row++) {
-                    _modules[row] = new Array(_moduleCount);
-                    for (var col = 0; col < _moduleCount; col++) {
-                        _modules[row][col] = null;
-                    }
-                }
-                setupPositionProbePattern(0, 0);
-                setupPositionProbePattern(_moduleCount - 7, 0);
-                setupPositionProbePattern(0, _moduleCount - 7);
-                setupPositionAdjustPattern();
-                setupTimingPattern();
-                setupTypeInfo(test, maskPattern);
-                if (_typeNumber >= 7) {
-                    setupTypeNumber(test);
-                }
-                if (_dataCache == null) {
-                    _dataCache = createData(_typeNumber, _errorCorrectionLevel, _dataList);
-                }
-                mapData(_dataCache, maskPattern);
-            }
-
-            function setupPositionProbePattern(row, col) {
-                for (var r = -1; r <= 7; r++) {
-                    if (row + r <= -1 || _moduleCount <= row + r) continue;
-                    for (var c = -1; c <= 7; c++) {
-                        if (col + c <= -1 || _moduleCount <= col + c) continue;
-                        if ((0 <= r && r <= 6 && (c == 0 || c == 6)) ||
-                            (0 <= c && c <= 6 && (r == 0 || r == 6)) ||
-                            (2 <= r && r <= 4 && 2 <= c && c <= 4)) {
-                            _modules[row + r][col + c] = true;
-                        } else {
-                            _modules[row + r][col + c] = false;
-                        }
-                    }
-                }
-            }
-
-            function getBestMaskPattern() {
-                var minLostPoint = 0;
-                var pattern = 0;
-                for (var i = 0; i < 8; i++) {
-                    makeImpl(true, i);
-                    var lostPoint = QRLostPoint.getLostPoint(_this);
-                    if (i == 0 || minLostPoint > lostPoint) {
-                        minLostPoint = lostPoint;
-                        pattern = i;
-                    }
-                }
-                return pattern;
-            }
-
-            function setupTimingPattern() {
-                for (var r = 8; r < _moduleCount - 8; r++) {
-                    if (_modules[r][6] != null) continue;
-                    _modules[r][6] = (r % 2 == 0);
-                }
-                for (var c = 8; c < _moduleCount - 8; c++) {
-                    if (_modules[6][c] != null) continue;
-                    _modules[6][c] = (c % 2 == 0);
-                }
-            }
-
-            function setupPositionAdjustPattern() {
-                var pos = QRUtil.getPatternPosition(_typeNumber);
-                for (var i = 0; i < pos.length; i++) {
-                    for (var j = 0; j < pos.length; j++) {
-                        var row = pos[i], col = pos[j];
-                        if (_modules[row][col] != null) continue;
-                        for (var r = -2; r <= 2; r++) {
-                            for (var c = -2; c <= 2; c++) {
-                                if (r == -2 || r == 2 || c == -2 || c == 2 || (r == 0 && c == 0)) {
-                                    _modules[row + r][col + c] = true;
-                                } else {
-                                    _modules[row + r][col + c] = false;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            function setupTypeNumber(test) {
-                var bits = QRUtil.getBCHTypeNumber(_typeNumber);
-                for (var i = 0; i < 18; i++) {
-                    var mod = (!test && ((bits >> i) & 1) == 1);
-                    _modules[Math.floor(i / 3)][i % 3 + _moduleCount - 8 - 3] = mod;
-                }
-                for (var i = 0; i < 18; i++) {
-                    var mod = (!test && ((bits >> i) & 1) == 1);
-                    _modules[i % 3 + _moduleCount - 8 - 3][Math.floor(i / 3)] = mod;
-                }
-            }
-
-            function setupTypeInfo(test, maskPattern) {
-                var data = (_errorCorrectionLevel << 3) | maskPattern;
-                var bits = QRUtil.getBCHTypeInfo(data);
-                for (var i = 0; i < 15; i++) {
-                    var mod = (!test && ((bits >> i) & 1) == 1);
-                    if (i < 6) {
-                        _modules[i][8] = mod;
-                    } else if (i < 8) {
-                        _modules[i + 1][8] = mod;
-                    } else {
-                        _modules[_moduleCount - 15 + i][8] = mod;
-                    }
-                }
-                for (var i = 0; i < 15; i++) {
-                    var mod = (!test && ((bits >> i) & 1) == 1);
-                    if (i < 8) {
-                        _modules[8][_moduleCount - i - 1] = mod;
-                    } else if (i < 9) {
-                        _modules[8][15 - i - 1 + 1] = mod;
-                    } else {
-                        _modules[8][15 - i - 1] = mod;
-                    }
-                }
-                _modules[_moduleCount - 8][8] = (!test);
-            }
-
-            function mapData(data, maskPattern) {
-                var inc = -1;
-                var row = _moduleCount - 1;
-                var bitIndex = 7;
-                var byteIndex = 0;
-                for (var col = _moduleCount - 1; col > 0; col -= 2) {
-                    if (col == 6) col--;
-                    while (true) {
-                        for (var c = 0; c < 2; c++) {
-                            if (_modules[row][col - c] == null) {
-                                var dark = false;
-                                if (byteIndex < data.length) {
-                                    dark = (((data[byteIndex] >>> bitIndex) & 1) == 1);
-                                }
-                                var mask = QRUtil.getMask(maskPattern, row, col - c);
-                                if (mask) dark = !dark;
-                                _modules[row][col - c] = dark;
-                                bitIndex--;
-                                if (bitIndex == -1) {
-                                    byteIndex++;
-                                    bitIndex = 7;
-                                }
-                            }
-                        }
-                        row += inc;
-                        if (row < 0 || _moduleCount <= row) {
-                            row -= inc;
-                            inc = -inc;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            _this.isDark = function(row, col) {
-                if (row < 0 || _moduleCount <= row || col < 0 || _moduleCount <= col) {
-                    throw new Error(row + "," + col);
-                }
-                return _modules[row][col];
-            };
-
-            _this.getModuleCount = function() {
-                return _moduleCount;
-            };
-
-            _this.make = function() {
-                if (_typeNumber < 1) {
-                    var typeNumber = 1;
-                    for (typeNumber = 1; typeNumber < 40; typeNumber++) {
-                        var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, _errorCorrectionLevel);
-                        var buffer = QRBitBuffer.newBuffer();
-                        for (var i = 0; i < _dataList.length; i++) {
-                            var data = _dataList[i];
-                            buffer.put(data.getMode(), 4);
-                            buffer.put(data.getLength(), QRUtil.getLengthInBits(data.getMode(), typeNumber));
-                            data.write(buffer);
-                        }
-                        var totalDataCount = 0;
-                        for (var i = 0; i < rsBlocks.length; i++) {
-                            totalDataCount += rsBlocks[i].dataCount;
-                        }
-                        if (buffer.getLengthInBits() <= totalDataCount * 8) break;
-                    }
-                    _typeNumber = typeNumber;
-                }
-                makeImpl(false, getBestMaskPattern());
-            };
-
-            _this.addData = function(data, mode) {
-                mode = mode || 'Byte';
-                if (mode == 'Byte') {
-                    _dataList.push(QR8bitByte(data));
-                } else {
-                    throw new Error('mode:' + mode);
-                }
-            };
-
-            return _this;
-        }
-
-        // ---- QRMath ----
         var QRMath = {
             glog: function(n) {
                 if (n < 1) throw new Error('glog(' + n + ')');
@@ -500,39 +280,21 @@
             LOG_TABLE: new Array(256)
         };
 
-        for (var i = 0; i < 8; i++) {
-            QRMath.EXP_TABLE[i] = 1 << i;
-        }
-        for (var i = 8; i < 256; i++) {
-            QRMath.EXP_TABLE[i] = QRMath.EXP_TABLE[i - 4] ^ QRMath.EXP_TABLE[i - 5] ^ QRMath.EXP_TABLE[i - 6] ^ QRMath.EXP_TABLE[i - 8];
-        }
-        for (var i = 0; i < 255; i++) {
-            QRMath.LOG_TABLE[QRMath.EXP_TABLE[i]] = i;
-        }
+        for (var i = 0; i < 8; i++) QRMath.EXP_TABLE[i] = 1 << i;
+        for (var i = 8; i < 256; i++)
+            QRMath.EXP_TABLE[i] = QRMath.EXP_TABLE[i-4]^QRMath.EXP_TABLE[i-5]^QRMath.EXP_TABLE[i-6]^QRMath.EXP_TABLE[i-8];
+        for (var i = 0; i < 255; i++) QRMath.LOG_TABLE[QRMath.EXP_TABLE[i]] = i;
 
-        // ---- QRErrorCorrectionLevel ----
-        var QRErrorCorrectionLevel = {
-            L: 1,
-            M: 0,
-            Q: 3,
-            H: 2
-        };
+        var QRErrorCorrectionLevel = { L:1, M:0, Q:3, H:2 };
 
-        // ---- QRBitBuffer ----
         function QRBitBuffer() {
-            var _buffer = new Array();
+            var _buffer = [];
             var _length = 0;
             var _this = {};
-
             _this.getBuffer = function() { return _buffer; };
-            _this.get = function(index) {
-                var bufIndex = Math.floor(index / 8);
-                return ((_buffer[bufIndex] >>> (7 - index % 8)) & 1) == 1;
-            };
-            _this.put = function(num, length) {
-                for (var i = 0; i < length; i++) {
-                    _this.putBit(((num >>> (length - i - 1)) & 1) == 1);
-                }
+            _this.get = function(i) { return ((_buffer[Math.floor(i/8)] >>> (7 - i%8)) & 1) == 1; };
+            _this.put = function(num, len) {
+                for (var i = 0; i < len; i++) _this.putBit(((num >>> (len - i - 1)) & 1) == 1);
             };
             _this.getLengthInBits = function() { return _length; };
             _this.putBit = function(bit) {
@@ -544,89 +306,65 @@
             return _this;
         }
 
-        // ---- QR8bitByte ----
         function QR8bitByte(data) {
             var _mode = QRMode.MODE_8BIT_BYTE;
-            var _data = data;
-            var _bytes = new Array();
-
-            // UTF-8 encode
-            for (var i = 0; i < _data.length; i++) {
-                var c = _data.charCodeAt(i);
-                if (c < 0x80) {
-                    _bytes.push(c);
-                } else if (c < 0x800) {
-                    _bytes.push(0xC0 | (c >> 6));
-                    _bytes.push(0x80 | (c & 0x3F));
-                } else if (c < 0xD800 || c >= 0xE000) {
-                    _bytes.push(0xE0 | (c >> 12));
-                    _bytes.push(0x80 | ((c >> 6) & 0x3F));
-                    _bytes.push(0x80 | (c & 0x3F));
+            var _bytes = [];
+            for (var i = 0; i < data.length; i++) {
+                var c = data.charCodeAt(i);
+                if (c < 0x80) _bytes.push(c);
+                else if (c < 0x800) { _bytes.push(0xC0|(c>>6)); _bytes.push(0x80|(c&0x3F)); }
+                else if (c < 0xD800 || c >= 0xE000) {
+                    _bytes.push(0xE0|(c>>12)); _bytes.push(0x80|((c>>6)&0x3F)); _bytes.push(0x80|(c&0x3F));
                 } else {
                     i++;
-                    var c2 = _data.charCodeAt(i);
-                    var cp = 0x10000 + (((c & 0x3FF) << 10) | (c2 & 0x3FF));
-                    _bytes.push(0xF0 | (cp >> 18));
-                    _bytes.push(0x80 | ((cp >> 12) & 0x3F));
-                    _bytes.push(0x80 | ((cp >> 6) & 0x3F));
-                    _bytes.push(0x80 | (cp & 0x3F));
+                    var c2 = data.charCodeAt(i);
+                    var cp = 0x10000 + (((c&0x3FF)<<10)|(c2&0x3FF));
+                    _bytes.push(0xF0|(cp>>18)); _bytes.push(0x80|((cp>>12)&0x3F));
+                    _bytes.push(0x80|((cp>>6)&0x3F)); _bytes.push(0x80|(cp&0x3F));
                 }
             }
-
             var _this = {};
             _this.getMode = function() { return _mode; };
             _this.getLength = function() { return _bytes.length; };
             _this.write = function(buffer) {
-                for (var i = 0; i < _bytes.length; i++) {
-                    buffer.put(_bytes[i], 8);
-                }
+                for (var i = 0; i < _bytes.length; i++) buffer.put(_bytes[i], 8);
             };
             return _this;
         }
 
-        // ---- QRMode ----
-        var QRMode = {
-            MODE_8BIT_BYTE: 1 << 2
-        };
+        var QRMode = { MODE_8BIT_BYTE: 1 << 2 };
 
-        // ---- QRUtil ----
         var QRUtil = {
             PATTERN_POSITION_TABLE: [
-                [], [6,18], [6,22], [6,26], [6,30], [6,34], [6,22,38], [6,24,42],
-                [6,26,46], [6,28,50], [6,30,54], [6,32,58], [6,34,62], [6,26,46,66],
-                [6,26,48,70], [6,26,50,74], [6,30,54,78], [6,30,56,82], [6,30,58,86],
-                [6,34,62,90], [6,28,50,72,94], [6,26,50,74,98], [6,30,54,78,102],
-                [6,28,54,80,106], [6,32,58,84,110], [6,30,58,86,114], [6,34,62,90,118],
-                [6,26,50,74,98,122], [6,30,54,78,102,126], [6,26,52,78,104,130],
-                [6,30,56,82,108,134], [6,34,60,86,112,138], [6,30,58,86,114,142],
-                [6,34,62,90,118,146], [6,30,54,78,102,126,150], [6,24,50,76,102,128,154],
-                [6,28,54,80,106,132,158], [6,32,58,84,110,136,162], [6,26,54,82,110,138,166],
+                [], [6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],
+                [6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],
+                [6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],
+                [6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],
+                [6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],
+                [6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],
+                [6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],
+                [6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],
+                [6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],
                 [6,30,58,86,114,142,170]
             ],
-            G15: (1 << 10) | (1 << 8) | (1 << 5) | (1 << 4) | (1 << 2) | (1 << 1) | (1 << 0),
-            G18: (1 << 12) | (1 << 11) | (1 << 10) | (1 << 9) | (1 << 8) | (1 << 5) | (1 << 2) | (1 << 0),
-            G15_MASK: (1 << 14) | (1 << 12) | (1 << 10) | (1 << 4) | (1 << 1),
-
+            G15: (1<<10)|(1<<8)|(1<<5)|(1<<4)|(1<<2)|(1<<1)|(1<<0),
+            G18: (1<<12)|(1<<11)|(1<<10)|(1<<9)|(1<<8)|(1<<5)|(1<<2)|(1<<0),
+            G15_MASK: (1<<14)|(1<<12)|(1<<10)|(1<<4)|(1<<1),
             getBCHTypeInfo: function(data) {
                 var d = data << 10;
-                while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) >= 0) {
+                while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15) >= 0)
                     d ^= (QRUtil.G15 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G15)));
-                }
                 return ((data << 10) | d) ^ QRUtil.G15_MASK;
             },
             getBCHTypeNumber: function(data) {
                 var d = data << 12;
-                while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) >= 0) {
+                while (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18) >= 0)
                     d ^= (QRUtil.G18 << (QRUtil.getBCHDigit(d) - QRUtil.getBCHDigit(QRUtil.G18)));
-                }
                 return (data << 12) | d;
             },
             getBCHDigit: function(data) {
                 var digit = 0;
-                while (data != 0) {
-                    digit++;
-                    data >>>= 1;
-                }
+                while (data != 0) { digit++; data >>>= 1; }
                 return digit;
             },
             getPatternPosition: function(typeNumber) {
@@ -638,151 +376,176 @@
                     case 1: return i % 2 == 0;
                     case 2: return j % 3 == 0;
                     case 3: return (i + j) % 3 == 0;
-                    case 4: return (Math.floor(i / 2) + Math.floor(j / 3)) % 2 == 0;
-                    case 5: return (i * j) % 2 + (i * j) % 3 == 0;
-                    case 6: return ((i * j) % 2 + (i * j) % 3) % 2 == 0;
-                    case 7: return ((i * j) % 3 + (i + j) % 2) % 2 == 0;
+                    case 4: return (Math.floor(i/2) + Math.floor(j/3)) % 2 == 0;
+                    case 5: return (i*j)%2 + (i*j)%3 == 0;
+                    case 6: return ((i*j)%2 + (i*j)%3) % 2 == 0;
+                    case 7: return ((i*j)%3 + (i+j)%2) % 2 == 0;
                 }
                 throw new Error('bad maskPattern:' + maskPattern);
             },
             getLengthInBits: function(mode, type) {
-                if (1 <= type && type < 10) {
-                    return 8; // 8bit byte mode
-                } else if (type < 27) {
-                    return 16;
-                } else {
-                    return 16;
-                }
+                if (type < 10) return 8;
+                else if (type < 27) return 16;
+                else return 16;
+            },
+            getErrorCorrectPolynomial: function(errorCorrectLength) {
+                var a = QRPolynomial([1], 0);
+                for (var i = 0; i < errorCorrectLength; i++)
+                    a = a.multiply(QRPolynomial([1, QRMath.gexp(i)], 0));
+                return a;
             }
         };
 
-        // ---- QRRSBlock ----
         var QRRSBlock = {
             RS_BLOCK_TABLE: [
-                // L
-                [1, 26, 19], [1, 44, 34], [1, 70, 55], [1, 100, 80], [1, 134, 108],
-                [2, 86, 68], [2, 98, 78], [2, 121, 97], [2, 152, 116], [2, 86, 68, 2, 87, 69],
-                [2, 98, 78, 2, 99, 79], [2, 121, 97, 2, 122, 98], [2, 152, 116, 2, 153, 117],
-                [3, 114, 86, 1, 115, 87], [3, 144, 112, 1, 145, 113], [3, 154, 122, 2, 155, 123],
-                [4, 130, 100, 4, 131, 101], [4, 132, 102, 2, 133, 103], [4, 144, 112, 4, 145, 113],
-                [4, 154, 122, 3, 155, 123], [5, 130, 100, 5, 131, 101], [5, 144, 112, 4, 145, 113],
-                [8, 132, 102, 4, 133, 103], [8, 154, 122, 4, 155, 123], [11, 130, 100, 5, 131, 101],
-                [11, 144, 112, 5, 145, 113], [12, 154, 122, 7, 155, 123], [12, 130, 100, 12, 131, 101],
-                [6, 154, 122, 14, 155, 123], [17, 152, 122, 4, 153, 123], [17, 152, 122, 6, 153, 123],
-                [34, 122, 94], [30, 142, 114, 18, 143, 115], [28, 152, 122, 22, 153, 123],
-                [30, 152, 122, 26, 153, 123], [28, 152, 122, 28, 153, 123], [28, 152, 122, 30, 153, 123],
-                [28, 152, 122, 32, 153, 123], [28, 152, 122, 34, 153, 123], [28, 152, 122, 36, 153, 123],
-                [28, 152, 122, 38, 153, 123],
-                // M
-                [1, 26, 16], [1, 44, 28], [1, 70, 44], [2, 50, 32], [2, 67, 43],
-                [4, 43, 27], [4, 49, 31], [2, 60, 38, 2, 61, 39], [3, 58, 36, 2, 59, 37],
-                [4, 69, 43, 1, 70, 44], [1, 80, 50, 4, 81, 51], [6, 58, 36, 2, 59, 37],
-                [8, 59, 37, 1, 60, 38], [4, 64, 40, 5, 65, 41], [5, 65, 41, 5, 66, 42],
-                [7, 73, 45, 3, 74, 46], [10, 74, 46, 1, 75, 47], [9, 69, 43, 4, 70, 44],
-                [3, 70, 44, 11, 71, 45], [3, 67, 41, 13, 68, 42], [17, 68, 42, 0, 0],
-                [17, 74, 46, 0, 0], [4, 75, 47, 14, 76, 48], [6, 73, 45, 14, 74, 46],
-                [8, 75, 47, 13, 76, 48], [19, 74, 46, 4, 75, 47], [22, 73, 45, 3, 74, 46],
-                [3, 73, 45, 23, 74, 46], [21, 73, 45, 7, 74, 46], [19, 75, 47, 10, 76, 48],
-                [2, 74, 46, 29, 75, 47], [10, 74, 46, 23, 75, 47], [14, 74, 46, 21, 75, 47],
-                [14, 74, 46, 23, 75, 47], [12, 75, 47, 26, 76, 48], [6, 75, 47, 34, 76, 48],
-                [29, 74, 46, 14, 75, 47], [13, 74, 46, 32, 75, 47], [40, 75, 47, 7, 76, 48],
-                [18, 75, 47, 31, 76, 48],
-                // Q
-                [1, 26, 13], [1, 44, 22], [2, 35, 17], [2, 50, 24], [2, 67, 33],
-                [4, 43, 21], [2, 49, 24, 2, 50, 25], [4, 58, 31, 2, 59, 32], [4, 69, 36, 4, 70, 37],
-                [2, 74, 39, 6, 75, 40], [4, 81, 43, 4, 82, 44], [4, 90, 45, 4, 91, 46],
-                [4, 103, 50, 6, 104, 51], [8, 83, 42, 4, 84, 43], [11, 80, 40, 5, 81, 41],
-                [11, 85, 44, 5, 86, 45], [11, 86, 45, 7, 87, 46], [5, 86, 45, 13, 87, 46],
-                [17, 82, 42, 0, 0], [17, 85, 44, 1, 86, 45], [13, 80, 40, 17, 81, 41],
-                [2, 86, 45, 29, 87, 46], [6, 83, 42, 34, 84, 43], [17, 85, 44, 7, 86, 45],
-                [4, 85, 44, 22, 86, 45], [20, 86, 45, 13, 87, 46], [10, 83, 42, 23, 84, 43],
-                [19, 85, 44, 17, 86, 45], [28, 84, 43, 19, 85, 44], [33, 85, 44, 16, 86, 45],
-                [12, 85, 44, 32, 86, 45], [11, 85, 44, 36, 86, 45], [19, 85, 44, 29, 86, 45],
-                [23, 85, 44, 25, 86, 45], [23, 85, 44, 28, 86, 45], [19, 85, 44, 35, 86, 45],
-                [11, 85, 44, 46, 86, 45], [59, 86, 45, 1, 87, 46], [22, 85, 44, 41, 86, 45],
-                [2, 85, 44, 64, 86, 45], [24, 85, 44, 46, 86, 45],
-                // H
-                [1, 26, 9], [1, 44, 16], [2, 35, 13], [4, 25, 9], [2, 43, 17],
-                [4, 27, 12], [4, 31, 14, 1, 32, 15], [2, 38, 18, 2, 39, 19], [4, 36, 16, 2, 37, 17],
-                [4, 43, 19, 1, 44, 20], [6, 43, 19, 2, 44, 20], [8, 43, 19, 2, 44, 20],
-                [4, 43, 19, 6, 44, 20], [3, 45, 20, 7, 46, 21], [1, 45, 20, 13, 46, 21],
-                [7, 45, 20, 3, 46, 21], [5, 45, 20, 10, 46, 21], [13, 45, 20, 3, 46, 21],
-                [17, 45, 20, 0, 0], [17, 45, 20, 1, 46, 21], [13, 45, 20, 6, 46, 21],
-                [7, 45, 20, 16, 46, 21], [11, 45, 20, 14, 46, 21], [11, 45, 20, 16, 46, 21],
-                [3, 45, 20, 23, 46, 21], [1, 45, 20, 28, 46, 21], [20, 45, 20, 15, 46, 21],
-                [19, 45, 20, 10, 46, 21], [28, 45, 20, 22, 46, 21], [34, 45, 20, 13, 46, 21],
-                [20, 45, 20, 23, 46, 21], [18, 45, 20, 25, 46, 21], [28, 45, 20, 26, 46, 21],
-                [33, 45, 20, 22, 46, 21], [35, 45, 20, 24, 46, 21], [30, 45, 20, 32, 46, 21],
-                [23, 45, 20, 35, 46, 21], [12, 45, 20, 42, 46, 21], [11, 45, 20, 50, 46, 21],
-                [19, 45, 20, 46, 46, 21], [23, 45, 20, 44, 46, 21]
+                [1,26,19],[1,44,34],[1,70,55],[1,100,80],[1,134,108],
+                [2,86,68],[2,98,78],[2,121,97],[2,152,116],[2,86,68,2,87,69],
+                [2,98,78,2,99,79],[2,121,97,2,122,98],[2,152,116,2,153,117],
+                [3,114,86,1,115,87],[3,144,112,1,145,113],[3,154,122,2,155,123],
+                [4,130,100,4,131,101],[4,132,102,2,133,103],[4,144,112,4,145,113],
+                [4,154,122,3,155,123],[5,130,100,5,131,101],[5,144,112,4,145,113],
+                [8,132,102,4,133,103],[8,154,122,4,155,123],[11,130,100,5,131,101],
+                [11,144,112,5,145,113],[12,154,122,7,155,123],[12,130,100,12,131,101],
+                [6,154,122,14,155,123],[17,152,122,4,153,123],[17,152,122,6,153,123],
+                [34,122,94],[30,142,114,18,143,115],[28,152,122,22,153,123],
+                [30,152,122,26,153,123],[28,152,122,28,153,123],[28,152,122,30,153,123],
+                [28,152,122,32,153,123],[28,152,122,34,153,123],[28,152,122,36,153,123],
+                [28,152,122,38,153,123],
+                [1,26,16],[1,44,28],[1,70,44],[2,50,32],[2,67,43],
+                [4,43,27],[4,49,31],[2,60,38,2,61,39],[3,58,36,2,59,37],
+                [4,69,43,1,70,44],[1,80,50,4,81,51],[6,58,36,2,59,37],
+                [8,59,37,1,60,38],[4,64,40,5,65,41],[5,65,41,5,66,42],
+                [7,73,45,3,74,46],[10,74,46,1,75,47],[9,69,43,4,70,44],
+                [3,70,44,11,71,45],[3,67,41,13,68,42],[17,68,42,0,0],
+                [17,74,46,0,0],[4,75,47,14,76,48],[6,73,45,14,74,46],
+                [8,75,47,13,76,48],[19,74,46,4,75,47],[22,73,45,3,74,46],
+                [3,73,45,23,74,46],[21,73,45,7,74,46],[19,75,47,10,76,48],
+                [2,74,46,29,75,47],[10,74,46,23,75,47],[14,74,46,21,75,47],
+                [14,74,46,23,75,47],[12,75,47,26,76,48],[6,75,47,34,76,48],
+                [29,74,46,14,75,47],[13,74,46,32,75,47],[40,75,47,7,76,48],
+                [18,75,47,31,76,48],
+                [1,26,13],[1,44,22],[2,35,17],[2,50,24],[2,67,33],
+                [4,43,21],[2,49,24,2,50,25],[4,58,31,2,59,32],[4,69,36,4,70,37],
+                [2,74,39,6,75,40],[4,81,43,4,82,44],[4,90,45,4,91,46],
+                [4,103,50,6,104,51],[8,83,42,4,84,43],[11,80,40,5,81,41],
+                [11,85,44,5,86,45],[11,86,45,7,87,46],[5,86,45,13,87,46],
+                [17,82,42,0,0],[17,85,44,1,86,45],[13,80,40,17,81,41],
+                [2,86,45,29,87,46],[6,83,42,34,84,43],[17,85,44,7,86,45],
+                [4,85,44,22,86,45],[20,86,45,13,87,46],[10,83,42,23,84,43],
+                [19,85,44,17,86,45],[28,84,43,19,85,44],[33,85,44,16,86,45],
+                [12,85,44,32,86,45],[11,85,44,36,86,45],[19,85,44,29,86,45],
+                [23,85,44,25,86,45],[23,85,44,28,86,45],[19,85,44,35,86,45],
+                [11,85,44,46,86,45],[59,86,45,1,87,46],[22,85,44,41,86,45],
+                [2,85,44,64,86,45],[24,85,44,46,86,45],
+                [1,26,9],[1,44,16],[2,35,13],[4,25,9],[2,43,17],
+                [4,27,12],[4,31,14,1,32,15],[2,38,18,2,39,19],[4,36,16,2,37,17],
+                [4,43,19,1,44,20],[6,43,19,2,44,20],[8,43,19,2,44,20],
+                [4,43,19,6,44,20],[3,45,20,7,46,21],[1,45,20,13,46,21],
+                [7,45,20,3,46,21],[5,45,20,10,46,21],[13,45,20,3,46,21],
+                [17,45,20,0,0],[17,45,20,1,46,21],[13,45,20,6,46,21],
+                [7,45,20,16,46,21],[11,45,20,14,46,21],[11,45,20,16,46,21],
+                [3,45,20,23,46,21],[1,45,20,28,46,21],[20,45,20,15,46,21],
+                [19,45,20,10,46,21],[28,45,20,22,46,21],[34,45,20,13,46,21],
+                [20,45,20,23,46,21],[18,45,20,25,46,21],[28,45,20,26,46,21],
+                [33,45,20,22,46,21],[35,45,20,24,46,21],[30,45,20,32,46,21],
+                [23,45,20,35,46,21],[12,45,20,42,46,21],[11,45,20,50,46,21],
+                [19,45,20,46,46,21],[23,45,20,44,46,21]
             ],
             getRSBlocks: function(typeNumber, errorCorrectionLevel) {
                 var rsBlock = QRRSBlock.getRSBlockTable(typeNumber, errorCorrectionLevel);
-                if (rsBlock == null) {
-                    throw new Error('bad rs block @ typeNumber:' + typeNumber + '/errorCorrectionLevel:' + errorCorrectionLevel);
-                }
+                if (rsBlock == null) throw new Error('bad rs block @ ' + typeNumber);
                 var length = rsBlock.length / 3;
-                var list = new Array();
+                var list = [];
                 for (var i = 0; i < length; i++) {
-                    var count = rsBlock[i * 3 + 0];
-                    var totalCount = rsBlock[i * 3 + 1];
-                    var dataCount = rsBlock[i * 3 + 2];
-                    for (var j = 0; j < count; j++) {
-                        list.push({ totalCount: totalCount, dataCount: dataCount });
-                    }
+                    var count = rsBlock[i*3], totalCount = rsBlock[i*3+1], dataCount = rsBlock[i*3+2];
+                    for (var j = 0; j < count; j++) list.push({ totalCount: totalCount, dataCount: dataCount });
                 }
                 return list;
             },
             getRSBlockTable: function(typeNumber, errorCorrectionLevel) {
                 switch (errorCorrectionLevel) {
-                    case QRErrorCorrectionLevel.L:
-                        return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 0];
-                    case QRErrorCorrectionLevel.M:
-                        return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 1];
-                    case QRErrorCorrectionLevel.Q:
-                        return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 2];
-                    case QRErrorCorrectionLevel.H:
-                        return QRRSBlock.RS_BLOCK_TABLE[(typeNumber - 1) * 4 + 3];
+                    case QRErrorCorrectionLevel.L: return QRRSBlock.RS_BLOCK_TABLE[(typeNumber-1)*4+0];
+                    case QRErrorCorrectionLevel.M: return QRRSBlock.RS_BLOCK_TABLE[(typeNumber-1)*4+1];
+                    case QRErrorCorrectionLevel.Q: return QRRSBlock.RS_BLOCK_TABLE[(typeNumber-1)*4+2];
+                    case QRErrorCorrectionLevel.H: return QRRSBlock.RS_BLOCK_TABLE[(typeNumber-1)*4+3];
                 }
                 return null;
             }
         };
 
-        // ---- Polynomial ----
         function QRPolynomial(num, shift) {
-            if (num.length == undefined) throw new Error(num.length + '/' + shift);
-            var _num = new Array();
+            var _num = [];
             for (var i = 0; i < num.length; i++) _num.push(num[i]);
             var _offset = 0;
             while (_offset < _num.length && _num[_offset] == 0) _offset++;
-            _this = {};
+            var _this = {};
             _this.get = function(index) { return _num[index + _offset]; };
             _this.getLength = function() { return _num.length - _offset; };
             _this.multiply = function(e) {
                 var num = new Array(_this.getLength() + e.getLength() - 1);
-                for (var i = 0; i < _this.getLength(); i++) {
-                    for (var j = 0; j < e.getLength(); j++) {
-                        num[i + j] ^= QRMath.gexp(QRMath.glog(_this.get(i)) + QRMath.glog(e.get(j)));
-                    }
-                }
+                for (var i = 0; i < _this.getLength(); i++)
+                    for (var j = 0; j < e.getLength(); j++)
+                        num[i+j] ^= QRMath.gexp(QRMath.glog(_this.get(i)) + QRMath.glog(e.get(j)));
                 return QRPolynomial(num, 0);
             };
             _this.mod = function(e) {
                 if (_this.getLength() - e.getLength() < 0) return _this;
                 var ratio = QRMath.glog(_this.get(0)) - QRMath.glog(e.get(0));
-                var num = new Array(_this.getLength());
+                var num = [];
                 for (var i = 0; i < _this.getLength(); i++) num[i] = _this.get(i);
-                for (var i = 0; i < e.getLength(); i++) {
+                for (var i = 0; i < e.getLength(); i++)
                     num[i] ^= QRMath.gexp(QRMath.glog(e.get(i)) + ratio);
-                }
                 return QRPolynomial(num, 0).mod(e);
             };
             return _this;
         }
 
+        var QRLostPoint = {
+            getLostPoint: function(qr) {
+                var mc = qr.getModuleCount();
+                var lost = 0;
+                for (var row = 0; row < mc; row++) {
+                    for (var col = 0; col < mc; col++) {
+                        var same = 0;
+                        var dark = qr.isDark(row, col);
+                        for (var r = -1; r <= 1; r++) {
+                            if (row+r < 0 || mc <= row+r) continue;
+                            for (var c = -1; c <= 1; c++) {
+                                if (col+c < 0 || mc <= col+c) continue;
+                                if (r == 0 && c == 0) continue;
+                                if (dark == qr.isDark(row+r, col+c)) same++;
+                            }
+                        }
+                        if (same > 5) lost += (3 + same - 5);
+                    }
+                }
+                for (var row = 0; row < mc-1; row++)
+                    for (var col = 0; col < mc-1; col++) {
+                        var cnt = 0;
+                        if (qr.isDark(row,col)) cnt++;
+                        if (qr.isDark(row+1,col)) cnt++;
+                        if (qr.isDark(row,col+1)) cnt++;
+                        if (qr.isDark(row+1,col+1)) cnt++;
+                        if (cnt == 0 || cnt == 4) lost += 3;
+                    }
+                for (var row = 0; row < mc; row++)
+                    for (var col = 0; col < mc-6; col++)
+                        if (qr.isDark(row,col) && !qr.isDark(row,col+1) && qr.isDark(row,col+2) && qr.isDark(row,col+3) && qr.isDark(row,col+4) && !qr.isDark(row,col+5) && qr.isDark(row,col+6)) lost += 40;
+                for (var col = 0; col < mc; col++)
+                    for (var row = 0; row < mc-6; row++)
+                        if (qr.isDark(row,col) && !qr.isDark(row+1,col) && qr.isDark(row+2,col) && qr.isDark(row+3,col) && qr.isDark(row+4,col) && !qr.isDark(row+5,col) && qr.isDark(row+6,col)) lost += 40;
+                var darkCnt = 0;
+                for (var col = 0; col < mc; col++)
+                    for (var row = 0; row < mc; row++)
+                        if (qr.isDark(row,col)) darkCnt++;
+                lost += Math.abs(100*darkCnt/mc/mc - 50) / 5 * 10;
+                return lost;
+            }
+        };
+
         function createData(typeNumber, errorCorrectionLevel, dataList) {
             var rsBlocks = QRRSBlock.getRSBlocks(typeNumber, errorCorrectionLevel);
-            var buffer = QRBitBuffer.newBuffer();
+            var buffer = QRBitBuffer();
             for (var i = 0; i < dataList.length; i++) {
                 var data = dataList[i];
                 buffer.put(data.getMode(), 4);
@@ -790,42 +553,32 @@
                 data.write(buffer);
             }
             var totalDataCount = 0;
-            for (var i = 0; i < rsBlocks.length; i++) {
-                totalDataCount += rsBlocks[i].dataCount;
-            }
-            if (buffer.getLengthInBits() > totalDataCount * 8) {
-                throw new Error('code length overflow. (' + buffer.getLengthInBits() + '>' + totalDataCount * 8 + ')');
-            }
-            if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) {
-                buffer.put(0, 4);
-            }
-            while (buffer.getLengthInBits() % 8 != 0) {
-                buffer.putBit(false);
-            }
+            for (var i = 0; i < rsBlocks.length; i++) totalDataCount += rsBlocks[i].dataCount;
+            if (buffer.getLengthInBits() > totalDataCount * 8)
+                throw new Error('code length overflow');
+            if (buffer.getLengthInBits() + 4 <= totalDataCount * 8) buffer.put(0, 4);
+            while (buffer.getLengthInBits() % 8 != 0) buffer.putBit(false);
             while (true) {
                 if (buffer.getLengthInBits() >= totalDataCount * 8) break;
-                buffer.put(PAD0, 8);
+                buffer.put(0xEC, 8);
                 if (buffer.getLengthInBits() >= totalDataCount * 8) break;
-                buffer.put(PAD1, 8);
+                buffer.put(0x11, 8);
             }
             return createBytes(buffer, rsBlocks);
         }
 
         function createBytes(buffer, rsBlocks) {
-            var offset = 0;
-            var maxDcCount = 0;
-            var maxEcCount = 0;
+            var offset = 0, maxDc = 0, maxEc = 0;
             var dcdata = new Array(rsBlocks.length);
             var ecdata = new Array(rsBlocks.length);
             for (var r = 0; r < rsBlocks.length; r++) {
                 var dcCount = rsBlocks[r].dataCount;
                 var ecCount = rsBlocks[r].totalCount - dcCount;
-                maxDcCount = Math.max(maxDcCount, dcCount);
-                maxEcCount = Math.max(maxEcCount, ecCount);
+                maxDc = Math.max(maxDc, dcCount);
+                maxEc = Math.max(maxEc, ecCount);
                 dcdata[r] = new Array(dcCount);
-                for (var i = 0; i < dcdata[r].length; i++) {
+                for (var i = 0; i < dcdata[r].length; i++)
                     dcdata[r][i] = 0xff & buffer.getBuffer()[i + offset];
-                }
                 offset += dcCount;
                 var rsPoly = QRUtil.getErrorCorrectPolynomial(ecCount);
                 var rawPoly = QRPolynomial(dcdata[r], rsPoly.getLength() - 1);
@@ -837,100 +590,174 @@
                 }
             }
             var totalCodeCount = 0;
-            for (var i = 0; i < rsBlocks.length; i++) {
-                totalCodeCount += rsBlocks[i].totalCount;
-            }
+            for (var i = 0; i < rsBlocks.length; i++) totalCodeCount += rsBlocks[i].totalCount;
             var data = new Array(totalCodeCount);
             var index = 0;
-            for (var i = 0; i < maxDcCount; i++) {
-                for (var r = 0; r < rsBlocks.length; r++) {
-                    if (i < dcdata[r].length) {
-                        data[index++] = dcdata[r][i];
-                    }
-                }
-            }
-            for (var i = 0; i < maxEcCount; i++) {
-                for (var r = 0; r < rsBlocks.length; r++) {
-                    if (i < ecdata[r].length) {
-                        data[index++] = ecdata[r][i];
-                    }
-                }
-            }
+            for (var i = 0; i < maxDc; i++)
+                for (var r = 0; r < rsBlocks.length; r++)
+                    if (i < dcdata[r].length) data[index++] = dcdata[r][i];
+            for (var i = 0; i < maxEc; i++)
+                for (var r = 0; r < rsBlocks.length; r++)
+                    if (i < ecdata[r].length) data[index++] = ecdata[r][i];
             return data;
         }
 
-        QRUtil.getErrorCorrectPolynomial = function(errorCorrectLength) {
-            var a = QRPolynomial([1], 0);
-            for (var i = 0; i < errorCorrectLength; i++) {
-                a = a.multiply(QRPolynomial([1, QRMath.gexp(i)], 0));
-            }
-            return a;
-        };
+        function makeQR(typeNumber, errorCorrectionLevel, dataList) {
+            var PAD0 = 0xEC, PAD1 = 0x11;
+            var _typeNumber = typeNumber;
+            var _errorCorrectionLevel = QRErrorCorrectionLevel[errorCorrectionLevel];
+            var _modules = null;
+            var _moduleCount = 0;
+            var _dataCache = null;
 
-        QRLostPoint = {
-            getLostPoint: function(qrcode) {
-                var moduleCount = qrcode.getModuleCount();
-                var lostPoint = 0;
-                // LEVEL1
-                for (var row = 0; row < moduleCount; row++) {
-                    for (var col = 0; col < moduleCount; col++) {
-                        var sameCount = 0;
-                        var dark = qrcode.isDark(row, col);
-                        for (var r = -1; r <= 1; r++) {
-                            if (row + r < 0 || moduleCount <= row + r) continue;
-                            for (var c = -1; c <= 1; c++) {
-                                if (col + c < 0 || moduleCount <= col + c) continue;
-                                if (r == 0 && c == 0) continue;
-                                if (dark == qrcode.isDark(row + r, col + c)) sameCount++;
+            function makeImpl(test, maskPattern) {
+                _moduleCount = _typeNumber * 4 + 17;
+                _modules = new Array(_moduleCount);
+                for (var row = 0; row < _moduleCount; row++) {
+                    _modules[row] = new Array(_moduleCount);
+                    for (var col = 0; col < _moduleCount; col++) _modules[row][col] = null;
+                }
+                setupPositionProbePattern(0, 0);
+                setupPositionProbePattern(_moduleCount - 7, 0);
+                setupPositionProbePattern(0, _moduleCount - 7);
+                setupPositionAdjustPattern();
+                setupTimingPattern();
+                setupTypeInfo(test, maskPattern);
+                if (_typeNumber >= 7) setupTypeNumber(test);
+                if (_dataCache == null) _dataCache = createData(_typeNumber, _errorCorrectionLevel, dataList);
+                mapData(_dataCache, maskPattern);
+            }
+
+            function setupPositionProbePattern(row, col) {
+                for (var r = -1; r <= 7; r++) {
+                    if (row+r <= -1 || _moduleCount <= row+r) continue;
+                    for (var c = -1; c <= 7; c++) {
+                        if (col+c <= -1 || _moduleCount <= col+c) continue;
+                        if ((0<=r&&r<=6&&(c==0||c==6))||(0<=c&&c<=6&&(r==0||r==6))||(2<=r&&r<=4&&2<=c&&c<=4))
+                            _modules[row+r][col+c] = true;
+                        else _modules[row+r][col+c] = false;
+                    }
+                }
+            }
+
+            function setupTimingPattern() {
+                for (var r = 8; r < _moduleCount-8; r++) { if (_modules[r][6] != null) continue; _modules[r][6] = (r%2==0); }
+                for (var c = 8; c < _moduleCount-8; c++) { if (_modules[6][c] != null) continue; _modules[6][c] = (c%2==0); }
+            }
+
+            function setupPositionAdjustPattern() {
+                var pos = QRUtil.getPatternPosition(_typeNumber);
+                for (var i = 0; i < pos.length; i++) {
+                    for (var j = 0; j < pos.length; j++) {
+                        var row = pos[i], col = pos[j];
+                        if (_modules[row][col] != null) continue;
+                        for (var r = -2; r <= 2; r++)
+                            for (var c = -2; c <= 2; c++)
+                                _modules[row+r][col+c] = (r==-2||r==2||c==-2||c==2||(r==0&&c==0));
+                    }
+                }
+            }
+
+            function setupTypeNumber(test) {
+                var bits = QRUtil.getBCHTypeNumber(_typeNumber);
+                for (var i = 0; i < 18; i++) {
+                    var mod = (!test && ((bits >> i) & 1) == 1);
+                    _modules[Math.floor(i/3)][i%3 + _moduleCount - 8 - 3] = mod;
+                }
+                for (var i = 0; i < 18; i++) {
+                    var mod = (!test && ((bits >> i) & 1) == 1);
+                    _modules[i%3 + _moduleCount - 8 - 3][Math.floor(i/3)] = mod;
+                }
+            }
+
+            function setupTypeInfo(test, maskPattern) {
+                var data = (_errorCorrectionLevel << 3) | maskPattern;
+                var bits = QRUtil.getBCHTypeInfo(data);
+                for (var i = 0; i < 15; i++) {
+                    var mod = (!test && ((bits >> i) & 1) == 1);
+                    if (i < 6) _modules[i][8] = mod;
+                    else if (i < 8) _modules[i+1][8] = mod;
+                    else _modules[_moduleCount-15+i][8] = mod;
+                }
+                for (var i = 0; i < 15; i++) {
+                    var mod = (!test && ((bits >> i) & 1) == 1);
+                    if (i < 8) _modules[8][_moduleCount-i-1] = mod;
+                    else if (i < 9) _modules[8][15-i-1+1] = mod;
+                    else _modules[8][15-i-1] = mod;
+                }
+                _modules[_moduleCount-8][8] = (!test);
+            }
+
+            function mapData(data, maskPattern) {
+                var inc = -1, row = _moduleCount - 1, bitIndex = 7, byteIndex = 0;
+                for (var col = _moduleCount-1; col > 0; col -= 2) {
+                    if (col == 6) col--;
+                    while (true) {
+                        for (var c = 0; c < 2; c++) {
+                            if (_modules[row][col-c] == null) {
+                                var dark = false;
+                                if (byteIndex < data.length)
+                                    dark = (((data[byteIndex] >>> bitIndex) & 1) == 1);
+                                var mask = QRUtil.getMask(maskPattern, row, col-c);
+                                if (mask) dark = !dark;
+                                _modules[row][col-c] = dark;
+                                bitIndex--;
+                                if (bitIndex == -1) { byteIndex++; bitIndex = 7; }
                             }
                         }
-                        if (sameCount > 5) {
-                            lostPoint += (3 + sameCount - 5);
+                        row += inc;
+                        if (row < 0 || _moduleCount <= row) { row -= inc; inc = -inc; break; }
+                    }
+                }
+            }
+
+            function getBestMaskPattern() {
+                var minLost = 0, pattern = 0;
+                for (var i = 0; i < 8; i++) {
+                    makeImpl(true, i);
+                    var lost = QRLostPoint.getLostPoint(_this);
+                    if (i == 0 || minLost > lost) { minLost = lost; pattern = i; }
+                }
+                return pattern;
+            }
+
+            var _this = {
+                isDark: function(row, col) {
+                    if (row < 0 || _moduleCount <= row || col < 0 || _moduleCount <= col)
+                        throw new Error(row + ',' + col);
+                    return _modules[row][col];
+                },
+                getModuleCount: function() { return _moduleCount; }
+            };
+
+            return {
+                make: function() {
+                    if (_typeNumber < 1) {
+                        for (var t = 1; t < 40; t++) {
+                            var rsBlocks = QRRSBlock.getRSBlocks(t, _errorCorrectionLevel);
+                            var buffer = QRBitBuffer();
+                            for (var i = 0; i < dataList.length; i++) {
+                                var d = dataList[i];
+                                buffer.put(d.getMode(), 4);
+                                buffer.put(d.getLength(), QRUtil.getLengthInBits(d.getMode(), t));
+                                d.write(buffer);
+                            }
+                            var total = 0;
+                            for (var i = 0; i < rsBlocks.length; i++) total += rsBlocks[i].dataCount;
+                            if (buffer.getLengthInBits() <= total * 8) { _typeNumber = t; break; }
                         }
                     }
-                }
-                // LEVEL2
-                for (var row = 0; row < moduleCount - 1; row++) {
-                    for (var col = 0; col < moduleCount - 1; col++) {
-                        var count = 0;
-                        if (qrcode.isDark(row, col)) count++;
-                        if (qrcode.isDark(row + 1, col)) count++;
-                        if (qrcode.isDark(row, col + 1)) count++;
-                        if (qrcode.isDark(row + 1, col + 1)) count++;
-                        if (count == 0 || count == 4) lostPoint += 3;
-                    }
-                }
-                // LEVEL3
-                for (var row = 0; row < moduleCount; row++) {
-                    for (var col = 0; col < moduleCount - 6; col++) {
-                        if (qrcode.isDark(row, col) && !qrcode.isDark(row, col + 1) && qrcode.isDark(row, col + 2) && qrcode.isDark(row, col + 3) && qrcode.isDark(row, col + 4) && !qrcode.isDark(row, col + 5) && qrcode.isDark(row, col + 6)) lostPoint += 40;
-                    }
-                }
-                for (var col = 0; col < moduleCount; col++) {
-                    for (var row = 0; row < moduleCount - 6; row++) {
-                        if (qrcode.isDark(row, col) && !qrcode.isDark(row + 1, col) && qrcode.isDark(row + 2, col) && qrcode.isDark(row + 3, col) && qrcode.isDark(row + 4, col) && !qrcode.isDark(row + 5, col) && qrcode.isDark(row + 6, col)) lostPoint += 40;
-                    }
-                }
-                // LEVEL4
-                var darkCount = 0;
-                for (var col = 0; col < moduleCount; col++) {
-                    for (var row = 0; row < moduleCount; row++) {
-                        if (qrcode.isDark(row, col)) darkCount++;
-                    }
-                }
-                var ratio = Math.abs(100 * darkCount / moduleCount / moduleCount - 50) / 5;
-                lostPoint += ratio * 10;
-                return lostPoint;
-            }
-        };
+                    makeImpl(false, getBestMaskPattern());
+                },
+                isDark: _this.isDark,
+                getModuleCount: _this.getModuleCount
+            };
+        }
 
-        QRBitBuffer.newBuffer = function() { return QRBitBuffer(); };
-
-        // ---- Public API ----
         return {
             create: function(text) {
-                var qr = qrcode(0, 'L');
-                qr.addData(text);
+                var dataList = [QR8bitByte(text)];
+                var qr = makeQR(0, 'L', dataList);
                 qr.make();
                 return qr;
             },
@@ -946,16 +773,12 @@
                 ctx.fillStyle = '#fff';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = '#000';
-                for (var r = 0; r < count; r++) {
-                    for (var c = 0; c < count; c++) {
-                        if (qr.isDark(r, c)) {
-                            ctx.fillRect((c + qz) * px, (r + qz) * px, px, px);
-                        }
-                    }
-                }
+                for (var r = 0; r < count; r++)
+                    for (var c = 0; c < count; c++)
+                        if (qr.isDark(r, c)) ctx.fillRect((c+qz)*px, (r+qz)*px, px, px);
             }
         };
-    }();
+    })();
     </script>
 
     <script>
@@ -974,604 +797,396 @@
         })();
 
         /* ===== Сворачивание разделов ===== */
-        var sectionIds = ['section1', 'section2', 'section3', 'section4'];
+        var sectionIds = ['section1','section2','section3','section4'];
 
-        function collapseSection(section) {
-            section.style.maxHeight = section.scrollHeight + 'px';
-            section.offsetHeight;
-            section.classList.add('collapsed');
-            section.classList.remove('expanded');
-            section.style.maxHeight = '0';
-        }
-
-        function expandSection(section) {
-            section.classList.remove('collapsed');
-            section.classList.remove('expanded');
-            section.style.maxHeight = '0';
-            section.offsetHeight;
-            section.style.maxHeight = section.scrollHeight + 'px';
-
-            var handler = function(e) {
-                if (e.target !== section) return;
-                if (e.propertyName !== 'max-height') return;
-                section.style.maxHeight = 'none';
-                section.classList.add('expanded');
-                section.removeEventListener('transitionend', handler);
-            };
-            section.addEventListener('transitionend', handler);
-        }
-
-        function toggleSection(id, titleEl) {
+        function toggleSection(id, el) {
             var section = document.getElementById(id);
-            var arrow = titleEl.querySelector('.arrow');
-
+            var arrow = el.querySelector('.arrow');
             if (section.classList.contains('collapsed')) {
-                expandSection(section);
+                section.style.maxHeight = section.scrollHeight + 'px';
+                section.classList.remove('collapsed');
+                section.classList.add('expanded');
                 arrow.classList.remove('collapsed');
-                localStorage.setItem('collapsed_' + id, '0');
+                setTimeout(function() { section.style.maxHeight = 'none'; }, 200);
             } else {
-                section.classList.remove('expanded');
                 section.style.maxHeight = section.scrollHeight + 'px';
                 section.offsetHeight;
-                collapseSection(section);
+                section.classList.add('collapsed');
+                section.classList.remove('expanded');
                 arrow.classList.add('collapsed');
-                localStorage.setItem('collapsed_' + id, '1');
+                section.style.maxHeight = '0px';
             }
         }
 
-        function restoreSections() {
-            sectionIds.forEach(function(id, idx) {
-                var section = document.getElementById(id);
-                var arrow = document.getElementById('arrow' + (idx + 1));
-                var saved = localStorage.getItem('collapsed_' + id);
-                if (saved === '1') {
-                    section.classList.add('collapsed');
-                    section.classList.remove('expanded');
-                    section.style.maxHeight = '0';
-                    arrow.classList.add('collapsed');
-                } else {
-                    section.classList.add('expanded');
-                    section.classList.remove('collapsed');
-                    section.style.maxHeight = 'none';
-                    arrow.classList.remove('collapsed');
-                }
+        /* ===== Парсинг чисел (запятая/точка) ===== */
+        function parseNum(str) {
+            if (!str) return NaN;
+            return parseFloat(String(str).replace(',', '.'));
+        }
+
+        /* ===== Калькулятор 1: Короба в слое ===== */
+        var L = 120, W = 80;
+
+        function n(zw, zh, bw, bh) {
+            return Math.floor(zw / bw) * Math.floor(zh / bh);
+        }
+
+        function pts(total, d1, d2) {
+            var s = {};
+            var o = [];
+            for (var k = 1; k * d1 <= total; k++) s[k * d1] = 1;
+            for (var k = 1; k * d2 <= total; k++) s[k * d2] = 1;
+            for (var k = 0; k * d1 < total; k++) s[total - k * d1] = 1;
+            for (var k = 0; k * d2 < total; k++) s[total - k * d2] = 1;
+            for (var p in s) {
+                var v = +p;
+                if (v > 0 && v < total) o.push(v);
+            }
+            return o.sort(function(x,y){ return x-y; });
+        }
+
+        function best(bl, bw) {
+            var o = [{w:bl,h:bw},{w:bw,h:bl}];
+            var bc = 0, cfg;
+            function t(c, x) { if (c > bc) { bc = c; cfg = x; } }
+
+            for (var i = 0; i < 2; i++) t(n(L,W,o[i].w,o[i].h), {t:'s',o:[i]});
+
+            var xp = pts(L, bl, bw), yp = pts(W, bl, bw);
+
+            for (var s of xp) for (var i = 0; i < 2; i++) for (var j = 0; j < 2; j++)
+                t(n(s,W,o[i].w,o[i].h) + n(L-s,W,o[j].w,o[j].h), {t:'v2',s:[s],o:[i,j]});
+
+            for (var s of yp) for (var i = 0; i < 2; i++) for (var j = 0; j < 2; j++)
+                t(n(L,s,o[i].w,o[i].h) + n(L,W-s,o[j].w,o[j].h), {t:'h2',s:[s],o:[i,j]});
+
+            for (var xs of xp) for (var ys of yp) for (var i = 0; i < 2; i++) for (var j = 0; j < 2; j++) for (var k = 0; k < 2; k++) for (var l = 0; l < 2; l++)
+                t(n(xs,ys,o[i].w,o[i].h) + n(L-xs,ys,o[j].w,o[j].h) +
+                  n(xs,W-ys,o[k].w,o[k].h) + n(L-xs,W-ys,o[l].w,o[l].h), {t:'x',s:[xs,ys],o:[i,j,k,l]});
+
+            var names = { s:'Обычная', v2:'Смешанная (верт.)', h2:'Смешанная (гориз.)', x:'Смешанная' };
+            return { total: bc, type: names[cfg ? cfg.t : 's'] };
+        }
+
+        function calc() {
+            var bl = parseNum(document.getElementById('boxL').value);
+            var bw = parseNum(document.getElementById('boxW').value);
+            var el1 = document.getElementById('boxL'), el2 = document.getElementById('boxW');
+            el1.classList.remove('err'); el2.classList.remove('err');
+
+            if (!bl || bl <= 0) { el1.classList.add('err'); el1.focus(); fail(); return; }
+            if (!bw || bw <= 0) { el2.classList.add('err'); el2.focus(); fail(); return; }
+
+            var r = best(bl, bw);
+            if (!r.total) { el1.classList.add('err'); el2.classList.add('err'); fail(); return; }
+
+            document.getElementById('err').classList.remove('show');
+            var res = document.getElementById('result');
+            res.classList.add('show');
+            document.getElementById('count').textContent = r.total;
+            document.getElementById('fill').textContent = ((r.total*bl*bw)/(L*W)*100).toFixed(1) + '%';
+            document.getElementById('dims').textContent = 'Коробка ' + bl + ' × ' + bw + ' см';
+            res.scrollIntoView({behavior:'smooth'});
+            saveToHistory('boxes', bl + ' × ' + bw, r.total + ' шт.', {bl:bl, bw:bw});
+        }
+
+        function fail() {
+            document.getElementById('err').textContent = '7 раз отмерь — 1 раз введи';
+            document.getElementById('err').classList.add('show');
+            document.getElementById('result').classList.remove('show');
+        }
+
+        /* ===== Калькулятор 2: Сроки годности ===== */
+        var monthNames = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+
+        function initShelfSelects() {
+            var daySel = document.getElementById('mfgDay');
+            var monthSel = document.getElementById('mfgMonth');
+            var yearSel = document.getElementById('mfgYear');
+            daySel.innerHTML = '<option value="">День</option>';
+            for (var d = 1; d <= 31; d++) daySel.innerHTML += '<option value="'+d+'">'+d+'</option>';
+            monthSel.innerHTML = '<option value="">Месяц</option>';
+            for (var m = 1; m <= 12; m++) monthSel.innerHTML += '<option value="'+m+'">'+m+'</option>';
+            yearSel.innerHTML = '<option value="">Год</option>';
+            var now = new Date();
+            for (var y = now.getFullYear(); y > now.getFullYear() - 10; y--)
+                yearSel.innerHTML += '<option value="'+y+'">'+y+'</option>';
+        }
+
+        function calcShelf() {
+            var d = +document.getElementById('mfgDay').value;
+            var m = +document.getElementById('mfgMonth').value;
+            var y = +document.getElementById('mfgYear').value;
+            var qty = parseInt(document.getElementById('shelfLife').value);
+            var unit = +document.getElementById('shelfUnit').value;
+
+            if (!d || !m || !y) { showShelfErr('Укажите дату производства'); return; }
+            if (!qty || qty <= 0) { showShelfErr('Укажите срок годности'); return; }
+
+            document.getElementById('shelfErr').classList.remove('show');
+            var mfg = new Date(y, m - 1, d);
+            if (mfg.getDate() !== d || mfg.getMonth() !== m-1) { showShelfErr('Неверная дата'); return; }
+
+            var expiry = new Date(mfg);
+            var unitText = document.getElementById('shelfUnit').selectedOptions[0].text;
+
+            if (unit === 30) {
+                expiry.setMonth(expiry.getMonth() + qty);
+            } else if (unit === 365) {
+                expiry.setFullYear(expiry.getFullYear() + qty);
+            } else {
+                expiry.setDate(expiry.getDate() + qty * unit);
+            }
+
+            var now = new Date();
+            now.setHours(0,0,0,0);
+            var expiryMid = new Date(expiry); expiryMid.setHours(0,0,0,0);
+
+            var diff = Math.round((expiryMid - now) / 86400000);
+            var total = Math.round((expiryMid - mfg) / 86400000);
+
+            document.getElementById('shelfResult').classList.add('show');
+            document.getElementById('expiryDate').textContent = fmtDate(expiry);
+            var el = document.getElementById('daysLeft');
+            el.className = 'left-out';
+
+            if (diff < 0) {
+                el.textContent = 'Просрочено на ' + fmtDays(-diff) + ' (' + fmtDate(expiry) + ')';
+                el.classList.add('red');
+            } else if (diff === 0) {
+                el.textContent = 'Истекает сегодня';
+                el.classList.add('orange');
+            } else {
+                var pct = total > 0 ? Math.round(diff / total * 100) : 0;
+                el.textContent = 'Осталось ' + fmtDays(diff) + ' (' + pct + '%)';
+                el.classList.add(pct > 20 ? 'green' : 'orange');
+            }
+
+            saveToHistory('shelf', d + '.' + pad(m) + '.' + y + ' + ' + qty + ' ' + unitText, fmtDate(expiry), {
+                d:d, m:m, y:y, qty:qty, unit:unit
             });
         }
 
-        /* ===== История ===== */
-        var HISTORY_KEY = 'history';
-        var HISTORY_MAX = 15;
-        var fromHistory = false;
-        var currentHistoryTab = 'boxes';
-
-        function getHistory() {
-            try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; }
-            catch(e) { return []; }
+        function showShelfErr(msg) {
+            document.getElementById('shelfErr').textContent = msg;
+            document.getElementById('shelfErr').classList.add('show');
+            document.getElementById('shelfResult').classList.remove('show');
         }
 
-        function saveHistory(entry) {
-            if (fromHistory) return;
-            var h = getHistory();
-            h.unshift(entry);
-            if (h.length > HISTORY_MAX) h.length = HISTORY_MAX;
-            localStorage.setItem(HISTORY_KEY, JSON.stringify(h));
+        function fmtDate(dt) {
+            return pad(dt.getDate()) + '.' + pad(dt.getMonth()+1) + '.' + dt.getFullYear();
+        }
+
+        function fmtDays(n) {
+            if (n === 0) return '0 дней';
+            var last1 = n % 10, last2 = n % 100;
+            var word = 'дней';
+            if (last1 === 1 && last2 !== 11) word = 'дня';
+            else if (last1 >= 2 && last1 <= 4 && (last2 < 12 || last2 > 14)) word = 'дня';
+            if (last1 === 1 && last2 !== 11) word = 'день';
+            return n + ' ' + word;
+        }
+
+        function pad(n) { return n < 10 ? '0' + n : '' + n; }
+
+        /* ===== Калькулятор 3: QR ===== */
+        function togglePrefixInput() {
+            var cb = document.getElementById('prefixCheck');
+            var wrap = document.getElementById('prefixWrap');
+            wrap.classList.toggle('show', cb.checked);
+        }
+
+        function calcQR() {
+            var raw = document.getElementById('qrInput').value.trim();
+            if (!raw) { qrFail('Введите текст'); return; }
+
+            var parts = raw.split(/\s+/).filter(Boolean);
+            if (!parts.length) { qrFail('Введите текст'); return; }
+
+            var usePrefix = document.getElementById('prefixCheck').checked;
+            var prefix = usePrefix ? document.getElementById('prefixVal').value.trim() : '';
+
+            var grid = document.getElementById('qrGrid');
+            grid.innerHTML = '';
+            document.getElementById('qrErr').classList.remove('show');
+
+            try {
+                for (var i = 0; i < parts.length; i++) {
+                    var text = parts[i] + prefix;
+                    var item = document.createElement('div');
+                    item.className = 'qr-item';
+                    var canvas = document.createElement('canvas');
+                    qrcode.render(canvas, text, 3);
+                    item.appendChild(canvas);
+                    var label = document.createElement('div');
+                    label.className = 'qr-text';
+                    label.textContent = text;
+                    item.appendChild(label);
+                    grid.appendChild(item);
+                }
+            } catch(e) {
+                qrFail('Ошибка генерации: ' + e.message);
+                return;
+            }
+
+            document.getElementById('qrResultLabel').textContent = 'QR-коды (' + parts.length + ' шт.)';
+            document.getElementById('qrResult').classList.add('show');
+            document.getElementById('qrResult').scrollIntoView({behavior:'smooth'});
+            saveToHistory('qr', raw.substring(0,50) + (raw.length>50?'...':''), parts.length + ' QR', {raw:raw, prefix:prefix});
+        }
+
+        function qrFail(msg) {
+            document.getElementById('qrErr').textContent = msg;
+            document.getElementById('qrErr').classList.add('show');
+            document.getElementById('qrResult').classList.remove('show');
+        }
+
+        /* ===== История ===== */
+        var historyData = { boxes: [], shelf: [], qr: [] };
+        var currentTab = 'boxes';
+        var fromHistory = false;
+
+        function saveToHistory(type, input, result, data) {
+            if (fromHistory) { fromHistory = false; return; }
+            var arr = historyData[type];
+            arr.unshift({ input: input, result: result, data: data, date: new Date().toLocaleString('ru') });
+            if (arr.length > 15) arr.length = 15;
+            persistHistory();
             renderHistory();
         }
 
+        function persistHistory() {
+            try { localStorage.setItem('multitoolHistory', JSON.stringify(historyData)); } catch(e) {}
+        }
+
+        function loadHistory() {
+            try {
+                var s = localStorage.getItem('multitoolHistory');
+                if (s) historyData = JSON.parse(s);
+            } catch(e) {}
+        }
+
+        function renderHistory() {
+            var ul = document.getElementById('historyList');
+            ul.innerHTML = '';
+            var arr = historyData[currentTab] || [];
+            if (!arr.length) {
+                ul.innerHTML = '<li style="text-align:center;color:var(--text3);padding:20px">Пока пусто</li>';
+                return;
+            }
+            for (var i = 0; i < arr.length; i++) {
+                (function(idx) {
+                    var li = document.createElement('li');
+                    li.className = 'history-item';
+                    li.innerHTML = '<div class="h-input">' + escHtml(arr[idx].input) + '</div>' +
+                                   '<div class="h-result">' + escHtml(arr[idx].result) + '</div>' +
+                                   '<div class="h-date">' + escHtml(arr[idx].date) + '</div>';
+                    li.onclick = function() { restoreFromHistory(currentTab, arr[idx].data); };
+                    ul.appendChild(li);
+                })(i);
+            }
+        }
+
+        function escHtml(s) {
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        function restoreFromHistory(type, data) {
+            fromHistory = true;
+            if (type === 'boxes') {
+                document.getElementById('boxL').value = data.bl;
+                document.getElementById('boxW').value = data.bw;
+                calc();
+            } else if (type === 'shelf') {
+                document.getElementById('mfgDay').value = data.d;
+                document.getElementById('mfgMonth').value = data.m;
+                document.getElementById('mfgYear').value = data.y;
+                document.getElementById('shelfLife').value = data.qty;
+                document.getElementById('shelfUnit').value = data.unit;
+                calcShelf();
+            } else if (type === 'qr') {
+                document.getElementById('qrInput').value = data.raw;
+                document.getElementById('prefixCheck').checked = !!data.prefix;
+                document.getElementById('prefixVal').value = data.prefix || '';
+                togglePrefixInput();
+                calcQR();
+            }
+        }
+
         function switchHistoryTab(tab) {
-            currentHistoryTab = tab;
+            currentTab = tab;
             document.getElementById('tabBoxes').classList.toggle('active', tab === 'boxes');
             document.getElementById('tabShelf').classList.toggle('active', tab === 'shelf');
             document.getElementById('tabQR').classList.toggle('active', tab === 'qr');
             renderHistory();
         }
 
-        function renderHistory() {
-            var all = getHistory();
-            var h = all.filter(function(e) { return e.type === currentHistoryTab; });
-            var ul = document.getElementById('historyList');
-            ul.innerHTML = '';
-
-            if (!h.length) {
-                ul.innerHTML = '<li style="text-align:center;color:var(--text3);padding:16px">Пока пусто</li>';
-                return;
-            }
-
-            h.forEach(function(e) {
-                var li = document.createElement('li');
-                li.className = 'history-item';
-                li.innerHTML = '<div class="h-input">' + e.input + '</div>' +
-                    '<div class="h-result">' + e.result + '</div>' +
-                    '<div class="h-date">' + e.date + '</div>';
-                li.onclick = function() { restoreFromHistory(e); };
-                ul.appendChild(li);
-            });
-        }
-
-        function restoreFromHistory(e) {
-            fromHistory = true;
-            if (e.type === 'boxes') {
-                a.value = e.bl;
-                b.value = e.bw;
-                localStorage.setItem('bl', e.bl);
-                localStorage.setItem('bw', e.bw);
-                calc();
-            } else if (e.type === 'shelf') {
-                mfgDayEl.value = e.day;
-                mfgMonthEl.value = e.month;
-                mfgYearEl.value = e.year;
-                updateDayLimit();
-                mfgDayEl.value = e.day;
-                document.getElementById("shelfLife").value = e.life;
-                document.getElementById("shelfUnit").value = e.unit;
-                localStorage.setItem('sDay', e.day);
-                localStorage.setItem('sMonth', e.month);
-                localStorage.setItem('sYear', e.year);
-                localStorage.setItem('sLife', e.life);
-                localStorage.setItem('sUnit', e.unit);
-                calcShelf();
-            } else if (e.type === 'qr') {
-                document.getElementById('qrInput').value = e.text;
-                document.getElementById('prefixCheck').checked = e.prefixEnabled;
-                togglePrefixInput();
-                document.getElementById('prefixVal').value = e.prefix || '';
-                localStorage.setItem('qrText', e.text);
-                calcQR();
-            }
-            fromHistory = false;
-        }
-
         function clearHistory() {
-            if (confirm('Очистить историю?')) {
-                localStorage.removeItem(HISTORY_KEY);
-                renderHistory();
-            }
+            historyData = { boxes: [], shelf: [], qr: [] };
+            persistHistory();
+            renderHistory();
         }
 
-        /* ===== Блок 1: Короба ===== */
-        var L = 120, W = 80;
-        var a = document.getElementById("boxL");
-        var b = document.getElementById("boxW");
-
-        if (localStorage.getItem("bl")) a.value = localStorage.getItem("bl");
-        if (localStorage.getItem("bw")) b.value = localStorage.getItem("bw");
-
-        var num = function(v) { return parseFloat(String(v).trim().replace(',', '.')); };
-        var cnt = function(zw, zh, bw, bh) { return Math.floor(zw / bw) * Math.floor(zh / bh); };
-
-        function cuts(total, d1, d2) {
-            var s = new Set();
-            [d1, d2].forEach(function(d) {
-                for (var k = 1; k * d < total; k++) {
-                    s.add(+(k * d).toFixed(6));
-                    s.add(+(total - k * d).toFixed(6));
-                }
-            });
-            return Array.from(s).filter(function(v) { return v > 0 && v < total; }).sort(function(x, y) { return x - y; });
-        }
-
-        function rowsBest(zw, zh, bl, bw) {
-            var o = [{ w: bl, h: bw }, { w: bw, h: bl }];
-            var best = 0;
-            o.forEach(function(r) { best = Math.max(best, cnt(zw, zh, r.w, r.h)); });
-            cuts(zh, bl, bw).forEach(function(ry) {
-                o.forEach(function(r1) { o.forEach(function(r2) {
-                    best = Math.max(best, cnt(zw, ry, r1.w, r1.h) + cnt(zw, zh - ry, r2.w, r2.h));
-                }); });
-            });
-            cuts(zw, bl, bw).forEach(function(rx) {
-                o.forEach(function(r1) { o.forEach(function(r2) {
-                    best = Math.max(best, cnt(rx, zh, r1.w, r1.h) + cnt(zw - rx, zh, r2.w, r2.h));
-                }); });
-            });
-            return best;
-        }
-
-        function best(bl, bw) {
-            var best = rowsBest(L, W, bl, bw);
-            cuts(L, bl, bw).forEach(function(x) {
-                best = Math.max(best, rowsBest(x, W, bl, bw) + rowsBest(L - x, W, bl, bw));
-            });
-            cuts(W, bl, bw).forEach(function(y) {
-                best = Math.max(best, rowsBest(L, y, bl, bw) + rowsBest(L, W - y, bl, bw));
-            });
-            cuts(L, bl, bw).forEach(function(x) {
-                cuts(W, bl, bw).forEach(function(y) {
-                    best = Math.max(best,
-                        rowsBest(x, y, bl, bw) + rowsBest(L - x, y, bl, bw) +
-                        rowsBest(x, W - y, bl, bw) + rowsBest(L - x, W - y, bl, bw));
-                });
-            });
-            return best;
-        }
-
-        function showErr(msg) {
-            document.getElementById("err").textContent = msg;
-            document.getElementById("err").classList.add("show");
-            document.getElementById("result").classList.remove("show");
-        }
-
-        function calc() {
-            var bl = num(a.value), bw = num(b.value);
-            a.classList.remove("err");
-            b.classList.remove("err");
-            document.getElementById("err").classList.remove("show");
-
-            if (!isFinite(bl) || bl <= 0) {
-                a.classList.add("err"); a.focus();
-                showErr("7 раз отмерь — 1 раз введи");
-                return;
-            }
-            if (!isFinite(bw) || bw <= 0) {
-                b.classList.add("err"); b.focus();
-                showErr("7 раз отмерь — 1 раз введи");
-                return;
-            }
-
-            localStorage.setItem("bl", a.value);
-            localStorage.setItem("bw", b.value);
-
-            var total = best(bl, bw);
-            if (!total) {
-                a.classList.add("err");
-                b.classList.add("err");
-                showErr("Коробка " + bl + " × " + bw + " см не влезает на паллету " + L + " × " + W + " см");
-                return;
-            }
-
-            document.getElementById("result").classList.add("show");
-            document.getElementById("count").textContent = total;
-            var fillPct = (total * bl * bw / (L * W) * 100).toFixed(1);
-            document.getElementById("fill").textContent = fillPct + "%";
-            document.getElementById("dims").textContent = "Коробка " + bl + " × " + bw + " см";
-
-            saveHistory({
-                type: 'boxes',
-                bl: a.value,
-                bw: b.value,
-                input: "Коробка " + bl + " × " + bw + " см",
-                result: total + " шт. (" + fillPct + "%)",
-                date: new Date().toLocaleString('ru-RU')
-            });
-        }
-
-        a.oninput = b.oninput = function() { this.classList.remove("err"); };
-        a.onkeydown = function(e) { if (e.key === "Enter") { e.preventDefault(); b.focus(); } };
-        b.onkeydown = function(e) { if (e.key === "Enter") { e.preventDefault(); calc(); } };
-
-        /* ===== Блок 2: Сроки годности ===== */
-        var mfgDayEl = document.getElementById("mfgDay");
-        var mfgMonthEl = document.getElementById("mfgMonth");
-        var mfgYearEl = document.getElementById("mfgYear");
-
-        for (var i = 1; i <= 31; i++) {
-            var opt = document.createElement("option");
-            opt.value = i;
-            opt.textContent = i;
-            mfgDayEl.appendChild(opt);
-        }
-
-        var monthNames = ["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
-        monthNames.forEach(function(name, idx) {
-            var opt = document.createElement("option");
-            opt.value = idx + 1;
-            opt.textContent = name + " (" + String(idx + 1).padStart(2, "0") + ")";
-            mfgMonthEl.appendChild(opt);
-        });
-
-        var curYear = new Date().getFullYear();
-        for (var i = curYear; i >= curYear - 9; i--) {
-            var opt = document.createElement("option");
-            opt.value = i;
-            opt.textContent = i;
-            mfgYearEl.appendChild(opt);
-        }
-
-        function daysInMonth(m, y) {
-            return new Date(y, m, 0).getDate();
-        }
-
-        function updateDayLimit() {
-            var m = parseInt(mfgMonthEl.value) || 1;
-            var y = parseInt(mfgYearEl.value) || curYear;
-            var maxDay = daysInMonth(m, y);
-            var prev = parseInt(mfgDayEl.value) || 1;
-            mfgDayEl.innerHTML = "";
-            for (var i = 1; i <= maxDay; i++) {
-                var opt = document.createElement("option");
-                opt.value = i;
-                opt.textContent = i;
-                mfgDayEl.appendChild(opt);
-            }
-            mfgDayEl.value = Math.min(prev, maxDay);
-        }
-
-        if (localStorage.getItem("sMonth")) mfgMonthEl.value = localStorage.getItem("sMonth");
-        if (localStorage.getItem("sYear")) mfgYearEl.value = localStorage.getItem("sYear");
-        updateDayLimit();
-        if (localStorage.getItem("sDay")) mfgDayEl.value = localStorage.getItem("sDay");
-        if (localStorage.getItem("sLife")) document.getElementById("shelfLife").value = localStorage.getItem("sLife");
-        if (localStorage.getItem("sUnit")) document.getElementById("shelfUnit").value = localStorage.getItem("sUnit");
-
-        mfgMonthEl.addEventListener("change", function() { updateDayLimit(); autoCalcShelf(); });
-        mfgYearEl.addEventListener("change", function() { updateDayLimit(); autoCalcShelf(); });
-
-        function pluralDays(n) {
-            var a = n % 10, b = n % 100;
-            if (a === 1 && b !== 11) return "день";
-            if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return "дня";
-            return "дней";
-        }
-
-        function daysBetween(d1, d2) {
-            var ms1 = Date.UTC(d1.getFullYear(), d1.getMonth(), d1.getDate());
-            var ms2 = Date.UTC(d2.getFullYear(), d2.getMonth(), d2.getDate());
-            return Math.round((ms2 - ms1) / (1000 * 60 * 60 * 24));
-        }
-
-        function fmtRemaining(fromDate, toDate) {
-            var y = toDate.getFullYear() - fromDate.getFullYear();
-            var m = toDate.getMonth() - fromDate.getMonth();
-            var d = toDate.getDate() - fromDate.getDate();
-            d -= 1;
-            if (d < 0) { m--; var pm = new Date(toDate.getFullYear(), toDate.getMonth(), 0); d += pm.getDate(); }
-            if (m < 0) { y--; m += 12; }
-            var parts = [];
-            if (y) parts.push(y + " " + (y === 1 ? "год" : (y >= 2 && y <= 4 ? "года" : "лет")));
-            if (m) parts.push(m + " " + (m === 1 ? "месяц" : (m >= 2 && m <= 4 ? "месяца" : "месяцев")));
-            if (d) parts.push(d + " " + pluralDays(d));
-            if (!parts.length) parts.push("0 дней");
-            return parts.join(" ");
-        }
-
-        function fmtOverdue(fromDate, toDate) {
-            var y = toDate.getFullYear() - fromDate.getFullYear();
-            var m = toDate.getMonth() - fromDate.getMonth();
-            var d = toDate.getDate() - fromDate.getDate();
-            if (d < 0) { m--; var pm = new Date(toDate.getFullYear(), toDate.getMonth(), 0); d += pm.getDate(); }
-            if (m < 0) { y--; m += 12; }
-            var parts = [];
-            if (y) parts.push(y + " " + (y === 1 ? "год" : (y >= 2 && y <= 4 ? "года" : "лет")));
-            if (m) parts.push(m + " " + (m === 1 ? "месяц" : (m >= 2 && m <= 4 ? "месяца" : "месяцев")));
-            if (d) parts.push(d + " " + pluralDays(d));
-            if (!parts.length) parts.push("0 дней");
-            return parts.join(" ");
-        }
-
-        function calcShelf() {
-            var d = parseInt(mfgDayEl.value);
-            var m = parseInt(mfgMonthEl.value);
-            var y = parseInt(mfgYearEl.value);
-            var life = parseInt(document.getElementById("shelfLife").value);
-            var unit = parseInt(document.getElementById("shelfUnit").value);
-
-            var errEl = document.getElementById("shelfErr");
-            errEl.classList.remove("show");
-
-            if (!d || d < 1 || !m || m < 1 || m > 12 || !y || y < 2000 || y > 2100) {
-                errEl.textContent = "Проверьте дату производства";
-                errEl.classList.add("show");
-                document.getElementById("shelfResult").classList.remove("show");
-                return;
-            }
-            if (!life || life <= 0) {
-                errEl.textContent = "Укажите срок годности";
-                errEl.classList.add("show");
-                document.getElementById("shelfResult").classList.remove("show");
-                return;
-            }
-
-            var prodDate = new Date(y, m - 1, d);
-            if (prodDate.getDate() !== d) {
-                errEl.textContent = "Неверная дата (проверьте день)";
-                errEl.classList.add("show");
-                document.getElementById("shelfResult").classList.remove("show");
-                return;
-            }
-
-            localStorage.setItem("sDay", mfgDayEl.value);
-            localStorage.setItem("sMonth", mfgMonthEl.value);
-            localStorage.setItem("sYear", mfgYearEl.value);
-            localStorage.setItem("sLife", document.getElementById("shelfLife").value);
-            localStorage.setItem("sUnit", unit);
-
-            var expDate = new Date(y, m - 1, d);
-            if (unit === 30) {
-                expDate.setMonth(expDate.getMonth() + life);
-            } else if (unit === 365) {
-                expDate.setFullYear(expDate.getFullYear() + life);
-            } else {
-                expDate.setDate(expDate.getDate() + life * unit);
-            }
-
-            var today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            var pad = function(n) { return String(n).padStart(2, '0'); };
-            var fmt = pad(expDate.getDate()) + "." + pad(expDate.getMonth() + 1) + "." + expDate.getFullYear();
-            document.getElementById("expiryDate").textContent = fmt;
-
-            var leftEl = document.getElementById("daysLeft");
-            leftEl.className = "left-out";
-
-            var totalDays = daysBetween(prodDate, expDate);
-            var unitNames = {1:"Сутки",7:"Недели",30:"Месяцы",365:"Годы"};
-            var resultStr = '';
-
-            if (today.getTime() > expDate.getTime()) {
-                resultStr = "Просрочено на " + fmtOverdue(expDate, today);
-                leftEl.textContent = resultStr;
-                leftEl.classList.add("red");
-            } else {
-                var remaining = Math.max(0, daysBetween(today, expDate) - 1);
-                var pct = totalDays > 0 ? Math.round(remaining / totalDays * 100) : 100;
-                if (remaining <= 0) {
-                    resultStr = "Осталось 0 дней (0%)";
-                    leftEl.textContent = resultStr;
-                    leftEl.classList.add("orange");
-                } else {
-                    resultStr = "Осталось " + fmtRemaining(today, expDate) + " (" + pct + "%)";
-                    leftEl.textContent = resultStr;
-                    leftEl.classList.add(pct <= 20 ? "orange" : "green");
-                }
-            }
-
-            document.getElementById("shelfResult").classList.add("show");
-
-            saveHistory({
-                type: 'shelf',
-                day: mfgDayEl.value,
-                month: mfgMonthEl.value,
-                year: mfgYearEl.value,
-                life: document.getElementById("shelfLife").value,
-                unit: String(unit),
-                input: pad(d) + "." + pad(m) + "." + y + ", срок " + life + " " + (unitNames[unit] || ''),
-                result: "Годен до " + fmt + " — " + resultStr,
-                date: new Date().toLocaleString('ru-RU')
-            });
-        }
-
-        function autoCalcShelf() {
-            if (mfgDayEl.value && mfgMonthEl.value && mfgYearEl.value && document.getElementById("shelfLife").value) {
-                calcShelf();
-            }
-        }
-
-        [mfgDayEl, document.getElementById("shelfUnit")].forEach(function(el) {
-            el.onchange = autoCalcShelf;
-        });
-
-        document.getElementById("shelfLife").oninput = autoCalcShelf;
-
-        /* ===== Блок 3: QR-генератор ===== */
-        var qrInputEl = document.getElementById('qrInput');
-        var prefixCheckEl = document.getElementById('prefixCheck');
-        var prefixValEl = document.getElementById('prefixVal');
-
-        if (localStorage.getItem('qrText')) qrInputEl.value = localStorage.getItem('qrText');
-        if (localStorage.getItem('qrPrefixEnabled') === '1') {
-            prefixCheckEl.checked = true;
-            togglePrefixInput();
-        }
-        if (localStorage.getItem('qrPrefix')) prefixValEl.value = localStorage.getItem('qrPrefix');
-
-        function togglePrefixInput() {
-            var wrap = document.getElementById('prefixWrap');
-            if (prefixCheckEl.checked) {
-                wrap.classList.add('show');
-            } else {
-                wrap.classList.remove('show');
-            }
-        }
-
-        function calcQR() {
-            var raw = qrInputEl.value.trim();
-            var errEl = document.getElementById('qrErr');
-            errEl.classList.remove('show');
-
-            if (!raw) {
-                errEl.textContent = 'Введите текст для генерации';
-                errEl.classList.add('show');
-                document.getElementById('qrResult').classList.remove('show');
-                return;
-            }
-
-            var usePrefix = prefixCheckEl.checked;
-            var prefix = usePrefix ? prefixValEl.value : '';
-
-            if (usePrefix && !prefix) {
-                errEl.textContent = 'Введите текст или отключите галочку';
-                errEl.classList.add('show');
-                document.getElementById('qrResult').classList.remove('show');
-                return;
-            }
-
-            localStorage.setItem('qrText', raw);
-            localStorage.setItem('qrPrefixEnabled', usePrefix ? '1' : '0');
-            if (usePrefix) localStorage.setItem('qrPrefix', prefix);
-
-            var parts = raw.split(/\s+/).filter(Boolean);
-            var finalStrings = parts.map(function(p) { return usePrefix ? p + prefix : p; });
-
-            var grid = document.getElementById('qrGrid');
-            grid.innerHTML = '';
-
-            document.getElementById('qrResultLabel').textContent = "QR-коды (" + finalStrings.length + " шт.)";
-
-            finalStrings.forEach(function(str) {
-                var item = document.createElement('div');
-                item.className = 'qr-item';
-                var canvas = document.createElement('canvas');
-                try {
-                    qrcode.render(canvas, str, 3);
-                } catch(e) {
-                    var p = document.createElement('div');
-                    p.textContent = 'Ошибка: ' + e.message;
-                    p.style.color = 'var(--err-text)';
-                    p.style.fontSize = '11px';
-                    item.appendChild(p);
-                    grid.appendChild(item);
-                    return;
-                }
-                var label = document.createElement('div');
-                label.className = 'qr-text';
-                label.textContent = str.length > 30 ? str.slice(0, 27) + '…' : str;
-                item.appendChild(canvas);
-                item.appendChild(label);
-                grid.appendChild(item);
-            });
-
-            document.getElementById('qrResult').classList.add('show');
-
-            saveHistory({
-                type: 'qr',
-                text: raw,
-                prefixEnabled: usePrefix,
-                prefix: prefix,
-                input: raw.length > 60 ? raw.slice(0, 57) + '…' : raw,
-                result: finalStrings.length + " QR-код(ов)" + (usePrefix ? ' + текст «' + prefix + '»' : ''),
-                date: new Date().toLocaleString('ru-RU')
-            });
-        }
-
-        qrInputEl.addEventListener('input', function() {
-            localStorage.setItem('qrText', qrInputEl.value);
-        });
-
-        prefixValEl.addEventListener('input', function() {
-            localStorage.setItem('qrPrefix', prefixValEl.value);
-        });
-
-        /* ===== Мобильная адаптация ===== */
-        ["boxL", "boxW", "shelfLife"].forEach(function(id) {
+        /* ===== Сохранение полей ===== */
+        function saveField(id, key) {
             var el = document.getElementById(id);
-            el.addEventListener("focus", function() {
-                this.dataset.old = this.value;
-                var self = this;
-                setTimeout(function() {
-                    self.scrollIntoView({ behavior: "smooth", block: "center" });
-                }, 300);
+            el.addEventListener('input', function() {
+                localStorage.setItem(key, el.value);
             });
-            el.addEventListener("keydown", function(e) {
-                var keys = ["Tab","Shift","Control","Alt","Backspace","Delete","ArrowLeft","ArrowRight","ArrowUp","ArrowDown"];
-                if (!keys.includes(e.key) && this.dataset.old === this.value) {
-                    this.value = "";
-                    delete this.dataset.old;
+        }
+
+        function restoreFields() {
+            var fields = [
+                ['boxL','boxL'], ['boxW','boxW'],
+                ['shelfLife','shelfLife'],
+                ['qrInput','qrInput'], ['prefixVal','prefixVal']
+            ];
+            for (var i = 0; i < fields.length; i++) {
+                var el = document.getElementById(fields[i][0]);
+                if (el) {
+                    var v = localStorage.getItem(fields[i][1]);
+                    if (v !== null) el.value = v;
+                    saveField(fields[i][0], fields[i][1]);
                 }
-            });
+            }
+        }
+
+        /* ===== Прокрутка при фокусе ===== */
+        document.addEventListener('focusin', function(e) {
+            if (e.target.matches('input,select,textarea')) {
+                setTimeout(function() {
+                    e.target.scrollIntoView({behavior:'smooth', block:'center'});
+                }, 300);
+            }
         });
 
-        document.getElementById("shelfLife").onkeydown = function(e) {
-            if (e.key === "Enter") {
+        /* ===== Enter ===== */
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.target.matches('input')) {
                 e.preventDefault();
-                calcShelf();
-                document.getElementById("shelfLife").blur();
+                var inputs = Array.from(document.querySelectorAll('input'));
+                var idx = inputs.indexOf(e.target);
+                if (idx > -1 && idx < inputs.length - 1) inputs[idx + 1].focus();
+                else if (e.target.id === 'boxW' || e.target.id === 'prefixVal') calc();
             }
-        };
+        });
 
-        /* ===== Загрузка ===== */
-        restoreSections();
+        /* ===== Init ===== */
+        initShelfSelects();
+        loadHistory();
+        restoreFields();
         renderHistory();
+
+        // Обновление результата срока годности при изменении полей
+        ['mfgDay','mfgMonth','mfgYear','shelfLife','shelfUnit'].forEach(function(id) {
+            var el = document.getElementById(id);
+            if (el) el.addEventListener('change', function() {
+                if (document.getElementById('shelfResult').classList.contains('show')) calcShelf();
+            });
+        });
+        document.getElementById('shelfLife').addEventListener('input', function() {
+            if (document.getElementById('shelfResult').classList.contains('show')) calcShelf();
+        });
     </script>
 </body>
 </html>
