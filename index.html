@@ -261,437 +261,207 @@
         </div>
     </div>
 
+    <!-- ===== Библиотека qrcode-generator (Kazuhiko Arase), встроенная ===== -->
     <script>
-        /* ===== QR-генератор ===== */
-        /* Взято из проекта qrcode-generator (Kazuhiko Arase), адаптировано для одного файла */
-        var qrcode = (function() {
+    (function(){
+        'use strict';
+        // --- GF(256) ---
+        var EXP=new Uint8Array(512),LOG=new Uint8Array(256);
+        (function(){var x=1;for(var i=0;i<255;i++){EXP[i]=x;LOG[x]=i;x<<=1;if(x&0x100)x^=0x11d;}for(var i=255;i<512;i++)EXP[i]=EXP[i-255];})();
+        function gfMul(a,b){if(a===0||b===0)return 0;return EXP[LOG[a]+LOG[b]];}
+        function rsGenPoly(n){var p=[1];for(var i=0;i<n;i++){var q=new Array(p.length+1);for(var j=0;j<q.length;j++)q[j]=0;for(var j=0;j<p.length;j++){q[j]^=gfMul(p[j],1);q[j+1]^=gfMul(p[j],EXP[i]);}p=q;}return p;}
+        function rsEncode(data,ecLen){var gen=rsGenPoly(ecLen);var res=new Array(data.length+ecLen);for(var i=0;i<res.length;i++)res[i]=i<data.length?data[i]:0;for(var i=0;i<data.length;i++){var f=res[i];if(f===0)continue;for(var j=0;j<gen.length;j++)res[i+j]^=gfMul(gen[j],f);}return res.slice(data.length);}
 
-            // GF(256)
-            var EXP = new Uint8Array(512), LOG = new Uint8Array(256);
-            (function(){
-                var x = 1;
-                for (var i = 0; i < 255; i++) {
-                    EXP[i] = x;
-                    LOG[x] = i;
-                    x <<= 1;
-                    if (x & 0x100) x ^= 0x11d;
-                }
-                for (var i = 255; i < 512; i++) EXP[i] = EXP[i - 255];
-            })();
+        // --- Таблицы для ECC Level L ---
+        var RS_BLOCK={1:[7,1,19,0,0],2:[10,1,34,0,0],3:[15,1,55,0,0],4:[20,1,80,0,0],5:[26,1,108,0,0],6:[18,2,68,0,0],7:[20,2,78,0,0],8:[24,2,97,0,0],9:[30,2,116,0,0],10:[18,2,68,2,69],11:[20,4,81,0,0],12:[24,2,92,2,93],13:[26,4,107,0,0],14:[30,3,115,1,116],15:[22,5,87,1,88],16:[24,5,98,1,99],17:[28,1,107,5,108],18:[30,5,120,1,121],19:[28,3,113,4,114],20:[28,3,107,5,108],21:[28,4,116,4,117],22:[28,2,111,7,112],23:[30,4,121,5,122],24:[30,6,117,4,118],25:[26,8,106,4,107],26:[28,10,114,2,115],27:[30,8,122,4,123],28:[30,3,117,10,118],29:[30,7,116,7,117],30:[30,5,115,10,116],31:[30,13,115,3,116],32:[30,17,115,0,0],33:[30,17,115,1,116],34:[30,13,115,6,116],35:[30,12,121,7,122],36:[30,6,121,14,122],37:[30,17,122,4,123],38:[30,4,122,18,123],39:[30,20,117,4,118],40:[30,19,118,6,119]};
+        var ALIGN={1:[],2:[6,18],3:[6,22],4:[6,26],5:[6,30],6:[6,34],7:[6,22,38],8:[6,24,42],9:[6,26,46],10:[6,28,50],11:[6,30,54],12:[6,32,58],13:[6,34,62],14:[6,26,46,66],15:[6,26,48,70],16:[6,26,50,74],17:[6,30,54,78],18:[6,30,56,82],19:[6,30,58,86],20:[6,34,62,90],21:[6,28,50,72,94],22:[6,26,50,74,98],23:[6,30,54,78,102],24:[6,28,54,80,106],25:[6,32,58,84,110],26:[6,30,58,86,114],27:[6,34,62,90,118],28:[6,26,50,74,98,122],29:[6,30,54,78,102,126],30:[6,26,52,78,104,130],31:[6,30,56,82,108,134],32:[6,34,60,86,112,138],33:[6,30,58,86,114,142],34:[6,34,62,90,118,146],35:[6,30,54,78,102,126,150],36:[6,24,50,76,102,128,154],37:[6,28,54,80,106,132,158],38:[6,32,58,84,110,136,162],39:[6,26,54,82,110,138,166],40:[6,30,58,86,114,142,170]};
 
-            function gfMul(a, b) {
-                if (a === 0 || b === 0) return 0;
-                return EXP[LOG[a] + LOG[b]];
+        // Format info: ECC L (01) + mask 0..7
+        var FMT_L=[0x77C4,0x72F3,0x7DAA,0x789D,0x662F,0x6318,0x6C41,0x6936,0x5412,0x5125,0x5E7C,0x5B4B,0x45F9,0x40CE,0x4F97,0x4AA0,0x355F,0x3068,0x3F31,0x3A06,0x24B4,0x2183,0x2EDA,0x2BED,0x1689,0x13BE,0x1CE7,0x19D0,0x0762,0x0255,0x0D0C,0x083B];
+        // Format info indexed by (ecc<<3|mask)
+        // ECC L = 0b01, so index = 0b01mmm = 8+mask
+        // The 32 entries above are ordered: (ecc=00,mask=0..7), (ecc=01,mask=0..7), (ecc=10,...), (ecc=11,...)
+        // So for ECC L, entries 8..15
+        function fmtBits(mask){return FMT_L[8+mask];}
+
+        function utf8(str){var out=[];for(var i=0;i<str.length;i++){var c=str.charCodeAt(i);if(c<0x80)out.push(c);else if(c<0x800){out.push(0xC0|(c>>6),0x80|(c&0x3F));}else if(c<0xD800||c>=0xE000){out.push(0xE0|(c>>12),0x80|((c>>6)&0x3F),0x80|(c&0x3F));}else{i++;var c2=str.charCodeAt(i);var cp=0x10000+(((c&0x3FF)<<10)|(c2&0x3FF));out.push(0xF0|(cp>>18),0x80|((cp>>12)&0x3F),0x80|((cp>>6)&0x3F),0x80|(cp&0x3F));}}return out;}
+
+        function chooseVersion(len){for(var v=1;v<=40;v++){var rs=RS_BLOCK[v];var total=rs[1]*rs[2]+rs[3]*rs[4];var cb=v<10?8:16;if(len*8<=total*8-4-cb)return v;}return 40;}
+
+        function makeCW(bytes,version){
+            var rs=RS_BLOCK[version];var total=rs[1]*rs[2]+rs[3]*rs[4];var cb=version<10?8:16;
+            var bits=[];
+            bits.push(0,1,0,0);
+            for(var i=cb-1;i>=0;i--)bits.push((bytes.length>>i)&1);
+            for(var i=0;i<bytes.length;i++)for(var j=7;j>=0;j--)bits.push((bytes[i]>>j)&1);
+            var cap=total*8;var term=Math.min(4,cap-bits.length);for(var i=0;i<term;i++)bits.push(0);
+            while(bits.length%8)bits.push(0);
+            var pad=[0xEC,0x11],pi=0;
+            while(bits.length<cap){var pb=pad[pi%2];for(var j=7;j>=0;j--)bits.push((pb>>j)&1);pi++;}
+            var cw=[];for(var i=0;i<bits.length;i+=8){var v=0;for(var j=0;j<8;j++)v=(v<<1)|bits[i+j];cw.push(v);}
+            var blocks=[],ecBlocks=[],off=0;
+            for(var i=0;i<rs[1];i++){blocks.push(cw.slice(off,off+rs[2]));off+=rs[2];}
+            for(var i=0;i<rs[3];i++){blocks.push(cw.slice(off,off+rs[4]));off+=rs[4];}
+            for(var i=0;i<blocks.length;i++)ecBlocks.push(rsEncode(blocks[i],rs[0]));
+            var out=[];
+            var maxD=Math.max(rs[2],rs[4]);
+            for(var i=0;i<maxD;i++)for(var j=0;j<blocks.length;j++)if(i<blocks[j].length)out.push(blocks[j][i]);
+            for(var i=0;i<rs[0];i++)for(var j=0;j<ecBlocks.length;j++)out.push(ecBlocks[j][i]);
+            return out;
+        }
+
+        function maskFn(mask,r,c){
+            switch(mask){
+                case 0:return (r+c)%2===0;
+                case 1:return r%2===0;
+                case 2:return c%3===0;
+                case 3:return (r+c)%3===0;
+                case 4:return (Math.floor(r/2)+Math.floor(c/3))%2===0;
+                case 5:return ((r*c)%2)+((r*c)%3)===0;
+                case 6:return (((r*c)%2)+((r*c)%3))%2===0;
+                case 7:return (((r+c)%2)+((r*c)%3))%2===0;
             }
+        }
 
-            // RS generator polynomial
-            function rsGenPoly(degree) {
-                var poly = [1];
-                for (var i = 0; i < degree; i++) {
-                    var next = new Array(poly.length + 1);
-                    for (var j = 0; j < next.length; j++) next[j] = 0;
-                    for (var j = 0; j < poly.length; j++) {
-                        next[j] ^= gfMul(poly[j], 1);
-                        next[j + 1] ^= gfMul(poly[j], EXP[i]);
-                    }
-                    poly = next;
-                }
-                return poly;
+        function vInfo(v){var d=v<<12;var g=0x1F25;for(var i=2;i>=0;i--){if(d&(1<<(i+12)))d^=g<<i;}return (v<<12)|d;}
+
+        function penalty(m,size){
+            var p=0;
+            for(var i=0;i<size;i++){
+                var r=1;
+                for(var j=1;j<size;j++){if(m[i][j]===m[i][j-1])r++;else{if(r>=5)p+=r-2;r=1;}}
+                if(r>=5)p+=r-2;
+                r=1;
+                for(var j=1;j<size;j++){if(m[j][i]===m[j-1][i])r++;else{if(r>=5)p+=r-2;r=1;}}
+                if(r>=5)p+=r-2;
             }
-
-            function rsEncode(data, ecLen) {
-                var gen = rsGenPoly(ecLen);
-                var res = new Array(data.length + ecLen);
-                for (var i = 0; i < res.length; i++) res[i] = i < data.length ? data[i] : 0;
-                for (var i = 0; i < data.length; i++) {
-                    var f = res[i];
-                    if (f === 0) continue;
-                    for (var j = 0; j < gen.length; j++) {
-                        res[i + j] ^= gfMul(gen[j], f);
-                    }
-                }
-                return res.slice(data.length);
+            for(var i=0;i<size-1;i++)for(var j=0;j<size-1;j++){var v=m[i][j];if(v===m[i][j+1]&&v===m[i+1][j]&&v===m[i+1][j+1])p+=3;}
+            var p1=[1,0,1,1,1,0,1,0,0,0,0],p2=[0,0,0,0,1,0,1,1,1,0,1];
+            for(var i=0;i<size;i++)for(var j=0;j<=size-11;j++){
+                var m1=true,m2=true,m3=true,m4=true;
+                for(var k=0;k<11;k++){if(m[i][j+k]!==p1[k])m1=false;if(m[i][j+k]!==p2[k])m2=false;if(m[j+k][i]!==p1[k])m3=false;if(m[j+k][i]!==p2[k])m4=false;}
+                if(m1)p+=40;if(m2)p+=40;if(m3)p+=40;if(m4)p+=40;
             }
+            var dark=0;for(var i=0;i<size;i++)for(var j=0;j<size;j++)if(m[i][j])dark++;
+            p+=Math.floor(Math.abs(dark/(size*size)*100-50)/5)*10;
+            return p;
+        }
 
-            // [ecPerBlock, g1Blocks, g1DataPerBlock, g2Blocks, g2DataPerBlock] for ECC level L
-            var RS_BLOCK = {
-                1:[7,1,19,0,0],2:[10,1,34,0,0],3:[15,1,55,0,0],4:[20,1,80,0,0],
-                5:[26,1,108,0,0],6:[18,2,68,0,0],7:[20,2,78,0,0],8:[24,2,97,0,0],
-                9:[30,2,116,0,0],10:[18,2,68,2,69],11:[20,4,81,0,0],12:[24,2,92,2,93],
-                13:[26,4,107,0,0],14:[30,3,115,1,116],15:[22,5,87,1,88],16:[24,5,98,1,99],
-                17:[28,1,107,5,108],18:[30,5,120,1,121],19:[28,3,113,4,114],20:[28,3,107,5,108],
-                21:[28,4,116,4,117],22:[28,2,111,7,112],23:[30,4,121,5,122],24:[30,6,117,4,118],
-                25:[26,8,106,4,107],26:[28,10,114,2,115],27:[30,8,122,4,123],28:[30,3,117,10,118],
-                29:[30,7,116,7,117],30:[30,5,115,10,116],31:[30,13,115,3,116],32:[30,17,115,0,0],
-                33:[30,17,115,1,116],34:[30,13,115,6,116],35:[30,12,121,7,122],36:[30,6,121,14,122],
-                37:[30,17,122,4,123],38:[30,4,122,18,123],39:[30,20,117,4,118],40:[30,19,118,6,119]
-            };
+        function makeMatrix(version,cw){
+            var size=version*4+17;
+            var m=[],res=[];
+            for(var i=0;i<size;i++){m.push([]);res.push([]);for(var j=0;j<size;j++){m[i][j]=0;res[i][j]=false;}}
 
-            // Alignment pattern positions
-            var ALIGN_POS = {
-                1:[],2:[6,18],3:[6,22],4:[6,26],5:[6,30],6:[6,34],7:[6,22,38],8:[6,24,42],
-                9:[6,26,46],10:[6,28,50],11:[6,30,54],12:[6,32,58],13:[6,34,62],
-                14:[6,26,46,66],15:[6,26,48,70],16:[6,26,50,74],17:[6,30,54,78],
-                18:[6,30,56,82],19:[6,30,58,86],20:[6,34,62,90],21:[6,28,50,72,94],
-                22:[6,26,50,74,98],23:[6,30,54,78,102],24:[6,28,54,80,106],
-                25:[6,32,58,84,110],26:[6,30,58,86,114],27:[6,34,62,90,118],
-                28:[6,26,50,74,98,122],29:[6,30,54,78,102,126],30:[6,26,52,78,104,130],
-                31:[6,30,56,82,108,134],32:[6,34,60,86,112,138],33:[6,30,58,86,114,142],
-                34:[6,34,62,90,118,146],35:[6,30,54,78,102,126,150],
-                36:[6,24,50,76,102,128,154],37:[6,28,54,80,106,132,158],
-                38:[6,32,58,84,110,136,162],39:[6,26,54,82,110,138,166],
-                40:[6,30,58,86,114,142,170]
-            };
+            function set(r,c,v){if(r<0||r>=size||c<0||c>=size)return;m[r][c]=v;res[r][c]=true;}
 
-            // Format info (ECC level L = 01)
-            var FORMAT_L = [
-                0x77C4,0x72F3,0x7DAA,0x789D,0x662F,0x6318,0x6C41,0x6936,
-                0x5412,0x5125,0x5E7C,0x5B4B,0x45F9,0x40CE,0x4F97,0x4AA0,
-                0x355F,0x3068,0x3F31,0x3A06,0x24B4,0x2183,0x2EDA,0x2BED,
-                0x1689,0x13BE,0x1CE7,0x19D0,0x0762,0x0255,0x0D0C,0x083B
-            ];
-
-            function utf8Bytes(str) {
-                var out = [];
-                for (var i = 0; i < str.length; i++) {
-                    var c = str.charCodeAt(i);
-                    if (c < 0x80) out.push(c);
-                    else if (c < 0x800) { out.push(0xC0|(c>>6), 0x80|(c&0x3F)); }
-                    else if (c < 0xD800 || c >= 0xE000) { out.push(0xE0|(c>>12), 0x80|((c>>6)&0x3F), 0x80|(c&0x3F)); }
-                    else {
-                        i++;
-                        var c2 = str.charCodeAt(i);
-                        var cp = 0x10000 + (((c & 0x3FF) << 10) | (c2 & 0x3FF));
-                        out.push(0xF0|(cp>>18), 0x80|((cp>>12)&0x3F), 0x80|((cp>>6)&0x3F), 0x80|(cp&0x3F));
-                    }
-                }
-                return out;
-            }
-
-            function chooseVersion(byteLen) {
-                for (var v = 1; v <= 40; v++) {
-                    var rs = RS_BLOCK[v];
-                    var totalData = rs[1]*rs[2] + rs[3]*rs[4];
-                    var countBits = v < 10 ? 8 : 16;
-                    var capacityBits = totalData * 8 - 4 - countBits;
-                    if (byteLen * 8 <= capacityBits) return v;
-                }
-                return 40;
-            }
-
-            function makeCodewords(bytes, version) {
-                var rs = RS_BLOCK[version];
-                var totalData = rs[1]*rs[2] + rs[3]*rs[4];
-                var countBits = version < 10 ? 8 : 16;
-
-                var bits = [];
-                // Mode: byte = 0100
-                bits.push(0,1,0,0);
-                // Count
-                for (var i = countBits - 1; i >= 0; i--) bits.push((bytes.length >> i) & 1);
-                // Data
-                for (var i = 0; i < bytes.length; i++) {
-                    for (var j = 7; j >= 0; j--) bits.push((bytes[i] >> j) & 1);
-                }
-                // Terminator
-                var capBits = totalData * 8;
-                var term = Math.min(4, capBits - bits.length);
-                for (var i = 0; i < term; i++) bits.push(0);
-                while (bits.length % 8 !== 0) bits.push(0);
-                // Pad
-                var pad = [0xEC, 0x11], pi = 0;
-                while (bits.length < capBits) {
-                    var pb = pad[pi % 2];
-                    for (var j = 7; j >= 0; j--) bits.push((pb >> j) & 1);
-                    pi++;
-                }
-
-                // To codewords
-                var cw = [];
-                for (var i = 0; i < bits.length; i += 8) {
-                    var v = 0;
-                    for (var j = 0; j < 8; j++) v = (v << 1) | bits[i + j];
-                    cw.push(v);
-                }
-
-                // Split blocks
-                var blocks = [], ecBlocks = [], offset = 0;
-                for (var i = 0; i < rs[1]; i++) { blocks.push(cw.slice(offset, offset + rs[2])); offset += rs[2]; }
-                for (var i = 0; i < rs[3]; i++) { blocks.push(cw.slice(offset, offset + rs[4])); offset += rs[4]; }
-                for (var i = 0; i < blocks.length; i++) ecBlocks.push(rsEncode(blocks[i], rs[0]));
-
-                // Interleave
-                var out = [];
-                var maxD = Math.max(rs[2], rs[4]);
-                for (var i = 0; i < maxD; i++) {
-                    for (var j = 0; j < blocks.length; j++) {
-                        if (i < blocks[j].length) out.push(blocks[j][i]);
-                    }
-                }
-                for (var i = 0; i < rs[0]; i++) {
-                    for (var j = 0; j < ecBlocks.length; j++) {
-                        out.push(ecBlocks[j][i]);
-                    }
-                }
-                return out;
-            }
-
-            function makeMatrix(version, codewords) {
-                var size = version * 4 + 17;
-                var m = [], res = [];
-                for (var i = 0; i < size; i++) {
-                    m.push(new Array(size));
-                    res.push(new Array(size));
-                    for (var j = 0; j < size; j++) { m[i][j] = 0; res[i][j] = false; }
-                }
-
-                function set(r, c, v) {
-                    if (r < 0 || r >= size || c < 0 || c >= size) return;
-                    m[r][c] = v;
-                    res[r][c] = true;
-                }
-
-                // Finder
-                function finder(r0, c0) {
-                    for (var dr = -1; dr <= 7; dr++) {
-                        for (var dc = -1; dc <= 7; dc++) {
-                            var r = r0 + dr, c = c0 + dc;
-                            if (r < 0 || r >= size || c < 0 || c >= size) continue;
-                            var dark = (dr >= 0 && dr <= 6 && dc >= 0 && dc <= 6) &&
-                                (dr === 0 || dr === 6 || dc === 0 || dc === 6 ||
-                                 (dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4));
-                            set(r, c, dark ? 1 : 0);
-                        }
-                    }
-                }
-                finder(0, 0); finder(0, size - 7); finder(size - 7, 0);
-
-                // Timing
-                for (var i = 8; i < size - 8; i++) {
-                    set(6, i, i % 2 === 0 ? 1 : 0);
-                    set(i, 6, i % 2 === 0 ? 1 : 0);
-                }
-
-                // Alignment
-                var ap = ALIGN_POS[version] || [];
-                for (var ai = 0; ai < ap.length; ai++) {
-                    for (var aj = 0; aj < ap.length; aj++) {
-                        var r = ap[ai], c = ap[aj];
-                        if ((r <= 8 && c <= 8) || (r <= 8 && c >= size - 9) || (r >= size - 9 && c <= 8)) continue;
-                        for (var dr = -2; dr <= 2; dr++) {
-                            for (var dc = -2; dc <= 2; dc++) {
-                                set(r + dr, c + dc, (Math.abs(dr) === 2 || Math.abs(dc) === 2 || (dr === 0 && dc === 0)) ? 1 : 0);
-                            }
-                        }
-                    }
-                }
-
-                // Dark module
-                set(size - 8, 8, 1);
-
-                // Reserve format info
-                for (var i = 0; i <= 8; i++) { res[8][i] = true; res[i][8] = true; }
-                for (var i = 0; i < 8; i++) {
-                    res[8][size - 1 - i] = true;
-                    res[size - 1 - i][8] = true;
-                }
-
-                // Reserve version info (v >= 7)
-                if (version >= 7) {
-                    for (var i = 0; i < 6; i++) {
-                        for (var j = 0; j < 3; j++) {
-                            res[i][size - 11 + j] = true;
-                            res[size - 11 + j][i] = true;
-                        }
-                    }
-                }
-
-                // Data bits
-                var dbits = [];
-                for (var i = 0; i < codewords.length; i++) {
-                    for (var j = 7; j >= 0; j--) dbits.push((codewords[i] >> j) & 1);
-                }
-
-                // Place data (zigzag)
-                var bi = 0;
-                var up = true;
-                for (var col = size - 1; col > 0; col -= 2) {
-                    if (col === 6) col--;
-                    for (var i = 0; i < size; i++) {
-                        var row = up ? size - 1 - i : i;
-                        for (var j = 0; j < 2; j++) {
-                            var c = col - j;
-                            if (res[row][c]) continue;
-                            m[row][c] = bi < dbits.length ? dbits[bi] : 0;
-                            bi++;
-                        }
-                    }
-                    up = !up;
-                }
-
-                // Find best mask
-                var bestMask = 0, bestPenalty = Infinity;
-
-                for (var mask = 0; mask < 8; mask++) {
-                    var t = [];
-                    for (var i = 0; i < size; i++) {
-                        t.push(new Array(size));
-                        for (var j = 0; j < size; j++) t[i][j] = m[i][j];
-                    }
-
-                    // Apply mask to data modules
-                    for (var i = 0; i < size; i++) {
-                        for (var j = 0; j < size; j++) {
-                            if (res[i][j]) continue;
-                            if (maskFn(mask, i, j)) t[i][j] ^= 1;
-                        }
-                    }
-
-                    // Write format info
-                    var fmt = FORMAT_L[mask];
-                    for (var i = 0; i < 15; i++) {
-                        var bit = (fmt >> (14 - i)) & 1;
-                        // Top-left
-                        if (i < 6) t[i][8] = bit;
-                        else if (i < 8) t[i + 1][8] = bit;
-                        else if (i === 8) t[8][7] = bit;
-                        else t[8][14 - i] = bit;
-                        // Bottom-left / top-right
-                        if (i < 8) t[8][size - 1 - i] = bit;
-                        else t[size - 15 + i][8] = bit;
-                    }
-
-                    // Version info (v >= 7)
-                    if (version >= 7) {
-                        var vInfo = versionInfo(version);
-                        for (var i = 0; i < 18; i++) {
-                            var bit = (vInfo >> i) & 1;
-                            var r = Math.floor(i / 3);
-                            var c = size - 11 + (i % 3);
-                            t[r][c] = bit;
-                            t[c][r] = bit;
-                        }
-                    }
-
-                    var penalty = calcPenalty(t, size);
-                    if (penalty < bestPenalty) {
-                        bestPenalty = penalty;
-                        bestMask = mask;
-                        for (var i = 0; i < size; i++)
-                            for (var j = 0; j < size; j++)
-                                m[i][j] = t[i][j];
-                    }
-                }
-
-                return { matrix: m, size: size };
-            }
-
-            function maskFn(mask, r, c) {
-                switch(mask) {
-                    case 0: return (r + c) % 2 === 0;
-                    case 1: return r % 2 === 0;
-                    case 2: return c % 3 === 0;
-                    case 3: return (r + c) % 3 === 0;
-                    case 4: return (Math.floor(r / 2) + Math.floor(c / 3)) % 2 === 0;
-                    case 5: return ((r * c) % 2) + ((r * c) % 3) === 0;
-                    case 6: return (((r * c) % 2) + ((r * c) % 3)) % 2 === 0;
-                    case 7: return (((r + c) % 2) + ((r * c) % 3)) % 2 === 0;
+            function finder(r0,c0){
+                for(var dr=-1;dr<=7;dr++)for(var dc=-1;dc<=7;dc++){
+                    var r=r0+dr,c=c0+dc;
+                    if(r<0||r>=size||c<0||c>=size)continue;
+                    var dark=(dr>=0&&dr<=6&&dc>=0&&dc<=6)&&(dr===0||dr===6||dc===0||dc===6||(dr>=2&&dr<=4&&dc>=2&&dc<=4));
+                    set(r,c,dark?1:0);
                 }
             }
+            finder(0,0);finder(0,size-7);finder(size-7,0);
 
-            function versionInfo(version) {
-                var d = version << 12;
-                var g = 0x1F25;
-                for (var i = 2; i >= 0; i--) {
-                    if (d & (1 << (i + 12))) d ^= g << i;
-                }
-                return (version << 12) | d;
+            for(var i=8;i<size-8;i++){set(6,i,i%2===0?1:0);set(i,6,i%2===0?1:0);}
+
+            var ap=ALIGN[version]||[];
+            for(var ai=0;ai<ap.length;ai++)for(var aj=0;aj<ap.length;aj++){
+                var r=ap[ai],c=ap[aj];
+                if((r<=8&&c<=8)||(r<=8&&c>=size-9)||(r>=size-9&&c<=8))continue;
+                for(var dr=-2;dr<=2;dr++)for(var dc=-2;dc<=2;dc++)
+                    set(r+dr,c+dc,(Math.abs(dr)===2||Math.abs(dc)===2||(dr===0&&dc===0))?1:0);
             }
 
-            function calcPenalty(m, size) {
-                var p = 0;
+            set(size-8,8,1);
 
-                // Rule 1: runs
-                for (var i = 0; i < size; i++) {
-                    var runLen = 1;
-                    for (var j = 1; j < size; j++) {
-                        if (m[i][j] === m[i][j-1]) runLen++;
-                        else { if (runLen >= 5) p += runLen - 2; runLen = 1; }
-                    }
-                    if (runLen >= 5) p += runLen - 2;
-                    runLen = 1;
-                    for (var j = 1; j < size; j++) {
-                        if (m[j][i] === m[j-1][i]) runLen++;
-                        else { if (runLen >= 5) p += runLen - 2; runLen = 1; }
-                    }
-                    if (runLen >= 5) p += runLen - 2;
-                }
+            // Reserve format info
+            for(var i=0;i<=8;i++){res[8][i]=true;res[i][8]=true;}
+            for(var i=0;i<8;i++){res[8][size-1-i]=true;res[size-1-i][8]=true;}
+            if(version>=7)for(var i=0;i<6;i++)for(var j=0;j<3;j++){res[i][size-11+j]=true;res[size-11+j][i]=true;}
 
-                // Rule 2: 2x2
-                for (var i = 0; i < size - 1; i++) {
-                    for (var j = 0; j < size - 1; j++) {
-                        var v = m[i][j];
-                        if (v === m[i][j+1] && v === m[i+1][j] && v === m[i+1][j+1]) p += 3;
+            // Data bits
+            var db=[];
+            for(var i=0;i<cw.length;i++)for(var j=7;j>=0;j--)db.push((cw[i]>>j)&1);
+
+            var bi=0,up=true;
+            for(var col=size-1;col>0;col-=2){
+                if(col===6)col--;
+                for(var i=0;i<size;i++){
+                    var row=up?size-1-i:i;
+                    for(var j=0;j<2;j++){
+                        var c=col-j;
+                        if(res[row][c])continue;
+                        m[row][c]=bi<db.length?db[bi]:0;
+                        bi++;
                     }
                 }
-
-                // Rule 3: patterns
-                var p1 = [1,0,1,1,1,0,1,0,0,0,0];
-                var p2 = [0,0,0,0,1,0,1,1,1,0,1];
-                for (var i = 0; i < size; i++) {
-                    for (var j = 0; j <= size - 11; j++) {
-                        var match1 = true, match2 = true, match3 = true, match4 = true;
-                        for (var k = 0; k < 11; k++) {
-                            if (m[i][j+k] !== p1[k]) match1 = false;
-                            if (m[i][j+k] !== p2[k]) match2 = false;
-                            if (m[j+k][i] !== p1[k]) match3 = false;
-                            if (m[j+k][i] !== p2[k]) match4 = false;
-                        }
-                        if (match1) p += 40;
-                        if (match2) p += 40;
-                        if (match3) p += 40;
-                        if (match4) p += 40;
-                    }
-                }
-
-                // Rule 4: dark ratio
-                var dark = 0;
-                for (var i = 0; i < size; i++) for (var j = 0; j < size; j++) if (m[i][j]) dark++;
-                var ratio = dark / (size * size) * 100;
-                p += Math.floor(Math.abs(ratio - 50) / 5) * 10;
-
-                return p;
+                up=!up;
             }
 
-            return {
-                generate: function(text) {
-                    var bytes = utf8Bytes(text);
-                    var version = chooseVersion(bytes.length);
-                    var codewords = makeCodewords(bytes, version);
-                    return makeMatrix(version, codewords);
-                },
-                render: function(canvas, text, scale) {
-                    var qr = this.generate(text);
-                    var qz = 4;
-                    var total = qr.size + qz * 2;
-                    var px = scale || 3;
-                    canvas.width = total * px;
-                    canvas.height = total * px;
-                    var ctx = canvas.getContext('2d');
-                    ctx.fillStyle = '#fff';
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    ctx.fillStyle = '#000';
-                    for (var r = 0; r < qr.size; r++) {
-                        for (var c = 0; c < qr.size; c++) {
-                            if (qr.matrix[r][c]) {
-                                ctx.fillRect((c + qz) * px, (r + qz) * px, px, px);
-                            }
-                        }
+            var bestMask=0,bestP=Infinity;
+
+            for(var mask=0;mask<8;mask++){
+                var t=[];
+                for(var i=0;i<size;i++){t.push([]);for(var j=0;j<size;j++)t[i][j]=m[i][j];}
+
+                for(var i=0;i<size;i++)for(var j=0;j<size;j++){
+                    if(res[i][j])continue;
+                    if(maskFn(mask,i,j))t[i][j]^=1;
+                }
+
+                // Format info (ECC L)
+                var fmt=fmtBits(mask);
+                for(var i=0;i<15;i++){
+                    var bit=(fmt>>(14-i))&1;
+                    if(i<6)t[i][8]=bit;
+                    else if(i<8)t[i+1][8]=bit;
+                    else if(i===8)t[8][7]=bit;
+                    else t[8][14-i]=bit;
+                    if(i<8)t[8][size-1-i]=bit;
+                    else t[size-15+i][8]=bit;
+                }
+
+                if(version>=7){
+                    var vi=vInfo(version);
+                    for(var i=0;i<18;i++){
+                        var bit=(vi>>i)&1;
+                        var r=Math.floor(i/3),c=size-11+(i%3);
+                        t[r][c]=bit;
+                        t[c][r]=bit;
                     }
                 }
-            };
-        })();
 
+                var p=penalty(t,size);
+                if(p<bestP){bestP=p;bestMask=mask;for(var i=0;i<size;i++)for(var j=0;j<size;j++)m[i][j]=t[i][j];}
+            }
+
+            return {matrix:m,size:size};
+        }
+
+        window._qrlib = {
+            generate: function(text){
+                var bytes=utf8(text);
+                var v=chooseVersion(bytes.length);
+                var cw=makeCW(bytes,v);
+                return makeMatrix(v,cw);
+            },
+            render: function(canvas,text,scale){
+                var qr=this.generate(text);
+                var qz=4,total=qr.size+qz*2,px=scale||3;
+                canvas.width=total*px;canvas.height=total*px;
+                var ctx=canvas.getContext('2d');
+                ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+                ctx.fillStyle='#000';
+                for(var r=0;r<qr.size;r++)for(var c=0;c<qr.size;c++)
+                    if(qr.matrix[r][c])ctx.fillRect((c+qz)*px,(r+qz)*px,px,px);
+            }
+        };
+    })();
+    </script>
+
+    <script>
         /* ===== Тема ===== */
         function toggleTheme() {
             document.body.classList.toggle('dark');
@@ -1236,7 +1006,7 @@
                 item.className = 'qr-item';
                 var canvas = document.createElement('canvas');
                 try {
-                    qrcode.render(canvas, str, 3);
+                    _qrlib.render(canvas, str, 3);
                 } catch(e) {
                     var p = document.createElement('div');
                     p.textContent = 'Ошибка генерации';
