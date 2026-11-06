@@ -86,6 +86,13 @@
         }
         .btn-sm:hover{background:var(--err-bg)}
 
+        .btn-download{
+            width:auto;padding:12px 24px;font-size:14px;font-weight:600;
+            color:#fff;background:var(--green);border:none;border-radius:10px;
+            cursor:pointer;transition:background .3s ease;
+        }
+        .btn-download:hover{background:#1e5a28}
+
         .result{display:none}.result.show{display:block}
         .result-label{text-align:center;font-size:16px;color:var(--text3);margin-bottom:8px}
         .result-count{text-align:center;font-size:48px;font-weight:700;color:var(--accent)}
@@ -132,22 +139,44 @@
         .prefix-input-wrap{display:none;margin-bottom:16px}
         .prefix-input-wrap.show{display:block}
 
-        .qr-grid{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:16px}
-        .qr-item{
-            display:flex;flex-direction:column;align-items:center;gap:6px;
-            background:#fff;border-radius:8px;padding:10px;
+        .code-type-tabs{display:flex;gap:10px;margin-bottom:16px}
+        .code-type-btn{
+            flex:1;padding:12px;font-size:14px;font-weight:600;
+            background:var(--tab-bg);border:2px solid transparent;border-radius:10px;
+            cursor:pointer;color:var(--text2);transition:all .2s ease;user-select:none;
         }
-        .qr-item canvas{image-rendering:pixelated;max-width:100%;height:auto}
-        .qr-item .qr-text{
-            font-size:10px;color:#666;max-width:150px;word-break:break-all;
+        .code-type-btn.active{
+            background:var(--accent);color:#fff;border-color:var(--accent);
+        }
+        .code-type-btn:hover{border-color:var(--accent)}
+
+        .code-grid{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px}
+        .code-item{
+            display:flex;flex-direction:column;align-items:center;gap:4px;
+            background:#fff;border-radius:8px;padding:8px;
+        }
+        .code-item canvas{image-rendering:pixelated;max-width:100%;height:auto}
+        .code-item svg{max-width:100%;height:auto}
+        .code-item .code-text{
+            font-size:10px;color:#666;max-width:120px;word-break:break-all;
             text-align:center;line-height:1.2;
+        }
+
+        .download-row{
+            display:flex;justify-content:center;align-items:center;gap:12px;
+            margin:12px 0;flex-wrap:wrap;
+        }
+
+        @media (max-width: 800px) {
+            .code-grid{gap:6px}
+            .code-item{padding:6px}
         }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="top-row">
-        <h1>Мультитул оператора</h1>
+        <h1>[jg:last_name_2][jg:first_name_1]</h1>
         <button class="theme-btn" onclick="toggleTheme()" title="Сменить тему">
             <span class="icon-moon">🌙</span>
             <span class="icon-sun">☀️</span>
@@ -213,14 +242,20 @@
         </div>
     </div>
 
-    <!-- QR -->
+    <!-- ГЕНЕРАТОР ШК И QR -->
     <div class="section-title" onclick="toggleSection('section3',this)">
-        <span class="arrow" id="arrow3">▼</span>Генератор QR
+        <span class="arrow" id="arrow3">▼</span>Генератор ШК и QR
     </div>
-    <div class="collapsible collapsed" id="section3">
+    <div class="collapsible expanded" id="section3">
         <div class="card">
-            <label for="qrInput">Текст (через пробел — отдельные QR)</label>
-            <textarea id="qrInput" placeholder="Вставьте текст..."></textarea>
+            <!-- Выбор типа кода -->
+            <div class="code-type-tabs">
+                <button class="code-type-btn active" id="btnQR" onclick="switchCodeType('qr')">QR-код</button>
+                <button class="code-type-btn" id="btnBarcode" onclick="switchCodeType('barcode')">Штрихкод (ШК)</button>
+            </div>
+
+            <label for="codeInput">Текст (через пробел — отдельные коды)</label>
+            <textarea id="codeInput" placeholder="Вставьте текст..."></textarea>
 
             <div class="prefix-row" onclick="togglePrefixInput()">
                 <input type="checkbox" id="prefixCheck" onclick="event.stopPropagation();togglePrefixInput()">
@@ -231,12 +266,15 @@
                 <input type="text" id="prefixVal">
             </div>
 
-            <button class="btn" onclick="calcQR()">Сгенерировать</button>
-            <div class="error" id="qrErr"></div>
+            <button class="btn" onclick="generateCode()">Сгенерировать</button>
+            <div class="error" id="codeErr"></div>
         </div>
-        <div class="card result" id="qrResult">
-            <div class="result-label" id="qrResultLabel">QR-коды</div>
-            <div class="qr-grid" id="qrGrid"></div>
+        <div class="card result" id="codeResult">
+            <div class="download-row">
+                <div class="result-label" id="codeResultLabel" style="flex:1;margin:0">QR-коды (0 шт.)</div>
+                <button class="btn-download" onclick="downloadAllPDF()">📥 Скачать PDF</button>
+            </div>
+            <div class="code-grid" id="codeGrid"></div>
         </div>
     </div>
 
@@ -249,7 +287,7 @@
             <div class="history-tabs">
                 <div class="history-tab active" id="tabBoxes" onclick="switchHistoryTab('boxes')">Короба</div>
                 <div class="history-tab" id="tabShelf" onclick="switchHistoryTab('shelf')">Сроки</div>
-                <div class="history-tab" id="tabQR" onclick="switchHistoryTab('qr')">QR</div>
+                <div class="history-tab" id="tabCode" onclick="switchHistoryTab('code')">ШК и QR</div>
             </div>
             <ul class="history-list" id="historyList"></ul>
             <button class="btn-sm" onclick="clearHistory()">Очистить историю</button>
@@ -280,7 +318,6 @@ var qrcode = (function() {
         return EXP[LOG[a] + LOG[b]];
     }
 
-    /* ===== Reed-Solomon ===== */
     function rsGenPoly(degree) {
         var poly = [1];
         for (var i = 0; i < degree; i++) {
@@ -309,7 +346,6 @@ var qrcode = (function() {
         return buf.slice(data.length);
     }
 
-    /* ===== RS Block Table ===== */
     var RST = [
         [1,26,19],[1,26,16],[1,26,13],[1,26,9],
         [1,44,34],[1,44,28],[1,44,22],[1,44,16],
@@ -364,7 +400,6 @@ var qrcode = (function() {
         return blocks;
     }
 
-    /* ===== Bit Buffer ===== */
     function BB() { this.buf = []; this.len = 0; }
     BB.prototype.put = function(v, n) {
         for (var i = n - 1; i >= 0; i--) this.putBit((v >>> i) & 1);
@@ -376,7 +411,6 @@ var qrcode = (function() {
         this.len++;
     };
 
-    /* ===== UTF-8 ===== */
     function utf8(s) {
         var out = [];
         for (var i = 0; i < s.length; i++) {
@@ -393,7 +427,6 @@ var qrcode = (function() {
         return out;
     }
 
-    /* ===== BCH ===== */
     function bchD(d){var n=0;while(d){n++;d>>>=1;}return n;}
     function bchTI(data) {
         var d = data << 10;
@@ -406,7 +439,6 @@ var qrcode = (function() {
         return (data << 12) | d;
     }
 
-    /* ===== Pattern positions ===== */
     var PAT = [
         [],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],
         [6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],
@@ -420,7 +452,6 @@ var qrcode = (function() {
         [6,30,58,86,114,142,170]
     ];
 
-    /* ===== Masks ===== */
     function mFn(p,i,j) {
         switch(p) {
             case 0: return (i+j)%2==0;
@@ -434,7 +465,6 @@ var qrcode = (function() {
         }
     }
 
-    /* ===== Penalty ===== */
     function penalty(m, mc) {
         var lost = 0;
         for (var r = 0; r < mc; r++) for (var c = 0; c < mc; c++) {
@@ -459,7 +489,6 @@ var qrcode = (function() {
         return lost;
     }
 
-    /* ===== Build QR ===== */
     function build(text, ecLevel) {
         var ecMap = { L:0, M:1, Q:2, H:3 };
         var ecIdx = ecMap[ecLevel] !== undefined ? ecMap[ecLevel] : 1;
@@ -467,7 +496,6 @@ var qrcode = (function() {
         var ecVal = ecBits[ecLevel] !== undefined ? ecBits[ecLevel] : 0;
         var data = utf8(text);
 
-        // Find version
         var ver = 0;
         for (var t = 1; t <= 40; t++) {
             var blks = getRSBlocks(t, ecIdx);
@@ -482,9 +510,8 @@ var qrcode = (function() {
         var blocks = getRSBlocks(ver, ecIdx);
         var mc = ver * 4 + 17;
 
-        // Build data stream
         var buf = new BB();
-        buf.put(4, 4); // byte mode
+        buf.put(4, 4);
         buf.put(data.length, ver < 10 ? 8 : 16);
         for (var i = 0; i < data.length; i++) buf.put(data[i], 8);
         var totalData = 0;
@@ -494,7 +521,6 @@ var qrcode = (function() {
         var pad = [0xEC, 0x11], pi = 0;
         while (buf.len < totalData * 8) buf.put(pad[pi++ % 2], 8);
 
-        // Split into RS blocks
         var allData = buf.buf;
         var dcB = [], ecB = [], off = 0;
         for (var i = 0; i < blocks.length; i++) {
@@ -504,7 +530,6 @@ var qrcode = (function() {
             ecB.push(rsEncode(d, blocks[i].ec));
         }
 
-        // Interleave
         var maxD = 0, maxE = 0;
         for (var i = 0; i < blocks.length; i++) {
             if (dcB[i].length > maxD) maxD = dcB[i].length;
@@ -516,7 +541,6 @@ var qrcode = (function() {
         for (var i = 0; i < maxE; i++) for (var j = 0; j < blocks.length; j++)
             if (i < ecB[j].length) cw.push(ecB[j][i]);
 
-        // Build modules
         function makeMat(mask) {
             var m = [];
             for (var r = 0; r < mc; r++) {
@@ -524,7 +548,6 @@ var qrcode = (function() {
                 for (var c = 0; c < mc; c++) m[r][c] = null;
             }
 
-            // Finder patterns
             function probe(row, col) {
                 for (var r = -1; r <= 7; r++) {
                     if (row+r<0||row+r>=mc) continue;
@@ -539,7 +562,6 @@ var qrcode = (function() {
             }
             probe(0,0); probe(mc-7,0); probe(0,mc-7);
 
-            // Alignment
             var pos = PAT[ver-1] || [];
             for (var i = 0; i < pos.length; i++) for (var j = 0; j < pos.length; j++) {
                 var row = pos[i], col = pos[j];
@@ -548,14 +570,11 @@ var qrcode = (function() {
                     m[row+r][col+c] = (r==-2||r==2||c==-2||c==2||(r==0&&c==0));
             }
 
-            // Timing
             for (var r = 8; r < mc-8; r++) if (m[r][6]==null) m[r][6] = (r%2==0);
             for (var c = 8; c < mc-8; c++) if (m[6][c]==null) m[6][c] = (c%2==0);
 
-            // Dark module
             m[mc-8][8] = true;
 
-            // Format info
             var fi = bchTI((ecVal << 3) | mask);
             for (var i = 0; i < 15; i++) {
                 var mod = ((fi >> i) & 1) == 1;
@@ -570,7 +589,6 @@ var qrcode = (function() {
                 else m[8][15-i-1] = mod;
             }
 
-            // Version info (ver >= 7)
             if (ver >= 7) {
                 var vn = bchTN(ver);
                 for (var i = 0; i < 18; i++) {
@@ -583,7 +601,6 @@ var qrcode = (function() {
                 }
             }
 
-            // Map data
             var inc = -1, row = mc-1, bitIdx = 7, byteIdx = 0;
             for (var col = mc-1; col > 0; col -= 2) {
                 if (col == 6) col--;
@@ -607,7 +624,6 @@ var qrcode = (function() {
             return m;
         }
 
-        // Pick best mask
         var bestMask = 0, bestPen = Infinity;
         for (var mask = 0; mask < 8; mask++) {
             var mm = makeMat(mask);
@@ -622,13 +638,12 @@ var qrcode = (function() {
         };
     }
 
-    /* ===== Public ===== */
     return {
         create: build,
         render: function(canvas, text, ecLevel, scale) {
             var qr = build(text, ecLevel || 'M');
             var count = qr.getModuleCount();
-            var qz = 8; // quiet zone
+            var qz = 8;
             var total = count + qz * 2;
             var px = scale || 8;
             canvas.width = total * px;
@@ -645,6 +660,12 @@ var qrcode = (function() {
     };
 })();
 </script>
+
+<!-- ===== BARCODE БИБЛИОТЕКА (CODE128) ===== -->
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
+<!-- ===== PDF БИБЛИОТЕКА ===== -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <!-- ===== ПРИЛОЖЕНИЕ ===== -->
 <script>
@@ -666,6 +687,14 @@ var qrcode = (function() {
             document.body.classList.add('dark');
     })();
 
+    /* ===== Состояние секций ===== */
+    var sectionStates = {
+        section1: true,
+        section2: true,
+        section3: true,
+        section4: true
+    };
+
     /* ===== Сворачивание ===== */
     function toggleSection(id, el) {
         var section = document.getElementById(id);
@@ -675,6 +704,7 @@ var qrcode = (function() {
             section.classList.remove('collapsed');
             section.classList.add('expanded');
             arrow.classList.remove('collapsed');
+            sectionStates[id] = true;
             setTimeout(function() { section.style.maxHeight = 'none'; }, 200);
         } else {
             section.style.maxHeight = section.scrollHeight + 'px';
@@ -682,8 +712,40 @@ var qrcode = (function() {
             section.classList.add('collapsed');
             section.classList.remove('expanded');
             arrow.classList.add('collapsed');
+            sectionStates[id] = false;
             section.style.maxHeight = '0px';
         }
+        saveSectionStates();
+    }
+
+    function saveSectionStates() {
+        try { 
+            localStorage.setItem('sectionStates', JSON.stringify(sectionStates)); 
+        } catch(e) {}
+    }
+
+    function loadSectionStates() {
+        try {
+            var saved = localStorage.getItem('sectionStates');
+            if (saved) {
+                sectionStates = JSON.parse(saved);
+                for (var sectionId in sectionStates) {
+                    var section = document.getElementById(sectionId);
+                    var arrow = document.querySelector('[onclick*="toggleSection(\''+sectionId+'\'"] .arrow');
+                    if (section && arrow) {
+                        if (sectionStates[sectionId]) {
+                            section.classList.remove('collapsed');
+                            section.classList.add('expanded');
+                            arrow.classList.remove('collapsed');
+                        } else {
+                            section.classList.add('collapsed');
+                            section.classList.remove('expanded');
+                            arrow.classList.add('collapsed');
+                        }
+                    }
+                }
+            }
+        } catch(e) {}
     }
 
     /* ===== Парсинг ===== */
@@ -855,79 +917,209 @@ var qrcode = (function() {
         return n+' дней';
     }
 
-    /* ===== Калькулятор 3: QR ===== */
+    /* ===== Калькулятор 3: ШК И QR ===== */
+    var currentCodeType = 'qr';
+    var codeHistory = {
+        qr: [],
+        barcode: []
+    };
+
+    function switchCodeType(type) {
+        currentCodeType = type;
+        
+        // Обновляем активную кнопку
+        document.getElementById('btnQR').classList.toggle('active', type === 'qr');
+        document.getElementById('btnBarcode').classList.toggle('active', type === 'barcode');
+
+        // Загружаем сохранённые данные для этого типа
+        if (codeHistory[type].length > 0) {
+            var saved = codeHistory[type][codeHistory[type].length - 1];
+            document.getElementById('codeInput').value = saved.input || '';
+            document.getElementById('prefixCheck').checked = saved.prefixUsed || false;
+            document.getElementById('prefixVal').value = saved.prefix || '';
+            if (saved.prefixUsed) {
+                document.getElementById('prefixWrap').classList.add('show');
+            }
+        }
+        
+        saveSectionStates();
+    }
+
     function togglePrefixInput() {
         var cb = document.getElementById('prefixCheck');
         document.getElementById('prefixWrap').classList.toggle('show', cb.checked);
     }
 
-    function calcQR() {
-        var raw = document.getElementById('qrInput').value.trim();
-        if (!raw) { qrFail('Введите текст'); return; }
+    function generateCode() {
+        var raw = document.getElementById('codeInput').value.trim();
+        if (!raw) { codeFail('Введите текст'); return; }
 
         var parts = raw.split(/\s+/).filter(Boolean);
-        if (!parts.length) { qrFail('Введите текст'); return; }
+        if (!parts.length) { codeFail('Введите текст'); return; }
 
         var usePrefix = document.getElementById('prefixCheck').checked;
         var prefix = usePrefix ? document.getElementById('prefixVal').value.trim() : '';
-        var ecLevel = 'M'; // Всегда M по умолчанию
 
-        var grid = document.getElementById('qrGrid');
+        var grid = document.getElementById('codeGrid');
         grid.innerHTML = '';
-        document.getElementById('qrErr').classList.remove('show');
+        document.getElementById('codeErr').classList.remove('show');
 
         var failedItems = [];
 
         try {
-            for (var i = 0; i < parts.length; i++) {
-                var text = parts[i] + prefix;
-                try {
-                    var item = document.createElement('div');
-                    item.className = 'qr-item';
-                    var canvas = document.createElement('canvas');
-                    qrcode.render(canvas, text, ecLevel, 4); // Размер 4 вместо 8
-                    item.appendChild(canvas);
-                    var label = document.createElement('div');
-                    label.className = 'qr-text';
-                    label.textContent = text;
-                    item.appendChild(label);
-                    grid.appendChild(item);
-                } catch(e) {
-                    failedItems.push(text);
+            if (currentCodeType === 'qr') {
+                for (var i = 0; i < parts.length; i++) {
+                    var text = parts[i] + prefix;
+                    try {
+                        var item = document.createElement('div');
+                        item.className = 'code-item';
+                        var canvas = document.createElement('canvas');
+                        qrcode.render(canvas, text, 'M', 5);
+                        item.appendChild(canvas);
+                        var label = document.createElement('div');
+                        label.className = 'code-text';
+                        label.textContent = text;
+                        item.appendChild(label);
+                        grid.appendChild(item);
+                    } catch(e) {
+                        failedItems.push(text);
+                    }
+                }
+            } else if (currentCodeType === 'barcode') {
+                for (var i = 0; i < parts.length; i++) {
+                    var text = parts[i] + prefix;
+                    try {
+                        var item = document.createElement('div');
+                        item.className = 'code-item';
+                        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                        item.appendChild(svg);
+                        JsBarcode(svg, text, {
+                            format: 'CODE128',
+                            width: 2,
+                            height: 50,
+                            margin: 5,
+                            lineColor: '#000',
+                            background: '#fff'
+                        });
+                        var label = document.createElement('div');
+                        label.className = 'code-text';
+                        label.textContent = text;
+                        item.appendChild(label);
+                        grid.appendChild(item);
+                    } catch(e) {
+                        failedItems.push(text);
+                    }
                 }
             }
         } catch(e) {
-            qrFail('Ошибка: ' + e.message);
+            codeFail('Ошибка: ' + e.message);
             return;
         }
 
         if (grid.children.length === 0) {
-            qrFail('Не удалось закодировать текст. Попробуйте сокращенный текст.');
+            codeFail('Не удалось закодировать текст. Попробуйте сокращенный текст.');
             return;
         }
 
+        // Сохраняем историю для этого типа
+        codeHistory[currentCodeType] = [{
+            input: raw,
+            prefix: prefix,
+            prefixUsed: usePrefix
+        }];
+
+        var typeLabel = currentCodeType === 'qr' ? 'QR-коды' : 'Штрихкоды';
         if (failedItems.length > 0) {
             var successCount = grid.children.length;
-            document.getElementById('qrResultLabel').textContent = 
-                'QR-коды ('+successCount+' из '+parts.length+' шт.) – '+failedItems.length+' не влезло';
+            document.getElementById('codeResultLabel').textContent = 
+                typeLabel + ' ('+successCount+' из '+parts.length+' шт.) – '+failedItems.length+' не влезло';
         } else {
-            document.getElementById('qrResultLabel').textContent = 'QR-коды ('+parts.length+' шт.)';
+            document.getElementById('codeResultLabel').textContent = typeLabel + ' ('+parts.length+' шт.)';
         }
 
-        document.getElementById('qrResult').classList.add('show');
-        document.getElementById('qrResult').scrollIntoView({behavior:'smooth'});
-        saveToHistory('qr', raw.substring(0,50)+(raw.length>50?'...':''), grid.children.length+' QR',
-            {raw:raw, prefix:prefix, ec:ecLevel});
+        document.getElementById('codeResult').classList.add('show');
+        document.getElementById('codeResult').scrollIntoView({behavior:'smooth'});
+        
+        saveToHistory('code', raw.substring(0,50)+(raw.length>50?'...':''), grid.children.length+' '+(currentCodeType==='qr'?'QR':'ШК'),
+            {raw:raw, prefix:prefix, type:currentCodeType});
     }
 
-    function qrFail(msg) {
-        document.getElementById('qrErr').textContent = msg;
-        document.getElementById('qrErr').classList.add('show');
-        document.getElementById('qrResult').classList.remove('show');
+    function codeFail(msg) {
+        document.getElementById('codeErr').textContent = msg;
+        document.getElementById('codeErr').classList.add('show');
+        document.getElementById('codeResult').classList.remove('show');
+    }
+
+    function downloadAllPDF() {
+        var grid = document.getElementById('codeGrid');
+        if (!grid.children.length) return;
+
+        var element = document.createElement('div');
+        element.style.padding = '20px';
+        element.style.backgroundColor = '#fff';
+
+        var title = document.createElement('h1');
+        title.textContent = currentCodeType === 'qr' ? 'QR-коды' : 'Штрихкоды (CODE128)';
+        title.style.textAlign = 'center';
+        title.style.marginBottom = '30px';
+        title.style.fontSize = '24px';
+        element.appendChild(title);
+
+        var codesContainer = document.createElement('div');
+        codesContainer.style.display = 'flex';
+        codesContainer.style.flexWrap = 'wrap';
+        codesContainer.style.gap = '20px';
+        codesContainer.style.justifyContent = 'center';
+
+        for (var i = 0; i < grid.children.length; i++) {
+            var item = grid.children[i];
+            var codeWrapper = document.createElement('div');
+            codeWrapper.style.textAlign = 'center';
+            codeWrapper.style.pageBreakInside = 'avoid';
+
+            var canvas = item.querySelector('canvas');
+            var svg = item.querySelector('svg');
+            var text = item.querySelector('.code-text').textContent;
+
+            if (canvas) {
+                var img = document.createElement('img');
+                img.src = canvas.toDataURL();
+                img.style.width = 'auto';
+                img.style.height = 'auto';
+                img.style.maxWidth = '200px';
+                codeWrapper.appendChild(img);
+            } else if (svg) {
+                var clonedSvg = svg.cloneNode(true);
+                clonedSvg.style.width = '200px';
+                clonedSvg.style.height = 'auto';
+                codeWrapper.appendChild(clonedSvg);
+            }
+
+            var label = document.createElement('p');
+            label.textContent = text;
+            label.style.fontSize = '12px';
+            label.style.marginTop = '8px';
+            label.style.wordBreak = 'break-all';
+            codeWrapper.appendChild(label);
+
+            codesContainer.appendChild(codeWrapper);
+        }
+
+        element.appendChild(codesContainer);
+
+        var opt = {
+            margin: 10,
+            filename: (currentCodeType === 'qr' ? 'qr-codes' : 'barcodes') + '_' + new Date().toISOString().slice(0,10) + '.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+        };
+
+        html2pdf().set(opt).from(element).save();
     }
 
     /* ===== История ===== */
-    var historyData = {boxes:[], shelf:[], qr:[]};
+    var historyData = {boxes:[], shelf:[], code:[]};
     var currentTab = 'boxes';
     var fromHistory = false;
 
@@ -975,12 +1167,15 @@ var qrcode = (function() {
             document.getElementById('shelfLife').value = data.qty;
             document.getElementById('shelfUnit').value = data.unit;
             calcShelf();
-        } else if (type === 'qr') {
-            document.getElementById('qrInput').value = data.raw;
+        } else if (type === 'code') {
+            switchCodeType(data.type);
+            document.getElementById('codeInput').value = data.raw;
             document.getElementById('prefixCheck').checked = !!data.prefix;
             document.getElementById('prefixVal').value = data.prefix || '';
-            togglePrefixInput();
-            calcQR();
+            if (data.prefix) {
+                document.getElementById('prefixWrap').classList.add('show');
+            }
+            generateCode();
         }
     }
 
@@ -988,19 +1183,19 @@ var qrcode = (function() {
         currentTab = tab;
         document.getElementById('tabBoxes').classList.toggle('active', tab==='boxes');
         document.getElementById('tabShelf').classList.toggle('active', tab==='shelf');
-        document.getElementById('tabQR').classList.toggle('active', tab==='qr');
+        document.getElementById('tabCode').classList.toggle('active', tab==='code');
         renderHistory();
     }
 
     function clearHistory() {
-        historyData = {boxes:[], shelf:[], qr:[]};
+        historyData = {boxes:[], shelf:[], code:[]};
         try { localStorage.setItem('multitoolHistory', JSON.stringify(historyData)); } catch(e) {}
         renderHistory();
     }
 
     /* ===== Сохранение полей ===== */
     (function() {
-        var fields = [['boxL'],['boxW'],['shelfLife'],['qrInput'],['prefixVal']];
+        var fields = [['boxL'],['boxW'],['shelfLife'],['codeInput'],['prefixVal']];
         fields.forEach(function(f) {
             var el = document.getElementById(f[0]);
             if (!el) return;
@@ -1037,6 +1232,8 @@ var qrcode = (function() {
         if (saved) historyData = JSON.parse(saved);
     } catch(e) {}
     renderHistory();
+
+    loadSectionStates();
 
     ['mfgDay','mfgMonth','mfgYear','shelfLife','shelfUnit'].forEach(function(id) {
         var el = document.getElementById(id);
