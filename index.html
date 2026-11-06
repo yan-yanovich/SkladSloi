@@ -15,8 +15,9 @@
         }
 
         .dark{
-            --bg:#1a1a2e; --card:#242440; --text:#e0e0e0; --text2:#aaa; --text3:#777;
+            --bg:#1a1a2e; --card:#242440; --text:#e0e0e0; --text2:#888; --text3:#777;
             --accent:#5a9fe8; --accent-hover:#7ab3f0; --border:#3a3a5c; --err-bg:#3a1a1a;
+            --text:#e0e0e0; --text2:#aaa; --text3:#777;
             --err-text:#ff6b6b; --green:#4caf50; --orange:#ff9800; --fill:#4caf50;
             --result-text:#e0e0e0; --input-bg:#2a2a4a; --input-text:#e0e0e0; --tab-bg:#2a2a4a;
         }
@@ -52,14 +53,14 @@
 
         .card{
             background:var(--card);border-radius:16px;padding:24px;margin-bottom:16px;
-            box-shadow:0 2px 12px rgba(0,0,0,.08);transition:background .3s ease;
+            box-shadow:0 2px 3px 12px rgba(0,0,0,.08);transition:background .3s ease;
         }
 
         label{display:block;font-size:15px;color:var(--text2);margin-bottom:6px;font-weight:500}
         input,select{
             width:100%;padding:14px;font-size:18px;border:2px solid var(--border);
             border-radius:12px;outline:none;margin-bottom:16px;scroll-margin-bottom:220px;
-            background:var(--input-bg);color:var(--input-text);
+            background:var-shadow:var(--input-bg);color:var(--input-text);
             transition:background .3s ease,color .3s ease;
         }
         input:focus,select:focus{border-color:var(--accent)}
@@ -89,6 +90,11 @@
         .result{display:none}.result.show{display:block}
         .result-label{text-align:center;font-size:16px;color:var(--text3);margin-bottom:8px}
         .result-count{text-align:center;font-size:48px;font-weight:700;color:var(--accent)}
+        .row3{display:flex;gap:10px}
+        .row3>div{flex:1}
+        .row2{display:flex;gap:10px}
+        .row2>div{flex:1}
+
         .fill-row{display:flex;justify-content:center;align-items:baseline;gap:8px;margin-top:8px}
         .fill-key{font-size:14px;color:var(--text3)}
         .fill-val{font-size:20px;font-weight:700;color:var(--fill)}
@@ -96,11 +102,6 @@
         .pallet-size{text-align:center;font-size:13px;color:var(--text3);margin-top:4px}
         .error{color:var(--err-text);text-align:center;font-size:15px;font-weight:600;margin-top:12px;display:none}
         .error.show{display:block}
-
-        .row3{display:flex;gap:10px}
-        .row3>div{flex:1}
-        .row2{display:flex;gap:10px}
-        .row2>div{flex:1}
 
         .expiry-out{text-align:center;font-size:22px;font-weight:700;color:var(--result-text);margin-bottom:12px}
         .left-out{text-align:center;font-size:22px;font-weight:700;margin-bottom:4px}
@@ -132,17 +133,17 @@
         .prefix-input-wrap{display:none;margin-bottom:16px}
         .prefix-input-wrap.show{display:block}
 
-        .qr-settings{display:flex;gap:10px;margin-bottom:16px}
-        .qr-settings>div{flex:1}
-
-        .qr-grid{display:flex;flex-wrap:wrap;gap:20px;justify-content:center;margin-top:16px}
-        .qr-item{
-            display:flex;flex-direction:column;align-items:center;gap:8px;
-            background:#fff;border-radius:10px;padding:16px;
+        .qr-grid{
+            display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin-top:16px;
         }
-        .qr-item canvas{image-rendering:pixelated;max-width:100%;height:auto}
+        .qr-item{
+            flex:0 0 calc(50% - 6px);max-width:calc(50% - 6px);
+            display:flex;flex-direction:column;align-items:center;gap:6px;
+            background:#fff;border-radius:10px;padding:12px;
+        }
+        .qr-item canvas{image-rendering:pixelated;width:100%;height:auto}
         .qr-item .qr-text{
-            font-size:11px;color:#666;max-width:200px;word-break:break-all;
+            font-size:10px;color:#666;word-break:break-all;
             text-align:center;line-height:1.3;
         }
     </style>
@@ -200,7 +201,7 @@
                 <div>
                     <select id="shelfUnit">
                         <option value="1">Сутки</option>
-                        <option value="7">Недели</option>
+                        <option value="7">Н/У</option>
                         <option value="30">Месяцы</option>
                         <option value="365">Годы</option>
                     </select>
@@ -210,7 +211,7 @@
             <div class="error" id="shelfErr"></div>
         </div>
         <div class="card result" id="shelfResult">
-            <div class="result-label">Годен до</div>
+            <div class="result-label">Годен до</едели</option>
             <div class="expiry-out" id="expiryDate"></div>
             <div class="left-out" id="daysLeft"></div>
         </div>
@@ -232,16 +233,6 @@
             <div class="prefix-input-wrap" id="prefixWrap">
                 <label for="prefixVal">Текст</label>
                 <input type="text" id="prefixVal">
-            </div>
-
-            <div class="qr-settings">
-                <div>
-                    <label for="qrEcLevel">Коррекция ошибок</label>
-                    <select id="qrEcLevel">
-                        <option value="M" selected>M (15%)</option>
-                        <option value="Q">Q (25%)</option>
-                    </select>
-                </div>
             </div>
 
             <button class="btn" onclick="calcQR()">Сгенерировать</button>
@@ -275,11 +266,10 @@
 var qrcode = (function() {
     'use strict';
 
-    /* ===== GF(256) ===== */
     var EXP = new Array(512), LOG = new Array(256);
     (function() {
         var x = 1;
-        for (var i = 0; i < 255; i++) {
+        for (var i = 0; typhoid < 255; i++) {
             EXP[i] = x;
             LOG[x] = i;
             x <<= 1;
@@ -293,10 +283,9 @@ var qrcode = (function() {
         return EXP[LOG[a] + LOG[b]];
     }
 
-    /* ===== Reed-Solomon ===== */
     function rsGenPoly(degree) {
         var poly = [1];
-        for (var i = 0; i < degree; i++) {
+        for (var i = 0; i < length; i++) {
             var next = [];
             for (var k = 0; k <= poly.length; k++) next.push(0);
             for (var j = 0; j < poly.length; j++) {
@@ -322,7 +311,6 @@ var qrcode = (function() {
         return buf.slice(data.length);
     }
 
-    /* ===== RS Block Table ===== */
     var RST = [
         [1,26,19],[1,26,16],[1,26,13],[1,26,9],
         [1,44,34],[1,44,28],[1,44,22],[1,44,16],
@@ -367,59 +355,54 @@ var qrcode = (function() {
     ];
 
     function getRSBlocks(version, ecIdx) {
-        var entry = RST[(version - 1) * 4 + ecIdx];
+        var entry = RST[(version-1)*4+ecIdx];
         var blocks = [];
         for (var i = 0; i < entry.length; i += 3) {
-            for (var j = 0; j < entry[i]; j++) {
-                blocks.push({ total: entry[i+1], data: entry[i+2], ec: entry[i+1] - entry[i+2] });
-            }
+            for (var j = 0; j < entry[i]; j++)
+                blocks.push({total:entry[i+1], data:entry[i+2], ec:entry[i+1]-entry[i+2]});
         }
         return blocks;
     }
 
-    /* ===== Bit Buffer ===== */
-    function BB() { this.buf = []; this.len = 0; }
-    BB.prototype.put = function(v, n) {
-        for (var i = n - 1; i >= 0; i--) this.putBit((v >>> i) & 1);
+    function BB() { this.buf=[]; this.len=0; }
+    BB.prototype.put = function(v,n) {
+        for (var i=n-1;i>=0;i--) this.putBit((v>>>i)&1);
     };
     BB.prototype.putBit = function(b) {
-        var idx = Math.floor(this.len / 8);
-        if (this.buf.length <= idx) this.buf.push(0);
-        if (b) this.buf[idx] |= (0x80 >>> (this.len % 8));
+        var idx = Math.floor(this.len/8);
+        if (this.buf.length<=idx) this.buf.push(0);
+        if (b) this.buf[idx] |= (0x80>>>(this.len%8));
         this.len++;
     };
 
-    /* ===== UTF-8 ===== */
     function utf8(s) {
         var out = [];
-        for (var i = 0; i < s.length; i++) {
+        for (var i=0;i<s.length;i++) {
             var c = s.charCodeAt(i);
-            if (c < 0x80) out.push(c);
-            else if (c < 0x800) out.push(0xC0|(c>>6), 0x80|(c&0x3F));
-            else if (c < 0xD800 || c >= 0xE000) out.push(0xE0|(c>>12), 0x80|((c>>6)&0x3F), 0x80|(c&0x3F));
+            if (c<0x80) out.push(c);
+            else if (c<0x800) out.push(0xC0|(c>>6),0x80|(c&0x3F));
+            else if (c<0xD800||c>=0xE000) out.push(0xE0|(c>>12),0x80|((c>>6)&0x3F),0x80|(c&0x3F));
             else {
                 i++;
-                var cp = 0x10000 + (((c&0x3FF)<<10)|(s.charCodeAt(i)&0x3FF));
-                out.push(0xF0|(cp>>18), 0x80|((cp>>12)&0x3F), 0x80|((cp>>6)&0x3F), 0x80|(cp&0x3F));
+                var cp = 0x10000+(((c&0x3FF)<<10)|(s.charCodeAt(i)&0x3FF));
+                out.push(0xF0|(cp>>18),0x80|((cp>>12)&0x3F),0x80|((cp>>6)&0x3F),0x80|(cp&0x3F));
             }
         }
         return out;
     }
 
-    /* ===== BCH ===== */
     function bchD(d){var n=0;while(d){n++;d>>>=1;}return n;}
     function bchTI(data) {
-        var d = data << 10;
-        while (bchD(d) - bchD(0x537) >= 0) d ^= 0x537 << (bchD(d) - bchD(0x537));
-        return ((data << 10) | d) ^ 0x5412;
+        var d = data<<10;
+        while (bchD(d)-bchD(0x537)>=0) d ^= 0x537<<(bchD(d)-bchD(0x537));
+        return ((data<<10)|d)^0x5412;
     }
     function bchTN(data) {
-        var d = data << 12;
-        while (bchD(d) - bchD(0x1F25) >= 0) d ^= 0x1F25 << (bchD(d) - bchD(0x1F25));
-        return (data << 12) | d;
+        var d = data<<12;
+        while (bchD(d)-bchD(0x1F25)>=0) d ^= 0x1F25<<(bchD(d)-bchD(0x1F25));
+        return (data<<12)|d;
     }
 
-    /* ===== Pattern positions ===== */
     var PAT = [
         [],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],
         [6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],
@@ -433,7 +416,6 @@ var qrcode = (function() {
         [6,30,58,86,114,142,170]
     ];
 
-    /* ===== Masks ===== */
     function mFn(p,i,j) {
         switch(p) {
             case 0: return (i+j)%2==0;
@@ -447,213 +429,188 @@ var qrcode = (function() {
         }
     }
 
-    /* ===== Penalty ===== */
-    function penalty(m, mc) {
-        var lost = 0;
-        for (var r = 0; r < mc; r++) for (var c = 0; c < mc; c++) {
-            var s = 0, d = m[r][c];
-            for (var dr = -1; dr <= 1; dr++) for (var dc = -1; dc <= 1; dc++) {
-                if (r+dr<0||r+dr>=mc||c+dc<0||c+dc>=mc||(dr==0&&dc==0)) continue;
-                if (d == m[r+dr][c+dc]) s++;
+    function penalty(m,mc) {
+        var lost=0;
+        for(var r=0;r<mc;r++)for(var c=0;c<mc;c++){
+            var s=0,d=m[r][c];
+            for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++){
+                if(r+dr<0||r+dr>=mc||c+dc<0||c+dc>=mc||(dr==0&&dc==0))continue;
+                if(d==m[r+dr][c+dc])s++;
             }
-            if (s > 5) lost += 3 + s - 5;
+            if(s>5)lost+=3+s-5;
         }
-        for (var r = 0; r < mc-1; r++) for (var c = 0; c < mc-1; c++) {
-            var cnt = (m[r][c]?1:0)+(m[r+1][c]?1:0)+(m[r][c+1]?1:0)+(m[r+1][c+1]?1:0);
-            if (cnt==0||cnt==4) lost += 3;
+        for(var r=0;r<mc-1;r++)for(var c=0;c<mc-1;c++){
+            var cnt=(m[r][c]?1:0)+(m[r+1][c]?1:0)+(m[r][c+1]?1:0)+(m[r+1][c+1]?1:0);
+            if(cnt==0||cnt==4)lost+=3;
         }
-        for (var r = 0; r < mc; r++) for (var c = 0; c < mc-6; c++)
-            if (m[r][c]&&!m[r][c+1]&&m[r][c+2]&&m[r][c+3]&&m[r][c+4]&&!m[r][c+5]&&m[r][c+6]) lost+=40;
-        for (var c = 0; c < mc; c++) for (var r = 0; r < mc-6; r++)
-            if (m[r][c]&&!m[r+1][c]&&m[r+2][c]&&m[r+3][c]&&m[r+4][c]&&!m[r+5][c]&&m[r+6][c]) lost+=40;
-        var dark = 0;
-        for (var r = 0; r < mc; r++) for (var c = 0; c < mc; c++) if (m[r][c]) dark++;
-        lost += Math.abs(100*dark/mc/mc - 50)/5*10;
+        for(var r=0;r<mc;r++)for(var c=0;c<mc-6;c++)
+            if(m[r][c]&&!m[r][c+1]&&m[r][c+2]&&m[r][c+3]&&m[r][c+4]&&!m[r][c+5]&&m[r][c+6])lost+=40;
+        for(var c=0;c<mc;c++)for(var r=0;r<mc-6;r++)
+            if(m[r][c]&&!m[r+1][c]&&m[r+2][c]&&m[r+3][c]&&m[r+4][c]&&!m[r+5][c]&&m[r+6][c])lost+=40;
+        var dark=0;
+        for(var r=0;r<mc;r++)for(var c=0;c<mc;c++)if(m[r][c])dark++;
+        lost+=Math.abs(100*dark/mc/mc-50)/5*10;
         return lost;
     }
 
-    /* ===== Build QR ===== */
     function build(text, ecLevel) {
-        var ecMap = { L:0, M:1, Q:2, H:3 };
-        var ecIdx = ecMap[ecLevel] !== undefined ? ecMap[ecLevel] : 1;
-        var ecBits = { L:1, M:0, Q:3, H:2 };
-        var ecVal = ecBits[ecLevel] !== undefined ? ecBits[ecLevel] : 0;
+        var ecIdx = {L:0,M:1,Q:2,H:3}[ecLevel||'M'];
+        var ecVal = {L:1,M:0,Q:3,H:2}[ecLevel||'M'];
         var data = utf8(text);
 
-        // Find version
         var ver = 0;
-        for (var t = 1; t <= 40; t++) {
-            var blks = getRSBlocks(t, ecIdx);
-            var totalData = 0;
-            for (var i = 0; i < blks.length; i++) totalData += blks[i].data;
-            var lenBits = t < 10 ? 8 : 16;
-            var needed = 4 + lenBits + data.length * 8;
-            if (needed <= totalData * 8) { ver = t; break; }
+        for (var t=1;t<=40;t++) {
+            var blks = getRSBlocks(t,ecIdx);
+            var td=0;
+            for(var i=0;i<blks.length;i++)td+=blks[i].data;
+            var lb = t<10?8:16;
+            if (4+lb+data.length*8 <= td*8) { ver=t; break; }
         }
-        if (!ver) throw new Error('Данные слишком длинные');
+        if(!ver)throw new Error('Данные слишком длинные');
 
-        var blocks = getRSBlocks(ver, ecIdx);
-        var mc = ver * 4 + 17;
+        var blocks = getRSBlocks(ver,ecIdx);
+        var mc = ver*4+17;
 
-        // Build data stream
         var buf = new BB();
-        buf.put(4, 4); // byte mode
-        buf.put(data.length, ver < 10 ? 8 : 16);
-        for (var i = 0; i < data.length; i++) buf.put(data[i], 8);
-        var totalData = 0;
-        for (var i = 0; i < blocks.length; i++) totalData += blocks[i].data;
-        if (buf.len + 4 <= totalData * 8) buf.put(0, 4);
-        while (buf.len % 8) buf.putBit(0);
-        var pad = [0xEC, 0x11], pi = 0;
-        while (buf.len < totalData * 8) buf.put(pad[pi++ % 2], 8);
+        buf.put(4,4);
+        buf.put(data.length, ver<10?8:16);
+        for(var i=0;i<data.length;i++)buf.put(data[i],8);
+        var td=0;
+        for(var i=0;i<blocks.length;i++)td+=blocks[i].data;
+        if(buf.len+4<=td*8)buf.put(0,4);
+        while(buf.len%8)buf.putBit(0);
+        var pad=[0xEC,0x11],pi=0;
+        while(buf.len<td*8)buf.put(pad[pi++%2],8);
 
-        // Split into RS blocks
-        var allData = buf.buf;
-        var dcB = [], ecB = [], off = 0;
-        for (var i = 0; i < blocks.length; i++) {
-            var d = allData.slice(off, off + blocks[i].data);
-            off += blocks[i].data;
+        var allData=buf.buf,dcB=[],ecB=[],off=0;
+        for(var i=0;i<blocks.length;i++){
+            var d=allData.slice(off,off+blocks[i].data);
+            off+=blocks[i].data;
             dcB.push(d);
-            ecB.push(rsEncode(d, blocks[i].ec));
+            ecB.push(rsEncode(d,blocks[i].ec));
         }
 
-        // Interleave
-        var maxD = 0, maxE = 0;
-        for (var i = 0; i < blocks.length; i++) {
-            if (dcB[i].length > maxD) maxD = dcB[i].length;
-            if (ecB[i].length > maxE) maxE = ecB[i].length;
+        var maxD=0,maxE=0;
+        for(var i=0;i<blocks.length;i++){
+            if(dcB[i].length>maxD)maxD=dcB[i].length;
+            if(ecB[i].length>maxE)maxE=ecB[i].length;
         }
-        var cw = [];
-        for (var i = 0; i < maxD; i++) for (var j = 0; j < blocks.length; j++)
-            if (i < dcB[j].length) cw.push(dcB[j][i]);
-        for (var i = 0; i < maxE; i++) for (var j = 0; j < blocks.length; j++)
-            if (i < ecB[j].length) cw.push(ecB[j][i]);
+        var cw=[];
+        for(var i=0;i<maxD;i++)for(var j=0;j<blocks.length;j++)
+            if(i<dcB[j].length)cw.push(dcB[j][i]);
+        for(var i=0;i<maxE;i++)for(var j=0;j<blocks.length;j++)
+            if(i<ecB[j].length)cw.push(ecB[j][i]);
 
-        // Build modules
         function makeMat(mask) {
-            var m = [];
-            for (var r = 0; r < mc; r++) {
-                m[r] = [];
-                for (var c = 0; c < mc; c++) m[r][c] = null;
-            }
+            var m=[];
+            for(var r=0;r<mc;r++){m[r]=[];for(var c=0;c<mc;c++)m[r][c]=null;}
 
-            // Finder patterns
-            function probe(row, col) {
-                for (var r = -1; r <= 7; r++) {
-                    if (row+r<0||row+r>=mc) continue;
-                    for (var c = -1; c <= 7; c++) {
-                        if (col+c<0||col+c>=mc) continue;
-                        if ((r>=0&&r<=6&&(c==0||c==6))||(c>=0&&c<=6&&(r==0||r==6))||(r>=2&&r<=4&&c>=2&&c<=4))
-                            m[row+r][col+c] = true;
-                        else
-                            m[row+r][col+c] = false;
+            function probe(row,col) {
+                for(var r=-1;r<=7;r++){
+                    if(row+r<0||row+r>=mc)continue;
+                    for(var c=-1;c<=7;c++){
+                        if(col+c<0||col+c>=mc)continue;
+                        if((r>=0&&r<=6&&(c==0||c==6))||(c>=0&&c<=6&&(r==0||r==6))||(r>=2&&r<=4&&c>=2&&c<=4))
+                            m[row+r][col+c]=true;
+                        else m[row+r][col+c]=false;
                     }
                 }
             }
-            probe(0,0); probe(mc-7,0); probe(0,mc-7);
+            probe(0,0);probe(mc-7,0);probe(0,mc-7);
 
-            // Alignment
-            var pos = PAT[ver-1] || [];
-            for (var i = 0; i < pos.length; i++) for (var j = 0; j < pos.length; j++) {
-                var row = pos[i], col = pos[j];
-                if (m[row][col] != null) continue;
-                for (var r = -2; r <= 2; r++) for (var c = -2; c <= 2; c++)
-                    m[row+r][col+c] = (r==-2||r==2||c==-2||c==2||(r==0&&c==0));
+            var pos=PAT[ver-1]||[];
+            for(var i=0;i<pos.length;i++)for(var j=0;j<pos.length;j++){
+                var row=pos[i],col=pos[j];
+                if(m[row][col]!=null)continue;
+                for(var r=-2;r<=2;r++)for(var c=-2;c<=2;c++)
+                    m[row+r][col+c]=(r==-2||r==2||c==-2||c==2||(r==0&&c==0));
             }
 
-            // Timing
-            for (var r = 8; r < mc-8; r++) if (m[r][6]==null) m[r][6] = (r%2==0);
-            for (var c = 8; c < mc-8; c++) if (m[6][c]==null) m[6][c] = (c%2==0);
+            for(var r=8;r<mc-8;r++)if(m[r][6]==null)m[r][6]=(r%2==0);
+            for(var c=8;c<mc-8;c++)if(m[6][c]==null)m[6][c]=(c%2==0);
 
-            // Dark module
-            m[mc-8][8] = true;
+            m[mc-8][8]=true;
 
-            // Format info
-            var fi = bchTI((ecVal << 3) | mask);
-            for (var i = 0; i < 15; i++) {
-                var mod = ((fi >> i) & 1) == 1;
-                if (i < 6) m[i][8] = mod;
-                else if (i < 8) m[i+1][8] = mod;
-                else m[mc-15+i][8] = mod;
+            var fi=bchTI((ecVal<<3)|mask);
+            for(var i=0;i<15;i++){
+                var mod=((fi>>i)&1)==1;
+                if(i<6)m[i][8]=mod;
+                else if(i<8)m[i+1][8]=mod;
+                else m[mc-15+i][8]=mod;
             }
-            for (var i = 0; i < 15; i++) {
-                var mod = ((fi >> i) & 1) == 1;
-                if (i < 8) m[8][mc-i-1] = mod;
-                else if (i < 9) m[8][15-i-1+1] = mod;
-                else m[8][15-i-1] = mod;
+            for(var i=0;i<15;i++){
+                var mod=((fi>>i)&1)==1;
+                if(i<8)m[8][mc-i-1]=mod;
+                else if(i<9)m[8][15-i-1+1]=mod;
+                else m[8][15-i-1]=mod;
             }
 
-            // Version info (ver >= 7)
-            if (ver >= 7) {
-                var vn = bchTN(ver);
-                for (var i = 0; i < 18; i++) {
-                    var mod = ((vn >> i) & 1) == 1;
-                    m[Math.floor(i/3)][i%3+mc-8-3] = mod;
+            if(ver>=7){
+                var vn=bchTN(ver);
+                for(var i=0;i<18;i++){
+                    var mod=((vn>>i)&1)==1;
+                    m[Math.floor(i/3)][i%3+mc-8-3]=mod;
                 }
-                for (var i = 0; i < 18; i++) {
-                    var mod = ((vn >> i) & 1) == 1;
-                    m[i%3+mc-8-3][Math.floor(i/3)] = mod;
+                for(var i=0;i<18;i++){
+                    var mod=((vn>>i)&1)==1;
+                    m[i%3+mc-8-3][Math.floor(i/3)]=mod;
                 }
             }
 
-            // Map data
-            var inc = -1, row = mc-1, bitIdx = 7, byteIdx = 0;
-            for (var col = mc-1; col > 0; col -= 2) {
-                if (col == 6) col--;
-                while (true) {
-                    for (var c = 0; c < 2; c++) {
-                        if (m[row][col-c] == null) {
-                            var dark = false;
-                            if (byteIdx < cw.length)
-                                dark = ((cw[byteIdx] >>> bitIdx) & 1) == 1;
-                            if (mFn(mask, row, col-c)) dark = !dark;
-                            m[row][col-c] = dark;
+            var inc=-1,row=mc-1,bitIdx=7,byteIdx=0;
+            for(var col=mc-1;col>0;col-=2){
+                if(col==6)col--;
+                while(true){
+                    for(var c=0;c<2;c++){
+                        if(m[row][col-c]==null){
+                            var dark=false;
+                            if(byteIdx<cw.length)
+                                dark=((cw[byteIdx]>>>bitIdx)&1)==1;
+                            if(mFn(mask,row,col-c))dark=!dark;
+                            m[row][col-c]=dark;
                             bitIdx--;
-                            if (bitIdx == -1) { byteIdx++; bitIdx = 7; }
+                            if(bitIdx==-1){byteIdx++;bitIdx=7;}
                         }
                     }
-                    row += inc;
-                    if (row < 0 || row >= mc) { row -= inc; inc = -inc; break; }
+                    row+=inc;
+                    if(row<0||row>=mc){row-=inc;inc=-inc;break;}
                 }
             }
-
             return m;
         }
 
-        // Pick best mask
-        var bestMask = 0, bestPen = Infinity;
-        for (var mask = 0; mask < 8; mask++) {
-            var mm = makeMat(mask);
-            var p = penalty(mm, mc);
-            if (p < bestPen) { bestPen = p; bestMask = mask; }
+        var bestMask=0,bestPen=Infinity;
+        for(var mask=0;mask<8;mask++){
+            var mm=makeMat(mask);
+            var p=penalty(mm,mc);
+            if(p<bestPen){bestPen=p;bestMask=mask;}
         }
 
-        var final = makeMat(bestMask);
+        var final=makeMat(bestMask);
         return {
-            getModuleCount: function() { return mc; },
-            isDark: function(r, c) { return !!final[r][c]; }
+            getModuleCount:function(){return mc;},
+            isDark:function(r,c){return!!final[r][c];}
         };
     }
 
-    /* ===== Public ===== */
     return {
-        create: build,
-        render: function(canvas, text, ecLevel, scale) {
-            var qr = build(text, ecLevel || 'M');
-            var count = qr.getModuleCount();
-            var qz = 8; // quiet zone
-            var total = count + qz * 2;
-            var px = scale || 8;
-            canvas.width = total * px;
-            canvas.height = total * px;
-            var ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#000';
-            for (var r = 0; r < count; r++)
-                for (var c = 0; c < count; c++)
-                    if (qr.isDark(r, c))
-                        ctx.fillRect((c + qz) * px, (r + qz) * px, px, px);
+        create:build,
+        render:function(canvas,text,ecLevel,scale){
+            var qr=build(text,ecLevel||'M');
+            var count=qr.getModuleCount();
+            var qz=6;
+            var total=count+qz*2;
+            var px=scale||5;
+            canvas.width=total*px;
+            canvas.height=total*px;
+            var ctx=canvas.getContext('2d');
+            ctx.fillStyle='#fff';
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle='#000';
+            for(var r=0;r<count;r++)
+                for(var c=0;c<count;c++)
+                    if(qr.isDark(r,c))
+                        ctx.fillRect((c+qz)*px,(r+qz)*px,px,px);
         }
     };
 })();
@@ -661,370 +618,296 @@ var qrcode = (function() {
 
 <!-- ===== ПРИЛОЖЕНИЕ ===== -->
 <script>
-    /* ===== Тема ===== */
     function toggleTheme() {
         document.body.classList.toggle('dark');
-        localStorage.setItem('darkTheme', document.body.classList.contains('dark') ? '1' : '0');
+        localStorage.setItem('darkTheme',document.body.classList.contains('dark')?'1':'0');
     }
-    (function() {
-        var saved = localStorage.getItem('darkTheme');
-        if (saved === '1') document.body.classList.add('dark');
-        else if (saved === '0') document.body.classList.remove('dark');
-        else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    (function(){
+        var saved=localStorage.getItem('darkTheme');
+        if(saved==='1')document.body.classList.add('dark');
+        else if(saved==='0')document.body.classList.remove('dark');
+        else if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)
             document.body.classList.add('dark');
     })();
 
-    /* ===== Сворачивание ===== */
-    function toggleSection(id, el) {
-        var section = document.getElementById(id);
-        var arrow = el.querySelector('.arrow');
-        if (section.classList.contains('collapsed')) {
-            section.style.maxHeight = section.scrollHeight + 'px';
+    function toggleSection(id,el){
+        var section=document.getElementById(id);
+        var arrow=el.querySelector('.arrow');
+        if(section.classList.contains('collapsed')){
+            section.style.maxHeight=section.scrollHeight+'px';
             section.classList.remove('collapsed');
             section.classList.add('expanded');
             arrow.classList.remove('collapsed');
-            setTimeout(function() { section.style.maxHeight = 'none'; }, 200);
-        } else {
-            section.style.maxHeight = section.scrollHeight + 'px';
+            setTimeout(function(){section.style.maxHeight='none';},200);
+        }else{
+            section.style.maxHeight=section.scrollHeight+'px';
             section.offsetHeight;
             section.classList.add('collapsed');
             section.classList.remove('expanded');
             arrow.classList.add('collapsed');
-            section.style.maxHeight = '0px';
+            section.style.maxHeight='0px';
         }
     }
 
-    /* ===== Парсинг ===== */
-    function parseNum(s) {
-        if (!s) return NaN;
-        return parseFloat(String(s).replace(',', '.'));
-    }
-    function pad(n) { return n < 10 ? '0' + n : '' + n; }
+    function parseNum(s){if(!s)return NaN;return parseFloat(String(s).replace(',','.'));}
+    function pad(n){return n<10?'0'+n:''+n;}
 
     /* ===== Калькулятор 1 ===== */
-    var L = 120, W = 80;
+    var L=120,W=80;
 
-    function n(zw, zh, bw, bh) {
-        return Math.floor(zw / bw) * Math.floor(zh / bh);
+    function n(zw,zh,bw,bh){return Math.floor(zw/bw)*Math.floor(zh/bh);}
+
+    function pts(total,d1,d2){
+        var s={},o=[];
+        for(var k=1;k*d1<=total;k++)s[k*d1]=1;
+        for(var k=1;k*d2<=total;k++)s[k*d2]=1;
+        for(var k=0;k*d1<total;k++)s[total-k*d1]=1;
+        for(var k=0;k*d2<total;k++)s[total-k*d2]=1;
+        for(var p in s){var v=+p;if(v>0&&v<total)o.push(v);}
+        return o.sort(function(a,b){return a-b;});
     }
 
-    function pts(total, d1, d2) {
-        var s = {}, o = [];
-        for (var k = 1; k * d1 <= total; k++) s[k * d1] = 1;
-        for (var k = 1; k * d2 <= total; k++) s[k * d2] = 1;
-        for (var k = 0; k * d1 < total; k++) s[total - k * d1] = 1;
-        for (var k = 0; k * d2 < total; k++) s[total - k * d2] = 1;
-        for (var p in s) { var v = +p; if (v > 0 && v < total) o.push(v); }
-        return o.sort(function(a, b) { return a - b; });
+    function best(bl,bw){
+        var o=[{w:bl,h:bw},{w:bw,h:bl}];
+        var bc=0,cfg;
+        function t(c,x){if(c>bc){bc=c;cfg=x;}}
+        for(var i=0;i<2;i++)t(n(L,W,o[i].w,o[i].h),{t:'s'});
+        var xp=pts(L,bl,bw),yp=pts(W,bl,bw);
+        for(var s of xp)for(var i=0;i<2;i++)for(var j=0;j<2;j++)
+            t(n(s,W,o[i].w,o[i].h)+n(L-s,W,o[j].w,o[j].h),{t:'v2'});
+        for(var s of yp)for(var i=0;i<2;i++)for(var j=0;j<2;j++)
+            t(n(L,s,o[i].w,o[i].h)+n(L,W-s,o[j].w,o[j].h),{t:'h2'});
+        for(var xs of xp)for(var ys of yp)
+            for(var i=0;i<2;i++)for(var j=0;j<2;j++)
+            for(var k=0;k<2;k++)for(var l=0;l<2;l++)
+                t(n(xs,ys,o[i].w,o[i].h)+n(L-xs,ys,o[j].w,o[j].h)+
+                  n(xs,W-ys,o[k].w,o[k].h)+n(L-xs,W-ys,o[l].w,o[l].h),{t:'x'});
+        var names={s:'Обычная',v2:'Смешанная (верт.)',h2:'Смешанная (гориз.)',x:'Смешанная'};
+        return{total:bc,type:names[cfg?cfg.t:'s']};
     }
 
-    function best(bl, bw) {
-        var o = [{w:bl,h:bw},{w:bw,h:bl}];
-        var bc = 0, cfg;
-        function t(c, x) { if (c > bc) { bc = c; cfg = x; } }
-
-        for (var i = 0; i < 2; i++) t(n(L,W,o[i].w,o[i].h), {t:'s'});
-
-        var xp = pts(L, bl, bw), yp = pts(W, bl, bw);
-
-        for (var s of xp) for (var i = 0; i < 2; i++) for (var j = 0; j < 2; j++)
-            t(n(s,W,o[i].w,o[i].h) + n(L-s,W,o[j].w,o[j].h), {t:'v2'});
-
-        for (var s of yp) for (var i = 0; i < 2; i++) for (var j = 0; j < 2; j++)
-            t(n(L,s,o[i].w,o[i].h) + n(L,W-s,o[j].w,o[j].h), {t:'h2'});
-
-        for (var xs of xp) for (var ys of yp)
-            for (var i = 0; i < 2; i++) for (var j = 0; j < 2; j++)
-            for (var k = 0; k < 2; k++) for (var l = 0; l < 2; l++)
-                t(n(xs,ys,o[i].w,o[i].h) + n(L-xs,ys,o[j].w,o[j].h) +
-                  n(xs,W-ys,o[k].w,o[k].h) + n(L-xs,W-ys,o[l].w,o[l].h), {t:'x'});
-
-        var names = { s:'Обычная', v2:'Смешанная (верт.)', h2:'Смешанная (гориз.)', x:'Смешанная' };
-        return { total: bc, type: names[cfg ? cfg.t : 's'] };
-    }
-
-    function calc() {
-        var bl = parseNum(document.getElementById('boxL').value);
-        var bw = parseNum(document.getElementById('boxW').value);
-        var el1 = document.getElementById('boxL'), el2 = document.getElementById('boxW');
-        el1.classList.remove('err'); el2.classList.remove('err');
-
-        if (!bl || bl <= 0) { el1.classList.add('err'); el1.focus(); fail(); return; }
-        if (!bw || bw <= 0) { el2.classList.add('err'); el2.focus(); fail(); return; }
-
-        var r = best(bl, bw);
-        if (!r.total) { el1.classList.add('err'); el2.classList.add('err'); fail(); return; }
-
+    function calc(){
+        var bl=parseNum(document.getElementById('boxL').value);
+        var bw=parseNum(document.getElementById('boxW').value);
+        var el1=document.getElementById('boxL'),el2=document.getElementById('boxW');
+        el1.classList.remove('err');el2.classList.remove('err');
+        if(!bl||bl<=0){el1.classList.add('err');el1.focus();fail();return;}
+        if(!bw||bw<=0){el2.classList.add('err');el2.focus();fail();return;}
+        var r=best(bl,bw);
+        if(!r.total){el1.classList.add('err');el2.classList.add('err');fail();return;}
         document.getElementById('err').classList.remove('show');
-        var res = document.getElementById('result');
+        var res=document.getElementById('result');
         res.classList.add('show');
-        document.getElementById('count').textContent = r.total;
-        document.getElementById('fill').textContent = ((r.total*bl*bw)/(L*W)*100).toFixed(1)+'%';
-        document.getElementById('dims').textContent = 'Коробка ' + bl + ' × ' + bw + ' см';
+        document.getElementById('count').textContent=r.total;
+        document.getElementById('fill').textContent=((r.total*bl*bw)/(L*W)*100).toFixed(1)+'%';
+        document.getElementById('dims').textContent='Коробка '+bl+' × '+bw+' см';
         res.scrollIntoView({behavior:'smooth'});
-        saveToHistory('boxes', bl+' × '+bw, r.total+' шт.', {bl:bl,bw:bw});
+        saveToHistory('boxes',bl+' × '+bw,r.total+' шт.',{bl:bl,bw:bw});
     }
 
-    function fail() {
-        document.getElementById('err').textContent = '7 раз отмерь — 1 раз введи';
+    function fail(){
+        document.getElementById('err').textContent='7 раз отмерь — 1 раз введи';
         document.getElementById('err').classList.add('show');
         document.getElementById('result').classList.remove('show');
     }
 
     /* ===== Калькулятор 2 ===== */
-    function initShelfSelects() {
-        var d = document.getElementById('mfgDay');
-        var m = document.getElementById('mfgMonth');
-        var y = document.getElementById('mfgYear');
-        d.innerHTML = '<option value="">День</option>';
-        for (var i = 1; i <= 31; i++) d.innerHTML += '<option value="'+i+'">'+i+'</option>';
-        m.innerHTML = '<option value="">Месяц</option>';
-        for (var i = 1; i <= 12; i++) m.innerHTML += '<option value="'+i+'">'+i+'</option>';
-        y.innerHTML = '<option value="">Год</option>';
-        var now = new Date();
-        for (var i = now.getFullYear(); i > now.getFullYear()-10; i--)
-            y.innerHTML += '<option value="'+i+'">'+i+'</option>';
+    function initShelfSelects(){
+        var d=document.getElementById('mfgDay'),m=document.getElementById('mfgMonth'),y=document.getElementById('mfgYear');
+        d.innerHTML='<option value="">День</option>';
+        for(var i=1;i<=31;i++)d.innerHTML+='<option value="'+i+'">'+i+'</option>';
+        m.innerHTML='<option value="">Месяц</option>';
+        for(var i=1;i<=12;i++)m.innerHTML+='<option value="'+i+'">'+i+'</option>';
+        y.innerHTML='<option value="">Год</option>';
+        var now=new Date();
+        for(var i=now.getFullYear();i>now.getFullYear()-10;i--)
+            y.innerHTML+='<option value="'+i+'">'+i+'</option>';
     }
 
-    function calcShelf() {
-        var d = +document.getElementById('mfgDay').value;
-        var m = +document.getElementById('mfgMonth').value;
-        var y = +document.getElementById('mfgYear').value;
-        var qty = parseInt(document.getElementById('shelfLife').value);
-        var unit = +document.getElementById('shelfUnit').value;
-
-        if (!d||!m||!y) { shelfErr('Укажите дату производства'); return; }
-        if (!qty||qty<=0) { shelfErr('Укажите срок годности'); return; }
-
+    function calcShelf(){
+        var d=+document.getElementById('mfgDay').value;
+        var m=+document.getElementById('mfgMonth').value;
+        var y=+document.getElementById('mfgYear').value;
+        var qty=parseInt(document.getElementById('shelfLife').value);
+        var unit=+document.getElementById('shelfUnit').value;
+        if(!d||!m||!y){shelfErr('Укажите дату производства');return;}
+        if(!qty||qty<=0){shelfErr('Укажите срок годности');return;}
         document.getElementById('shelfErr').classList.remove('show');
-        var mfg = new Date(y, m-1, d);
-        if (mfg.getDate()!==d||mfg.getMonth()!==m-1) { shelfErr('Неверная дата'); return; }
-
-        var exp = new Date(mfg);
-        var unitText = document.getElementById('shelfUnit').selectedOptions[0].text;
-
-        if (unit===30) exp.setMonth(exp.getMonth()+qty);
-        else if (unit===365) exp.setFullYear(exp.getFullYear()+qty);
+        var mfg=new Date(y,m-1,d);
+        if(mfg.getDate()!==d||mfg.getMonth()!==m-1){shelfErr('Неверная дата');return;}
+        var exp=new Date(mfg);
+        var unitText=document.getElementById('shelfUnit').selectedOptions[0].text;
+        if(unit===30)exp.setMonth(exp.getMonth()+qty);
+        else if(unit===365)exp.setFullYear(exp.getFullYear()+qty);
         else exp.setDate(exp.getDate()+qty*unit);
-
-        var now = new Date(); now.setHours(0,0,0,0);
-        var expMid = new Date(exp); expMid.setHours(0,0,0,0);
-        var diff = Math.round((expMid-now)/86400000);
-        var total = Math.round((expMid-mfg)/86400000);
-
+        var now=new Date();now.setHours(0,0,0,0);
+        var expMid=new Date(exp);expMid.setHours(0,0,0,0);
+        var diff=Math.round((expMid-now)/86400000);
+        var total=Math.round((expMid-mfg)/86400000);
         document.getElementById('shelfResult').classList.add('show');
-        document.getElementById('expiryDate').textContent = fmtDate(exp);
-        var el = document.getElementById('daysLeft');
-        el.className = 'left-out';
-
-        if (diff<0) {
-            el.textContent = 'Просрочено на '+fmtDays(-diff);
-            el.classList.add('red');
-        } else if (diff===0) {
-            el.textContent = 'Истекает сегодня';
-            el.classList.add('orange');
-        } else {
-            var pct = total>0 ? Math.round(diff/total*100) : 0;
-            el.textContent = 'Осталось '+fmtDays(diff)+' ('+pct+'%)';
+        document.getElementById('expiryDate').textContent=fmtDate(exp);
+        var el=document.getElementById('daysLeft');
+        el.className='left-out';
+        if(diff<0){el.textContent='Просрочено на '+fmtDays(-diff);el.classList.add('red');}
+        else if(diff===0){el.textContent='Истекает сегодня';el.classList.add('orange');}
+        else{
+            var pct=total>0?Math.round(diff/total*100):0;
+            el.textContent='Осталось '+fmtDays(diff)+' ('+pct+'%)';
             el.classList.add(pct>20?'green':'orange');
         }
-
-        saveToHistory('shelf', d+'.'+pad(m)+'.'+y+' + '+qty+' '+unitText, fmtDate(exp),
-            {d:d,m:m,y:y,qty:qty,unit:unit});
+        saveToHistory('shelf',d+'.'+pad(m)+'.'+y+' + '+qty+' '+unitText,fmtDate(exp),{d:d,m:m,y:y,qty:qty,unit:unit});
     }
 
-    function shelfErr(msg) {
-        document.getElementById('shelfErr').textContent = msg;
+    function shelfErr(msg){
+        document.getElementById('shelfErr').textContent=msg;
         document.getElementById('shelfErr').classList.add('show');
         document.getElementById('shelfResult').classList.remove('show');
     }
 
-    function fmtDate(dt) {
-        return pad(dt.getDate())+'.'+pad(dt.getMonth()+1)+'.'+dt.getFullYear();
-    }
-
-    function fmtDays(n) {
-        if (n===0) return '0 дней';
-        var l1=n%10, l2=n%100;
-        if (l1===1&&l2!==11) return n+' день';
-        if (l1>=2&&l1<=4&&(l2<12||l2>14)) return n+' дня';
+    function fmtDate(dt){return pad(dt.getDate())+'.'+pad(dt.getMonth()+1)+'.'+dt.getFullYear();}
+    function fmtDays(n){
+        if(n===0)return'0 дней';
+        var l1=n%10,l2=n%100;
+        if(l1===1&&l2!==11)return n+' день';
+        if(l1>=2&&l1<=4&&(l2<12||l2>14))return n+' дня';
         return n+' дней';
     }
 
     /* ===== Калькулятор 3: QR ===== */
-    function togglePrefixInput() {
-        var cb = document.getElementById('prefixCheck');
-        document.getElementById('prefixWrap').classList.toggle('show', cb.checked);
+    function togglePrefixInput(){
+        document.getElementById('prefixWrap').classList.toggle('show',document.getElementById('prefixCheck').checked);
     }
 
-    function calcQR() {
-        var raw = document.getElementById('qrInput').value.trim();
-        if (!raw) { qrFail('Введите текст'); return; }
+    function calcQR(){
+        var raw=document.getElementById('qrInput').value.trim();
+        if(!raw){qrFail('Введите текст');return;}
+        var parts=raw.split(/\s+/).filter(Boolean);
+        if(!parts.length){qrFail('Введите текст');return;}
+        var usePrefix=document.getElementById('prefixCheck').checked;
+        var prefix=usePrefix?document.getElementById('prefixVal').value.trim():'';
 
-        var parts = raw.split(/\s+/).filter(Boolean);
-        if (!parts.length) { qrFail('Введите текст'); return; }
-
-        var usePrefix = document.getElementById('prefixCheck').checked;
-        var prefix = usePrefix ? document.getElementById('prefixVal').value.trim() : '';
-        var ecLevel = document.getElementById('qrEcLevel').value;
-
-        var grid = document.getElementById('qrGrid');
-        grid.innerHTML = '';
+        var grid=document.getElementById('qrGrid');
+        grid.innerHTML='';
         document.getElementById('qrErr').classList.remove('show');
 
-        try {
-            for (var i = 0; i < parts.length; i++) {
-                var text = parts[i] + prefix;
-                var item = document.createElement('div');
-                item.className = 'qr-item';
-                var canvas = document.createElement('canvas');
-                qrcode.render(canvas, text, ecLevel, 8);
+        try{
+            for(var i=0;i<parts.length;i++){
+                var text=parts[i]+prefix;
+                var item=document.createElement('div');
+                item.className='qr-item';
+                var canvas=document.createElement('canvas');
+                qrcode.render(canvas,text,'M',5);
                 item.appendChild(canvas);
-                var label = document.createElement('div');
-                label.className = 'qr-text';
-                label.textContent = text;
+                var label=document.createElement('div');
+                label.className='qr-text';
+                label.textContent=text;
                 item.appendChild(label);
                 grid.appendChild(item);
             }
-        } catch(e) {
-            qrFail('Ошибка: ' + e.message);
-            return;
-        }
+        }catch(e){qrFail('Ошибка: '+e.message);return;}
 
-        document.getElementById('qrResultLabel').textContent = 'QR-коды ('+parts.length+' шт.)';
+        document.getElementById('qrResultLabel').textContent='QR-коды ('+parts.length+' шт.)';
         document.getElementById('qrResult').classList.add('show');
         document.getElementById('qrResult').scrollIntoView({behavior:'smooth'});
-        saveToHistory('qr', raw.substring(0,50)+(raw.length>50?'...':''), parts.length+' QR',
-            {raw:raw, prefix:prefix, ec:ecLevel});
+        saveToHistory('qr',raw.substring(0,50)+(raw.length>50?'...':''),parts.length+' QR',{raw:raw,prefix:prefix});
     }
 
-    function qrFail(msg) {
-        document.getElementById('qrErr').textContent = msg;
+    function qrFail(msg){
+        document.getElementById('qrErr').textContent=msg;
         document.getElementById('qrErr').classList.add('show');
         document.getElementById('qrResult').classList.remove('show');
     }
 
     /* ===== История ===== */
-    var historyData = {boxes:[], shelf:[], qr:[]};
-    var currentTab = 'boxes';
-    var fromHistory = false;
+    var historyData={boxes:[],shelf:[],qr:[]};
+    var currentTab='boxes';
+    var fromHistory=false;
 
-    function saveToHistory(type, input, result, data) {
-        if (fromHistory) { fromHistory = false; return; }
-        historyData[type].unshift({input:input, result:result, data:data, date:new Date().toLocaleString('ru')});
-        if (historyData[type].length > 15) historyData[type].length = 15;
-        try { localStorage.setItem('multitoolHistory', JSON.stringify(historyData)); } catch(e) {}
+    function saveToHistory(type,input,result,data){
+        if(fromHistory){fromHistory=false;return;}
+        historyData[type].unshift({input:input,result:result,data:data,date:new Date().toLocaleString('ru')});
+        if(historyData[type].length>15)historyData[type].length=15;
+        try{localStorage.setItem('multitoolHistory',JSON.stringify(historyData));}catch(e){}
         renderHistory();
     }
 
-    function renderHistory() {
-        var ul = document.getElementById('historyList');
-        ul.innerHTML = '';
-        var arr = historyData[currentTab] || [];
-        if (!arr.length) {
-            ul.innerHTML = '<li style="text-align:center;color:var(--text3);padding:20px">Пока пусто</li>';
-            return;
-        }
-        arr.forEach(function(item, idx) {
-            var li = document.createElement('li');
-            li.className = 'history-item';
-            li.innerHTML = '<div class="h-input">'+escHtml(item.input)+'</div>'+
-                           '<div class="h-result">'+escHtml(item.result)+'</div>'+
-                           '<div class="h-date">'+escHtml(item.date)+'</div>';
-            li.onclick = function() { restoreFromHistory(currentTab, item.data); };
+    function renderHistory(){
+        var ul=document.getElementById('historyList');
+        ul.innerHTML='';
+        var arr=historyData[currentTab]||[];
+        if(!arr.length){ul.innerHTML='<li style="text-align:center;color:var(--text3);padding:20px">Пока пусто</li>';return;}
+        arr.forEach(function(item){
+            var li=document.createElement('li');
+            li.className='history-item';
+            li.innerHTML='<div class="h-input">'+escHtml(item.input)+'</div><div class="h-result">'+escHtml(item.result)+'</div><div class="h-date">'+escHtml(item.date)+'</div>';
+            li.onclick=function(){restoreFromHistory(currentTab,item.data);};
             ul.appendChild(li);
         });
     }
 
-    function escHtml(s) {
-        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    function escHtml(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+    function restoreFromHistory(type,data){
+        fromHistory=true;
+        if(type==='boxes'){document.getElementById('boxL').value=data.bl;document.getElementById('boxW').value=data.bw;calc();}
+        else if(type==='shelf'){document.getElementById('mfgDay').value=data.d;document.getElementById('mfgMonth').value=data.m;document.getElementById('mfgYear').value=data.y;document.getElementById('shelfLife').value=data.qty;document.getElementById('shelfUnit').value=data.unit;calcShelf();}
+        else if(type==='qr'){document.getElementById('qrInput').value=data.raw;document.getElementById('prefixCheck').checked=!!data.prefix;document.getElementById('prefixVal').value=data.prefix||'';togglePrefixInput();calcQR();}
     }
 
-    function restoreFromHistory(type, data) {
-        fromHistory = true;
-        if (type === 'boxes') {
-            document.getElementById('boxL').value = data.bl;
-            document.getElementById('boxW').value = data.bw;
-            calc();
-        } else if (type === 'shelf') {
-            document.getElementById('mfgDay').value = data.d;
-            document.getElementById('mfgMonth').value = data.m;
-            document.getElementById('mfgYear').value = data.y;
-            document.getElementById('shelfLife').value = data.qty;
-            document.getElementById('shelfUnit').value = data.unit;
-            calcShelf();
-        } else if (type === 'qr') {
-            document.getElementById('qrInput').value = data.raw;
-            document.getElementById('prefixCheck').checked = !!data.prefix;
-            document.getElementById('prefixVal').value = data.prefix || '';
-            if (data.ec) document.getElementById('qrEcLevel').value = data.ec;
-            togglePrefixInput();
-            calcQR();
-        }
-    }
-
-    function switchHistoryTab(tab) {
-        currentTab = tab;
-        document.getElementById('tabBoxes').classList.toggle('active', tab==='boxes');
-        document.getElementById('tabShelf').classList.toggle('active', tab==='shelf');
-        document.getElementById('tabQR').classList.toggle('active', tab==='qr');
+    function switchHistoryTab(tab){
+        currentTab=tab;
+        document.getElementById('tabBoxes').classList.toggle('active',tab==='boxes');
+        document.getElementById('tabShelf').classList.toggle('active',tab==='shelf');
+        document.getElementById('tabQR').classList.toggle('active',tab==='qr');
         renderHistory();
     }
 
-    function clearHistory() {
-        historyData = {boxes:[], shelf:[], qr:[]};
-        try { localStorage.setItem('multitoolHistory', JSON.stringify(historyData)); } catch(e) {}
+    function clearHistory(){
+        historyData={boxes:[],shelf:[],qr:[]};
+        try{localStorage.setItem('multitoolHistory',JSON.stringify(historyData));}catch(e){}
         renderHistory();
     }
 
     /* ===== Сохранение полей ===== */
-    (function() {
-        var fields = [['boxL'],['boxW'],['shelfLife'],['qrInput'],['prefixVal']];
-        fields.forEach(function(f) {
-            var el = document.getElementById(f[0]);
-            if (!el) return;
-            var v = localStorage.getItem(f[0]);
-            if (v !== null) el.value = v;
-            el.addEventListener('input', function() {
-                localStorage.setItem(f[0], el.value);
-            });
+    (function(){
+        ['boxL','boxW','shelfLife','qrInput','prefixVal'].forEach(function(id){
+            var el=document.getElementById(id);
+            if(!el)return;
+            var v=localStorage.getItem(id);
+            if(v!==null)el.value=v;
+            el.addEventListener('input',function(){localStorage.setItem(id,el.value);});
         });
     })();
 
     /* ===== Фокус ===== */
-    document.addEventListener('focusin', function(e) {
-        if (e.target.matches('input,select,textarea')) {
-            setTimeout(function() { e.target.scrollIntoView({behavior:'smooth',block:'center'}); }, 300);
-        }
+    document.addEventListener('focusin',function(e){
+        if(e.target.matches('input,select,textarea'))
+            setTimeout(function(){e.target.scrollIntoView({behavior:'smooth',block:'center'});},300);
     });
 
     /* ===== Enter ===== */
-    document.addEventListener('keydown', function(e) {
-        if (e.key==='Enter' && e.target.matches('input')) {
+    document.addEventListener('keydown',function(e){
+        if(e.key==='Enter'&&e.target.matches('input')){
             e.preventDefault();
-            var inputs = Array.from(document.querySelectorAll('input'));
-            var idx = inputs.indexOf(e.target);
-            if (idx>-1 && idx<inputs.length-1) inputs[idx+1].focus();
+            var inputs=Array.from(document.querySelectorAll('input'));
+            var idx=inputs.indexOf(e.target);
+            if(idx>-1&&idx<inputs.length-1)inputs[idx+1].focus();
         }
     });
 
     /* ===== Init ===== */
     initShelfSelects();
-
-    try {
-        var saved = localStorage.getItem('multitoolHistory');
-        if (saved) historyData = JSON.parse(saved);
-    } catch(e) {}
+    try{var s=localStorage.getItem('multitoolHistory');if(s)historyData=JSON.parse(s);}catch(e){}
     renderHistory();
 
-    ['mfgDay','mfgMonth','mfgYear','shelfLife','shelfUnit'].forEach(function(id) {
-        var el = document.getElementById(id);
-        if (el) el.addEventListener('change', function() {
-            if (document.getElementById('shelfResult').classList.contains('show')) calcShelf();
+    ['mfgDay','mfgMonth','mfgYear','shelfLife','shelfUnit'].forEach(function(id){
+        var el=document.getElementById(id);
+        if(el)el.addEventListener('change',function(){
+            if(document.getElementById('shelfResult').classList.contains('show'))calcShelf();
         });
     });
-    document.getElementById('shelfLife').addEventListener('input', function() {
-        if (document.getElementById('shelfResult').classList.contains('show')) calcShelf();
+    document.getElementById('shelfLife').addEventListener('input',function(){
+        if(document.getElementById('shelfResult').classList.contains('show'))calcShelf();
     });
 </script>
 </body>
