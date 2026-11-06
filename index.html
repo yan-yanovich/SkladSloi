@@ -146,23 +146,52 @@
         .code-grid{
             display:grid;
             grid-template-columns: repeat(10, 1fr);
-            gap:8px;
+            gap:12px;
             margin-top:16px;
         }
+
         .code-item{
             display:flex;
             flex-direction:column;
             align-items:center;
-            gap:4px;
+            gap:8px;
             background:#fff;
             border-radius:8px;
-            padding:8px;
+            padding:12px;
+            overflow:hidden;
         }
-        .code-item canvas{image-rendering:pixelated;max-width:100%;height:auto}
-        .code-item svg{max-width:100%;height:auto}
+
+        .code-item canvas{
+            image-rendering:pixelated;
+            max-width:100%;
+            width:100%;
+            height:auto;
+            display:block;
+            border:1px solid #ddd;
+            border-radius:4px;
+        }
+
+        .code-item svg{
+            max-width:100%;
+            width:100%;
+            height:auto;
+            display:block;
+            border:1px solid #ddd;
+            border-radius:4px;
+        }
+
         .code-item .code-text{
-            font-size:10px;color:#666;max-width:100%;word-break:break-all;
-            text-align:center;line-height:1.2;
+            font-size:8px;
+            color:#333;
+            max-width:100%;
+            word-break:break-all;
+            text-align:center;
+            line-height:1.1;
+            overflow:hidden;
+            text-overflow:ellipsis;
+            display:-webkit-box;
+            -webkit-line-clamp:2;
+            -webkit-box-orient:vertical;
         }
 
         .download-row{
@@ -1008,7 +1037,7 @@ var qrcode = (function() {
                         var item = document.createElement('div');
                         item.className = 'code-item';
                         var canvas = document.createElement('canvas');
-                        qrcode.render(canvas, text, 'M', 10);
+                        qrcode.render(canvas, text, 'M', 25);
                         item.appendChild(canvas);
                         var label = document.createElement('div');
                         label.className = 'code-text';
@@ -1029,9 +1058,9 @@ var qrcode = (function() {
                         item.appendChild(svg);
                         JsBarcode(svg, text, {
                             format: 'CODE128',
-                            width: 3,
-                            height: 80,
-                            margin: 8,
+                            width: 5,
+                            height: 150,
+                            margin: 12,
                             lineColor: '#000',
                             background: '#fff'
                         });
@@ -1093,9 +1122,9 @@ var qrcode = (function() {
 
         // Параметры сетки
         var itemsPerRow = 10;
-        var itemWidth = 120;
-        var itemHeight = 140;
-        var gap = 8;
+        var itemWidth = 140;
+        var itemHeight = 160;
+        var gap = 12;
 
         var cols = Math.min(itemsPerRow, items.length);
         var rows = Math.ceil(items.length / itemsPerRow);
@@ -1113,7 +1142,6 @@ var qrcode = (function() {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         var promises = [];
-        var drawCount = 0;
 
         items.forEach(function(item, idx) {
             var row = Math.floor(idx / itemsPerRow);
@@ -1127,15 +1155,15 @@ var qrcode = (function() {
 
             if (codeElem) {
                 // Для QR-кода (canvas)
-                ctx.drawImage(codeElem, x + 10, y + 5, 100, 100);
+                ctx.drawImage(codeElem, x + 15, y + 8, 110, 110);
                 
                 // Текст под кодом
                 if (textElem) {
                     ctx.fillStyle = '#000';
-                    ctx.font = 'bold 10px Arial';
+                    ctx.font = 'bold 9px Arial';
                     ctx.textAlign = 'center';
                     var text = textElem.textContent;
-                    ctx.fillText(text.substring(0, 14), x + itemWidth / 2, y + 125);
+                    ctx.fillText(text.substring(0, 16), x + itemWidth / 2, y + 135);
                 }
             } else if (svgElem) {
                 // Для штрихкода (svg) - конвертируем в canvas
@@ -1146,12 +1174,12 @@ var qrcode = (function() {
                 
                 promises.push(new Promise(function(resolve) {
                     img.onload = function() {
-                        ctx.drawImage(img, x + 10, y + 10, 100, 80);
+                        ctx.drawImage(img, x + 10, y + 10, 120, 110);
                         if (textElem) {
                             ctx.fillStyle = '#000';
-                            ctx.font = 'bold 10px Arial';
+                            ctx.font = 'bold 9px Arial';
                             ctx.textAlign = 'center';
-                            ctx.fillText(textElem.textContent.substring(0, 14), x + itemWidth / 2, y + 125);
+                            ctx.fillText(textElem.textContent.substring(0, 16), x + itemWidth / 2, y + 135);
                         }
                         URL.revokeObjectURL(url);
                         resolve();
