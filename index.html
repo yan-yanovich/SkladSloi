@@ -144,10 +144,11 @@
         .code-type-btn:hover{border-color:var(--accent)}
 
         .code-grid{
-            display:grid;
-            grid-template-columns: repeat(10, 1fr);
-            gap:12px;
+            display:flex;
+            flex-wrap:wrap;
+            gap:16px;
             margin-top:16px;
+            justify-content:center;
         }
 
         .code-item{
@@ -158,13 +159,13 @@
             background:#fff;
             border-radius:8px;
             padding:12px;
-            overflow:hidden;
+            flex: 0 0 calc(25% - 12px);
+            max-width:160px;
         }
 
         .code-item canvas{
             image-rendering:pixelated;
             max-width:100%;
-            width:100%;
             height:auto;
             display:block;
             border:1px solid #ddd;
@@ -173,7 +174,6 @@
 
         .code-item svg{
             max-width:100%;
-            width:100%;
             height:auto;
             display:block;
             border:1px solid #ddd;
@@ -181,12 +181,12 @@
         }
 
         .code-item .code-text{
-            font-size:8px;
+            font-size:10px;
             color:#333;
             max-width:100%;
             word-break:break-all;
             text-align:center;
-            line-height:1.1;
+            line-height:1.2;
             overflow:hidden;
             text-overflow:ellipsis;
             display:-webkit-box;
@@ -204,14 +204,11 @@
         }
         .btn-download-icon:hover{transform:scale(1.2)}
 
-        @media (max-width: 1200px) {
-            .code-grid{grid-template-columns: repeat(8, 1fr)}
-        }
         @media (max-width: 900px) {
-            .code-grid{grid-template-columns: repeat(6, 1fr)}
+            .code-item { flex: 0 0 calc(33.333% - 11px); }
         }
         @media (max-width: 600px) {
-            .code-grid{grid-template-columns: repeat(4, 1fr)}
+            .code-item { flex: 0 0 calc(50% - 8px); }
         }
     </style>
 </head>
@@ -966,46 +963,37 @@ var qrcode = (function() {
 
     /* ===== Калькулятор 3: ШК И QR ===== */
     var currentCodeType = 'qr';
-    var codeHistory = {
-        qr: [],
-        barcode: []
+    var codeInputState = {
+        qr: { input: '', prefix: '', prefixUsed: false },
+        barcode: { input: '', prefix: '', prefixUsed: false }
     };
 
     function switchCodeType(type) {
-        // Сохраняем текущее состояние ДО переключения
-        if (currentCodeType) {
-            codeHistory[currentCodeType] = [{
-                input: document.getElementById('codeInput').value,
-                prefix: document.getElementById('prefixVal').value,
-                prefixUsed: document.getElementById('prefixCheck').checked
-            }];
-        }
+        // Сохраняем состояние текущего типа
+        codeInputState[currentCodeType] = {
+            input: document.getElementById('codeInput').value,
+            prefix: document.getElementById('prefixVal').value,
+            prefixUsed: document.getElementById('prefixCheck').checked
+        };
 
+        // Переключаемся на новый тип
         currentCodeType = type;
-        
+
+        // Обновляем кнопки
         document.getElementById('btnQR').classList.toggle('active', type === 'qr');
         document.getElementById('btnBarcode').classList.toggle('active', type === 'barcode');
 
-        // Восстанавливаем сохраненное состояние
-        if (codeHistory[type] && codeHistory[type].length > 0) {
-            var saved = codeHistory[type][0];
-            document.getElementById('codeInput').value = saved.input || '';
-            document.getElementById('prefixCheck').checked = saved.prefixUsed || false;
-            document.getElementById('prefixVal').value = saved.prefix || '';
-            if (saved.prefixUsed) {
-                document.getElementById('prefixWrap').classList.add('show');
-            } else {
-                document.getElementById('prefixWrap').classList.remove('show');
-            }
+        // Восстанавливаем состояние для нового типа
+        var state = codeInputState[type];
+        document.getElementById('codeInput').value = state.input;
+        document.getElementById('prefixVal').value = state.prefix;
+        document.getElementById('prefixCheck').checked = state.prefixUsed;
+        
+        if (state.prefixUsed) {
+            document.getElementById('prefixWrap').classList.add('show');
         } else {
-            // Если для этого типа кода нет истории, очищаем
-            document.getElementById('codeInput').value = '';
-            document.getElementById('prefixCheck').checked = false;
-            document.getElementById('prefixVal').value = '';
             document.getElementById('prefixWrap').classList.remove('show');
         }
-        
-        saveSectionStates();
     }
 
     function togglePrefixInput() {
@@ -1037,7 +1025,7 @@ var qrcode = (function() {
                         var item = document.createElement('div');
                         item.className = 'code-item';
                         var canvas = document.createElement('canvas');
-                        qrcode.render(canvas, text, 'M', 25);
+                        qrcode.render(canvas, text, 'M', 5);
                         item.appendChild(canvas);
                         var label = document.createElement('div');
                         label.className = 'code-text';
@@ -1058,9 +1046,9 @@ var qrcode = (function() {
                         item.appendChild(svg);
                         JsBarcode(svg, text, {
                             format: 'CODE128',
-                            width: 5,
-                            height: 150,
-                            margin: 12,
+                            width: 2,
+                            height: 50,
+                            margin: 5,
                             lineColor: '#000',
                             background: '#fff'
                         });
@@ -1083,12 +1071,6 @@ var qrcode = (function() {
             codeFail('Не удалось закодировать текст. Попробуйте сокращенный текст.');
             return;
         }
-
-        codeHistory[currentCodeType] = [{
-            input: raw,
-            prefix: prefix,
-            prefixUsed: usePrefix
-        }];
 
         var typeLabel = currentCodeType === 'qr' ? 'QR-коды' : 'Штрихкоды';
         var successCount = grid.children.length;
@@ -1120,14 +1102,11 @@ var qrcode = (function() {
             return;
         }
 
-        // Параметры сетки
-        var itemsPerRow = 10;
-        var itemWidth = 140;
+        var itemWidth = 160;
         var itemHeight = 160;
-        var gap = 12;
-
-        var cols = Math.min(itemsPerRow, items.length);
-        var rows = Math.ceil(items.length / itemsPerRow);
+        var gap = 16;
+        var cols = 4;
+        var rows = Math.ceil(items.length / cols);
 
         var canvasWidth = cols * itemWidth + (cols - 1) * gap;
         var canvasHeight = rows * itemHeight + (rows - 1) * gap;
@@ -1137,15 +1116,14 @@ var qrcode = (function() {
         canvas.height = canvasHeight;
         var ctx = canvas.getContext('2d');
 
-        // Белый фон
         ctx.fillStyle = '#fff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         var promises = [];
 
         items.forEach(function(item, idx) {
-            var row = Math.floor(idx / itemsPerRow);
-            var col = idx % itemsPerRow;
+            var row = Math.floor(idx / cols);
+            var col = idx % cols;
             var x = col * (itemWidth + gap);
             var y = row * (itemHeight + gap);
 
@@ -1154,19 +1132,16 @@ var qrcode = (function() {
             var textElem = item.querySelector('.code-text');
 
             if (codeElem) {
-                // Для QR-кода (canvas)
-                ctx.drawImage(codeElem, x + 15, y + 8, 110, 110);
+                ctx.drawImage(codeElem, x + 20, y + 10, 120, 120);
                 
-                // Текст под кодом
                 if (textElem) {
                     ctx.fillStyle = '#000';
-                    ctx.font = 'bold 9px Arial';
+                    ctx.font = 'bold 10px Arial';
                     ctx.textAlign = 'center';
                     var text = textElem.textContent;
-                    ctx.fillText(text.substring(0, 16), x + itemWidth / 2, y + 135);
+                    ctx.fillText(text.substring(0, 16), x + itemWidth / 2, y + 145);
                 }
             } else if (svgElem) {
-                // Для штрихкода (svg) - конвертируем в canvas
                 var svgString = new XMLSerializer().serializeToString(svgElem);
                 var svg = new Blob([svgString], { type: 'image/svg+xml' });
                 var url = URL.createObjectURL(svg);
@@ -1174,12 +1149,12 @@ var qrcode = (function() {
                 
                 promises.push(new Promise(function(resolve) {
                     img.onload = function() {
-                        ctx.drawImage(img, x + 10, y + 10, 120, 110);
+                        ctx.drawImage(img, x + 15, y + 20, 130, 90);
                         if (textElem) {
                             ctx.fillStyle = '#000';
-                            ctx.font = 'bold 9px Arial';
+                            ctx.font = 'bold 10px Arial';
                             ctx.textAlign = 'center';
-                            ctx.fillText(textElem.textContent.substring(0, 16), x + itemWidth / 2, y + 135);
+                            ctx.fillText(textElem.textContent.substring(0, 16), x + itemWidth / 2, y + 145);
                         }
                         URL.revokeObjectURL(url);
                         resolve();
@@ -1193,7 +1168,6 @@ var qrcode = (function() {
             }
         });
 
-        // Ждем загрузки всех SVG
         if (promises.length > 0) {
             Promise.all(promises).then(function() {
                 downloadCanvas(canvas);
@@ -1233,7 +1207,6 @@ var qrcode = (function() {
     function saveToHistory(type, input, result, data) {
         var historyData = getHistoryData();
         
-        // Инициализируем массив если не существует
         if (!historyData[type]) {
             historyData[type] = [];
         }
@@ -1297,7 +1270,6 @@ var qrcode = (function() {
         loadSectionStates();
         renderHistory();
         
-        // Инициализируем пустую историю если нужно
         var historyData = getHistoryData();
         if (!historyData.code) historyData.code = [];
         saveHistoryData(historyData);
