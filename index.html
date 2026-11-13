@@ -1144,7 +1144,7 @@ var App = (function() {
 
                     if (sectionStates[sectionId]) {
                         section.classList.remove('collapsed');
-                        section.style.maxHeight = 'none';  // ✅ FIX: none вместо ''
+                        section.style.maxHeight = 'none';
                         if (arrow) arrow.classList.remove('collapsed');
                         if (titleEl) titleEl.setAttribute('aria-expanded', 'true');
                     } else {
@@ -1358,16 +1358,28 @@ var App = (function() {
         DOM.expiryDate.textContent = expDateStr;
 
         var now = new Date();
-        var daysLeft = Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
+        now.setHours(0, 0, 0, 0);
+
+        // ✅ Процент остатка (Вариант А): осталось / общий срок × 100
+        var expMid = new Date(exp);
+        expMid.setHours(0, 0, 0, 0);
+
+        var totalDays = Math.round((expMid - mfg) / 86400000);
+        var diffDays = (expMid - now) / 86400000;
+        var daysLeft = Math.round(diffDays);
+
+        // Процент остатка (0–100%, не меньше 0)
+        var pctLeft = totalDays > 0 ? Math.round((diffDays / totalDays) * 100) : 0;
+        if (pctLeft < 0) pctLeft = 0;
 
         if (daysLeft < 0) {
-            DOM.daysLeft.textContent = 'Истёк на ' + (-daysLeft) + ' дн.';
+            DOM.daysLeft.textContent = 'Истёк на ' + (-daysLeft) + ' дн. (остаток 0%)';
             DOM.daysLeft.className = 'left-out red';
         } else if (daysLeft <= DAYS_ORANGE_THRESHOLD) {
-            DOM.daysLeft.textContent = daysLeft + ' дн. до истечения';
+            DOM.daysLeft.textContent = daysLeft + ' дн. до истечения (остаток ' + pctLeft + '%)';
             DOM.daysLeft.className = 'left-out orange';
         } else {
-            DOM.daysLeft.textContent = daysLeft + ' дн. осталось';
+            DOM.daysLeft.textContent = daysLeft + ' дн. осталось (остаток ' + pctLeft + '%)';
             DOM.daysLeft.className = 'left-out green';
         }
 
