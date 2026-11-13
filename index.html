@@ -752,8 +752,7 @@ var qrcode = (function() {
         for (var i = 0; i < maxE; i++) for (var j = 0; j < blocks.length; j++)
             if (i < ecB[j].length) cw.push(ecB[j][i]);
 
-        // ✅ FIX #5: Строим "базовую" матрицу один раз (без маски и данных),
-        // а данные + маску применяем к копии для каждой из 8 масок.
+        // ✅ FIX #5: базовая матрица строится 1 раз
         function makeBaseMatrix() {
             var m = [];
             for (var r = 0; r < mc; r++) {
@@ -788,7 +787,7 @@ var qrcode = (function() {
 
             m[mc-8][8] = true;
 
-            // Резервируем места для format info (пока placeholder = false)
+            // Резерв format info
             for (var i = 0; i < 15; i++) {
                 if (i < 6) m[i][8] = false;
                 else if (i < 8) m[i+1][8] = false;
@@ -818,14 +817,12 @@ var qrcode = (function() {
         var baseMatrix = makeBaseMatrix();
 
         function applyMaskAndData(mask) {
-            // Копируем базовую матрицу
             var m = [];
             for (var r = 0; r < mc; r++) {
                 m[r] = [];
                 for (var c = 0; c < mc; c++) m[r][c] = baseMatrix[r][c];
             }
 
-            // Данные (змейкой) + маска
             var inc = -1, row = mc-1, bitIdx = 7, byteIdx = 0;
             for (var col = mc-1; col > 0; col -= 2) {
                 if (col == 6) col--;
@@ -846,7 +843,6 @@ var qrcode = (function() {
                 }
             }
 
-            // Format info
             var fi = bchTI((ecVal << 3) | mask);
             for (var i = 0; i < 15; i++) {
                 var mod = ((fi >> i) & 1) == 1;
@@ -864,7 +860,7 @@ var qrcode = (function() {
             return m;
         }
 
-        // ✅ FIX #5: базовая матрица строится 1 раз, а не 9
+        // ✅ FIX #5: базовая матрица строится 1 раз, данные+маска — 8 раз на копиях
         var bestMask = 0, bestPen = Infinity;
         for (var mask = 0; mask < 8; mask++) {
             var mm = applyMaskAndData(mask);
@@ -921,13 +917,9 @@ var App = (function() {
     var QR_SCALE = 6;
     var DAYS_ORANGE_THRESHOLD = 7;
     var SAVE_FIELDS_DEBOUNCE = 300;
-    var DOWNLOAD_DELAY_MS = 200;
     var ANIMATION_DURATION = 350;
     var SCROLL_DELAY = 100;
-    // ✅ FIX #2: лимит QR
     var QR_LIMIT = 50;
-
-    // ✅ FIX #6: убрана неиспользуемая переменная EXPAND_MAX_HEIGHT
 
     var MONTHS = [
         'Январь (01)', 'Февраль (02)', 'Март (03)', 'Апрель (04)',
@@ -1281,7 +1273,6 @@ var App = (function() {
         DOM.dims.textContent = 'Коробка ' + bl + ' × ' + bw + ' см · ' + arrangement.type;
         DOM.result.classList.add('show');
 
-        // ✅ Схема раскладки
         drawPalletScheme(bl, bw, arrangement.config);
 
         safeScrollTo(DOM.result);
@@ -1320,26 +1311,14 @@ var App = (function() {
         ctx.fillStyle = bg;
         ctx.fillRect(0, 0, W, H);
 
-        // Паллета
         ctx.strokeStyle = border;
         ctx.lineWidth = 2;
         ctx.strokeRect(offsetX, offsetY, PALLET_L * scale, PALLET_W * scale);
 
-        // Отрисовка зон
-        function drawZone(x0, y0, zw, zh, bl2, bw2, label) {
+        function drawZone(x0, y0, zw, zh, bl2, bw2) {
             var bx = offsetX + x0 * scale;
             var by = offsetY + y0 * scale;
-            var bwd = zw * scale;
-            var bht = zh * scale;
 
-            // Рамка зоны
-            ctx.strokeStyle = isDark ? 'rgba(255,255,255,.15)' : 'rgba(0,0,0,.08)';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([3, 3]);
-            ctx.strokeRect(bx, by, bwd, bht);
-            ctx.setLineDash([]);
-
-            // Коробки
             var cols = safeDivide(zw, bl2);
             var rows = safeDivide(zh, bw2);
             for (var r = 0; r < rows; r++) {
@@ -1362,29 +1341,29 @@ var App = (function() {
 
         if (config.type === 'simple') {
             var o = orientations[config.ori];
-            drawZone(0, 0, PALLET_L, PALLET_W, o.w, o.h, '');
+            drawZone(0, 0, PALLET_L, PALLET_W, o.w, o.h);
         } else if (config.type === 'vert') {
             var s = config.split;
             var oL = orientations[config.oriL];
             var oR = orientations[config.oriR];
-            drawZone(0, 0, s, PALLET_W, oL.w, oL.h, '');
-            drawZone(s, 0, PALLET_L - s, PALLET_W, oR.w, oR.h, '');
+            drawZone(0, 0, s, PALLET_W, oL.w, oL.h);
+            drawZone(s, 0, PALLET_L - s, PALLET_W, oR.w, oR.h);
         } else if (config.type === 'horiz') {
             var s = config.split;
             var oT = orientations[config.oriT];
             var oB = orientations[config.oriB];
-            drawZone(0, 0, PALLET_L, s, oT.w, oT.h, '');
-            drawZone(0, s, PALLET_L, PALLET_W - s, oB.w, oB.h, '');
+            drawZone(0, 0, PALLET_L, s, oT.w, oT.h);
+            drawZone(0, s, PALLET_L, PALLET_W - s, oB.w, oB.h);
         } else if (config.type === 'combined') {
             var xs = config.xs, ys = config.ys;
             var o0 = orientations[config.ori0];
             var o1 = orientations[config.ori1];
             var o2 = orientations[config.ori2];
             var o3 = orientations[config.ori3];
-            drawZone(0, 0, xs, ys, o0.w, o0.h, '');
-            drawZone(xs, 0, PALLET_L - xs, ys, o1.w, o1.h, '');
-            drawZone(0, ys, xs, PALLET_W - ys, o2.w, o2.h, '');
-            drawZone(xs, ys, PALLET_L - xs, PALLET_W - ys, o3.w, o3.h, '');
+            drawZone(0, 0, xs, ys, o0.w, o0.h);
+            drawZone(xs, 0, PALLET_L - xs, ys, o1.w, o1.h);
+            drawZone(0, ys, xs, PALLET_W - ys, o2.w, o2.h);
+            drawZone(xs, ys, PALLET_L - xs, PALLET_W - ys, o3.w, o3.h);
         }
     }
 
@@ -1501,8 +1480,6 @@ var App = (function() {
         }
     }
 
-    // ✅ FIX #12: Храним только текст + маленький canvas для превью.
-    // Крупный canvas пересоздаётся при клике (модалка / скачивание).
     function generateCode() {
         var text = DOM.codeInput.value.trim();
         var prefix = DOM.prefixVal.value;
@@ -1533,7 +1510,6 @@ var App = (function() {
 
         DOM.codeGrid.innerHTML = '';
 
-        // ✅ FIX #12: не храним canvas — храним только текст
         var qrTexts = [];
 
         for (var i = 0; i < lines.length; i++) {
@@ -1565,19 +1541,19 @@ var App = (function() {
             textEl.textContent = codeText;
             codeItem.appendChild(textEl);
 
-            var idx = i;
-            codeItem.onclick = function() { openQRModal(idx, qrTexts); };
-            codeItem.onkeydown = function(e) {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    openQRModal(idx, qrTexts);
-                }
-            };
+            (function(idx) {
+                codeItem.onclick = function() { openQRModal(idx, qrTexts); };
+                codeItem.onkeydown = function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        openQRModal(idx, qrTexts);
+                    }
+                };
+            })(i);
 
             DOM.codeGrid.appendChild(codeItem);
         }
 
-        // ✅ FIX #12: сохраняем только тексты (без canvas)
         DOM.codeGrid._qrTexts = qrTexts;
 
         DOM.codeResultLabel.textContent = 'QR-коды (' + qrTexts.length + ' шт.)';
@@ -1594,41 +1570,51 @@ var App = (function() {
         }
     }
 
-    // ✅ FIX #13: «Скачать все» — один PNG со всеми QR сеткой
+    // ✅ FIX #13 v2: «Скачать все» — один PNG, QR в высоком качестве
     function downloadAllPNG() {
         var qrTexts = DOM.codeGrid._qrTexts;
         if (!qrTexts || !qrTexts.length) return;
 
-        // Определяем размеры
-        var cols = Math.min(4, qrTexts.length);
+        // Рендерим каждый QR с крупным масштабом (8px на модуль)
+        var RENDER_SCALE = 8;
+
+        var qrCanvases = [];
+        var maxCellSize = 0;
+
+        for (var i = 0; i < qrTexts.length; i++) {
+            var tmp = document.createElement('canvas');
+            qrcode.render(tmp, qrTexts[i], 'M', RENDER_SCALE);
+            qrCanvases.push(tmp);
+            if (tmp.width > maxCellSize) maxCellSize = tmp.width;
+        }
+
+        // Сетка: 2 колонки для ≤4, иначе 3
+        var cols = qrTexts.length === 1 ? 1 : (qrTexts.length <= 4 ? 2 : 3);
         var rows = Math.ceil(qrTexts.length / cols);
-        var cellSize = 200;
-        var padding = 20;
+        var padding = 40;
+
+        // Ячейка = размер самого большого QR + отступ
+        var cellSize = maxCellSize + 20;
 
         var canvas = document.createElement('canvas');
         canvas.width = cols * cellSize + (cols + 1) * padding;
         canvas.height = rows * cellSize + (rows + 1) * padding;
         var ctx = canvas.getContext('2d');
 
-        // Белый фон
         ctx.fillStyle = '#fff';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        for (var i = 0; i < qrTexts.length; i++) {
+        for (var i = 0; i < qrCanvases.length; i++) {
             var col = i % cols;
             var row = Math.floor(i / cols);
             var x = padding + col * (cellSize + padding);
             var y = padding + row * (cellSize + padding);
 
-            // Рендерим QR в temp canvas и вставляем
-            var tmp = document.createElement('canvas');
-            qrcode.render(tmp, qrTexts[i], 'M', 1);
+            // Вставка 1:1 (без растяжения!)
+            var offsetX = (cellSize - qrCanvases[i].width) / 2;
+            var offsetY = (cellSize - qrCanvases[i].height) / 2;
 
-            var qrSize = tmp.width;
-            var drawSize = Math.min(cellSize, qrSize);
-            var offset = (cellSize - drawSize) / 2;
-
-            ctx.drawImage(tmp, x + offset, y + offset, drawSize, drawSize);
+            ctx.drawImage(qrCanvases[i], x + offsetX, y + offsetY);
         }
 
         var link = document.createElement('a');
@@ -1647,7 +1633,6 @@ var App = (function() {
         currentQRData = { idx: idx, texts: qrTexts };
         var text = qrTexts[idx];
 
-        // Рендерим крупно
         qrcode.render(DOM.modalCanvas, text, 'M', 6);
 
         DOM.modalText.textContent = text;
@@ -1718,13 +1703,11 @@ var App = (function() {
 
     // ===== КОПИРОВАНИЕ РЕЗУЛЬТАТА =====
 
-    // ✅ Копировать результат коробок
     function copyBoxResult() {
         var text = 'Короба: ' + DOM.count.textContent + ' шт. / ' + DOM.fill.textContent + ' заполнение';
         copyText(text);
     }
 
-    // ✅ Копировать результат срока годности
     function copyShelfResult() {
         var text = 'Годен до: ' + DOM.expiryDate.textContent + ' / ' + DOM.daysLeft.textContent;
         copyText(text);
@@ -1908,11 +1891,9 @@ var App = (function() {
         }
     }
 
-    // ✅ FIX #3: renderHistory рендерит текущую вкладку
     function clearHistory() {
         if (confirm('Вы уверены? Это действие нельзя отменить.')) {
             storageSet('appHistory', JSON.stringify({ boxes: [], shelf: [], code: [] }));
-            // Рендерим все вкладки пустыми
             renderHistory('boxes');
             showNotification('История очищена');
         }
@@ -1973,7 +1954,7 @@ var App = (function() {
         document.addEventListener('input', scheduleSaveFields);
         document.addEventListener('change', scheduleSaveFields);
 
-        // ✅ Горячие клавиши: Ctrl+Enter = рассчитать / Esc = закрыть модалку
+        // ✅ Горячие клавиши
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && DOM.qrModal && DOM.qrModal.classList.contains('show')) {
                 closeQRModal();
@@ -1982,7 +1963,6 @@ var App = (function() {
 
             if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
                 e.preventDefault();
-                // Определяем активную секцию и запускаем расчёт
                 if (document.activeElement) {
                     var el = document.activeElement;
                     if (el === DOM.boxL || el === DOM.boxW) {
