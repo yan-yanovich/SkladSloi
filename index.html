@@ -1321,62 +1321,57 @@ var App = (function() {
         return test.getDate() === d && test.getMonth() === m - 1 && test.getFullYear() === y;
     }
 
-   function calcShelf(){
-    var d=+document.getElementById('mfgDay').value;
-    var m=+document.getElementById('mfgMonth').value;
-    var y=+document.getElementById('mfgYear').value;
-    var qty=parseInt(document.getElementById('shelfLife').value);
-    var unit=+document.getElementById('shelfUnit').value;
+    function calcShelf() {
+        var d = +DOM.mfgDay.value;
+        var m = +DOM.mfgMonth.value;
+        var y = +DOM.mfgYear.value;
+        var qty = parseInt(DOM.shelfLife.value);
+        var unit = +DOM.shelfUnit.value;
 
-    if(!d||!m||!y){shelfErr('Укажите дату производства');return;}
-    if(!qty||qty<=0){shelfErr('Укажите срок годности');return;}
+        clearErrors('shelf');
 
-    document.getElementById('shelfErr').classList.remove('show');
+        if (!d || !m || !y) {
+            showError('shelf', 'Укажите дату производства');
+            DOM.shelfResult.classList.remove('show');
+            return;
+        }
+        if (!isValidDate(d, m, y)) {
+            showError('shelf', 'Неверная дата');
+            DOM.shelfResult.classList.remove('show');
+            return;
+        }
+        if (!qty || qty <= 0) {
+            showError('shelf', 'Укажите срок годности');
+            DOM.shelfResult.classList.remove('show');
+            return;
+        }
 
-    var mfg=new Date(y,m-1,d);
-    if(mfg.getDate()!==d||mfg.getMonth()!==m-1){shelfErr('Неверная дата');return;}
+        var mfg = new Date(y, m - 1, d);
+        var exp = new Date(mfg);
 
-    var exp=new Date(mfg);
-    var unitText=document.getElementById('shelfUnit').selectedOptions[0].text;
+        if (unit === 30) exp.setMonth(exp.getMonth() + qty);
+        else if (unit === 365) exp.setFullYear(exp.getFullYear() + qty);
+        else exp.setDate(exp.getDate() + qty * unit);
 
-    if(unit===30)exp.setMonth(exp.getMonth()+qty);
-    else if(unit===365)exp.setFullYear(exp.getFullYear()+qty);
-    else exp.setDate(exp.getDate()+qty*unit);
+        var ed = exp.getDate(), em = exp.getMonth() + 1, ey = exp.getFullYear();
+        var expDateStr = pad(ed) + '.' + pad(em) + '.' + ey;
+        DOM.expiryDate.textContent = expDateStr;
 
-    var now=new Date();now.setHours(0,0,0,0);
-    var expMid=new Date(exp);expMid.setHours(0,0,0,0);
+        var now = new Date();
+        var daysLeft = Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
 
-    // Разница в днях
-    var diffDays=(expMid-now)/86400000;
-    var totalDays=Math.round((expMid-mfg)/86400000);
-    // Остаток в днях (целое, для текста)
-    var diff=Math.round(diffDays);
+        if (daysLeft < 0) {
+            DOM.daysLeft.textContent = 'Истёк на ' + (-daysLeft) + ' дн.';
+            DOM.daysLeft.className = 'left-out red';
+        } else if (daysLeft <= DAYS_ORANGE_THRESHOLD) {
+            DOM.daysLeft.textContent = daysLeft + ' дн. до истечения';
+            DOM.daysLeft.className = 'left-out orange';
+        } else {
+            DOM.daysLeft.textContent = daysLeft + ' дн. осталось';
+            DOM.daysLeft.className = 'left-out green';
+        }
 
-    document.getElementById('shelfResult').classList.add('show');
-    document.getElementById('expiryDate').textContent=fmtDate(exp);
-
-    var el=document.getElementById('daysLeft');
-    el.className='left-out';
-
-    // Процент остатка от общего срока (0..100+, дробный, потом округляем)
-    var pctLeft=totalDays>0?Math.round((diffDays/totalDays)*100):0;
-
-    if(diff<0){
-        // Просрочено: показываем, сколько срока истрачено сверх (в % от общего)
-        var pctExpired=totalDays>0?Math.round((-diffDays)/totalDays*100):0;
-        el.textContent='Просрочено на '+fmtDays(-diff)+' ('+pctExpired+'%)';
-        el.classList.add('red');
-    }else if(diff===0){
-        // Истекает сегодня — процент остатка покажем явно
-        el.textContent='Истекает сегодня (остаток '+pctLeft+'%)';
-        el.classList.add('orange');
-    }else{
-        el.textContent='Осталось '+fmtDays(diff)+' ('+pctLeft+'%)';
-        el.classList.add(pctLeft>20?'green':'orange');
-    }
-
-    saveToHistory('shelf',d+'.'+pad(m)+'.'+y+' + '+qty+' '+unitText,fmtDate(exp),{d:d,m:m,y:y,qty:qty,unit:unit});
-}
+        DOM.shelfResult.classList.add('show');
 
         // ✅ FIX: безопасная прокрутка
         safeScrollTo(DOM.shelfResult);
