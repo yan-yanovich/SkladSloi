@@ -128,14 +128,12 @@
 
         .history-list{
             list-style:none;
-            /* ✅ FIX: прокрутка истории */
             max-height:400px;
             overflow-y:auto;
             -webkit-overflow-scrolling:touch;
             padding-right:4px;
         }
 
-        /* Стилизация скроллбара */
         .history-list::-webkit-scrollbar{width:6px}
         .history-list::-webkit-scrollbar-track{background:transparent}
         .history-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
@@ -173,7 +171,7 @@
             background:#fff;
             border-radius:12px;
             padding:16px;
-            flex: 0 0 calc(33.333% - 11px);
+            flex:0 0 calc(33.333% - 11px);
             min-width:180px;
             cursor:pointer;
             box-shadow:0 2px 8px rgba(0,0,0,.1);
@@ -229,15 +227,35 @@
         }
         .btn-download-icon:hover{transform:scale(1.1)}
 
+        /* Кнопка копирования результата */
+        .copy-result-btn{
+            display:flex;align-items:center;justify-content:center;gap:6px;
+            width:auto;padding:8px 14px;margin:10px auto 0;
+            font-size:13px;font-weight:600;color:var(--accent);
+            background:none;border:2px solid var(--accent);border-radius:10px;
+            cursor:pointer;transition:all .2s ease;
+        }
+        .copy-result-btn:hover{background:var(--accent);color:#fff}
+
+        /* Схема раскладки */
+        .pallet-scheme{
+            margin:16px auto 0;max-width:360px;
+        }
+        .pallet-scheme canvas{
+            width:100%;height:auto;
+            border:2px solid var(--border);border-radius:12px;
+            background:var(--card);
+        }
+        .pallet-scheme-label{
+            text-align:center;font-size:12px;color:var(--text3);margin-top:6px;
+        }
+
         /* ===== МОДАЛЬНОЕ ОКНО ===== */
         .modal{
             display:none;
             position:fixed;
             z-index:1000;
-            left:0;
-            top:0;
-            width:100%;
-            height:100%;
+            left:0;top:0;width:100%;height:100%;
             background-color:rgba(0,0,0,.7);
             animation:fadeIn .2s ease;
         }
@@ -266,14 +284,8 @@
         }
 
         @keyframes slideIn{
-            from{
-                transform:translateY(-50px);
-                opacity:0;
-            }
-            to{
-                transform:translateY(0);
-                opacity:1;
-            }
+            from{transform:translateY(-50px);opacity:0}
+            to{transform:translateY(0);opacity:1}
         }
 
         .modal-header{
@@ -285,19 +297,10 @@
         }
 
         .modal-close{
-            background:none;
-            border:none;
-            font-size:28px;
-            cursor:pointer;
-            color:var(--text);
-            padding:0;
-            width:40px;
-            height:40px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            border-radius:8px;
-            transition:background .2s ease;
+            background:none;border:none;font-size:28px;cursor:pointer;
+            color:var(--text);padding:0;width:40px;height:40px;
+            display:flex;align-items:center;justify-content:center;
+            border-radius:8px;transition:background .2s ease;
         }
 
         .modal-close:hover{
@@ -306,106 +309,52 @@
         }
 
         .modal-qr{
-            width:100%;
-            max-width:400px;
-            display:flex;
-            justify-content:center;
+            width:100%;max-width:400px;
+            display:flex;justify-content:center;
         }
 
         .modal-text{
-            font-size:16px;
-            color:var(--text);
-            text-align:center;
-            word-break:break-all;
-            max-width:100%;
-            padding:12px;
-            background:var(--tab-bg);
-            border-radius:8px;
-            width:100%;
+            font-size:16px;color:var(--text);text-align:center;
+            word-break:break-all;max-width:100%;padding:12px;
+            background:var(--tab-bg);border-radius:8px;width:100%;
         }
 
         .modal-buttons{
-            display:flex;
-            gap:12px;
-            width:100%;
-            flex-wrap:wrap;
-            justify-content:center;
+            display:flex;gap:12px;width:100%;
+            flex-wrap:wrap;justify-content:center;
         }
 
         .modal-btn{
-            flex:1;
-            min-width:120px;
-            padding:12px 20px;
-            font-size:14px;
-            font-weight:600;
-            border:none;
-            border-radius:8px;
-            cursor:pointer;
-            transition:all .2s ease;
+            flex:1;min-width:120px;padding:12px 20px;
+            font-size:14px;font-weight:600;border:none;border-radius:8px;
+            cursor:pointer;transition:all .2s ease;
         }
 
-        .modal-btn-copy{
-            background:var(--accent);
-            color:#fff;
-        }
-
-        .modal-btn-copy:hover{
-            background:var(--accent-hover);
-        }
-
-        .modal-btn-download{
-            background:var(--green);
-            color:#fff;
-        }
-
-        .modal-btn-download:hover{
-            background:#1e5620;
-        }
-
-        .modal-btn-close{
-            background:var(--err-bg);
-            color:var(--err-text);
-        }
-
-        .modal-btn-close:hover{
-            background:var(--err-text);
-            color:#fff;
-        }
+        .modal-btn-copy{background:var(--accent);color:#fff}
+        .modal-btn-copy:hover{background:var(--accent-hover)}
+        .modal-btn-download{background:var(--green);color:#fff}
+        .modal-btn-download:hover{background:#1e5620}
+        .modal-btn-close{background:var(--err-bg);color:var(--err-text)}
+        .modal-btn-close:hover{background:var(--err-text);color:#fff}
 
         .copy-notify{
-            position:fixed;
-            bottom:20px;
-            left:50%;
-            transform:translateX(-50%);
-            background:var(--green);
-            color:#fff;
-            padding:12px 24px;
-            border-radius:8px;
-            font-weight:600;
-            animation:slideUp .3s ease;
-            z-index:2000;
+            position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+            background:var(--green);color:#fff;padding:12px 24px;
+            border-radius:8px;font-weight:600;
+            animation:slideUp .3s ease;z-index:2000;
         }
 
         @keyframes slideUp{
-            from{
-                transform:translateX(-50%) translateY(100px);
-                opacity:0;
-            }
-            to{
-                transform:translateX(-50%) translateY(0);
-                opacity:1;
-            }
+            from{transform:translateX(-50%) translateY(100px);opacity:0}
+            to{transform:translateX(-50%) translateY(0);opacity:1}
         }
 
-        @media (max-width: 900px) {
-            .code-item { flex: 0 0 calc(50% - 8px); }
+        @media (max-width:900px){
+            .code-item{flex:0 0 calc(50% - 8px)}
         }
-        @media (max-width: 600px) {
-            .code-item { flex: 0 0 calc(100% - 0px); }
-            .modal-content{
-                max-width:95%;
-                padding:20px;
-            }
+        @media (max-width:600px){
+            .code-item{flex:0 0 calc(100% - 0px)}
+            .modal-content{max-width:95%;padding:20px}
         }
     </style>
 </head>
@@ -448,6 +397,12 @@
             </div>
             <div class="dimensions" id="dims"></div>
             <div class="pallet-size">Паллета 120 × 80 см</div>
+            <!-- Схема раскладки -->
+            <div class="pallet-scheme" id="palletScheme" style="display:none">
+                <canvas id="schemeCanvas" width="360" height="240"></canvas>
+                <div class="pallet-scheme-label">Схема раскладки (вид сверху)</div>
+            </div>
+            <button class="copy-result-btn" onclick="App.copyBoxResult()">📋 Скопировать результат</button>
         </div>
     </div>
 
@@ -482,6 +437,7 @@
             <div class="result-label">Годен до</div>
             <div class="expiry-out" id="expiryDate"></div>
             <div class="left-out" id="daysLeft"></div>
+            <button class="copy-result-btn" onclick="App.copyShelfResult()">📋 Скопировать результат</button>
         </div>
     </div>
 
@@ -796,7 +752,9 @@ var qrcode = (function() {
         for (var i = 0; i < maxE; i++) for (var j = 0; j < blocks.length; j++)
             if (i < ecB[j].length) cw.push(ecB[j][i]);
 
-        function makeMat(mask) {
+        // ✅ FIX #5: Строим "базовую" матрицу один раз (без маски и данных),
+        // а данные + маску применяем к копии для каждой из 8 масок.
+        function makeBaseMatrix() {
             var m = [];
             for (var r = 0; r < mc; r++) {
                 m[r] = [];
@@ -830,18 +788,16 @@ var qrcode = (function() {
 
             m[mc-8][8] = true;
 
-            var fi = bchTI((ecVal << 3) | mask);
+            // Резервируем места для format info (пока placeholder = false)
             for (var i = 0; i < 15; i++) {
-                var mod = ((fi >> i) & 1) == 1;
-                if (i < 6) m[i][8] = mod;
-                else if (i < 8) m[i+1][8] = mod;
-                else m[mc-15+i][8] = mod;
+                if (i < 6) m[i][8] = false;
+                else if (i < 8) m[i+1][8] = false;
+                else m[mc-15+i][8] = false;
             }
             for (var i = 0; i < 15; i++) {
-                var mod = ((fi >> i) & 1) == 1;
-                if (i < 8) m[8][mc-i-1] = mod;
-                else if (i < 9) m[8][15-i-1+1] = mod;
-                else m[8][15-i-1] = mod;
+                if (i < 8) m[8][mc-i-1] = false;
+                else if (i < 9) m[8][15-i-1+1] = false;
+                else m[8][15-i-1] = false;
             }
 
             if (ver >= 7) {
@@ -856,6 +812,20 @@ var qrcode = (function() {
                 }
             }
 
+            return m;
+        }
+
+        var baseMatrix = makeBaseMatrix();
+
+        function applyMaskAndData(mask) {
+            // Копируем базовую матрицу
+            var m = [];
+            for (var r = 0; r < mc; r++) {
+                m[r] = [];
+                for (var c = 0; c < mc; c++) m[r][c] = baseMatrix[r][c];
+            }
+
+            // Данные (змейкой) + маска
             var inc = -1, row = mc-1, bitIdx = 7, byteIdx = 0;
             for (var col = mc-1; col > 0; col -= 2) {
                 if (col == 6) col--;
@@ -876,17 +846,33 @@ var qrcode = (function() {
                 }
             }
 
+            // Format info
+            var fi = bchTI((ecVal << 3) | mask);
+            for (var i = 0; i < 15; i++) {
+                var mod = ((fi >> i) & 1) == 1;
+                if (i < 6) m[i][8] = mod;
+                else if (i < 8) m[i+1][8] = mod;
+                else m[mc-15+i][8] = mod;
+            }
+            for (var i = 0; i < 15; i++) {
+                var mod = ((fi >> i) & 1) == 1;
+                if (i < 8) m[8][mc-i-1] = mod;
+                else if (i < 9) m[8][15-i-1+1] = mod;
+                else m[8][15-i-1] = mod;
+            }
+
             return m;
         }
 
+        // ✅ FIX #5: базовая матрица строится 1 раз, а не 9
         var bestMask = 0, bestPen = Infinity;
         for (var mask = 0; mask < 8; mask++) {
-            var mm = makeMat(mask);
+            var mm = applyMaskAndData(mask);
             var p = penalty(mm, mc);
             if (p < bestPen) { bestPen = p; bestMask = mask; }
         }
 
-        var final = makeMat(bestMask);
+        var final = applyMaskAndData(bestMask);
         return {
             getModuleCount: function() { return mc; },
             isDark: function(r, c) { return !!final[r][c]; }
@@ -934,11 +920,14 @@ var App = (function() {
     var HISTORY_MAX = 50;
     var QR_SCALE = 6;
     var DAYS_ORANGE_THRESHOLD = 7;
-    var EXPAND_MAX_HEIGHT = 10000;
     var SAVE_FIELDS_DEBOUNCE = 300;
-    var DOWNLOAD_DELAY_MS = 500;
+    var DOWNLOAD_DELAY_MS = 200;
     var ANIMATION_DURATION = 350;
     var SCROLL_DELAY = 100;
+    // ✅ FIX #2: лимит QR
+    var QR_LIMIT = 50;
+
+    // ✅ FIX #6: убрана неиспользуемая переменная EXPAND_MAX_HEIGHT
 
     var MONTHS = [
         'Январь (01)', 'Февраль (02)', 'Март (03)', 'Апрель (04)',
@@ -957,6 +946,8 @@ var App = (function() {
             count: document.getElementById('count'),
             fill: document.getElementById('fill'),
             dims: document.getElementById('dims'),
+            schemeCanvas: document.getElementById('schemeCanvas'),
+            palletScheme: document.getElementById('palletScheme'),
 
             mfgDay: document.getElementById('mfgDay'),
             mfgMonth: document.getElementById('mfgMonth'),
@@ -1026,7 +1017,6 @@ var App = (function() {
         return calcCache[key];
     }
 
-    // ✅ Безопасная прокрутка к элементу
     function safeScrollTo(el) {
         if (!el) return;
         setTimeout(function() {
@@ -1098,21 +1088,18 @@ var App = (function() {
         var isCollapsed = section.classList.contains('collapsed');
 
         if (isCollapsed) {
-            // ✅ FIX: раскрытие — сначала показываем, потом снимаем maxHeight
             section.classList.remove('collapsed');
             section.style.maxHeight = section.scrollHeight + 'px';
             arrow.classList.remove('collapsed');
             titleEl.setAttribute('aria-expanded', 'true');
             sectionStates[sectionId] = true;
 
-            // ✅ FIX: после анимации убираем maxHeight, чтобы контент скроллился
             setTimeout(function() {
                 if (!section.classList.contains('collapsed')) {
                     section.style.maxHeight = 'none';
                 }
             }, ANIMATION_DURATION);
         } else {
-            // ✅ FIX: сворачивание — устанавливаем текущую высоту, потом 0
             section.style.maxHeight = section.scrollHeight + 'px';
             void section.offsetHeight;
             section.classList.add('collapsed');
@@ -1160,8 +1147,13 @@ var App = (function() {
 
     // ===== КАЛЬКУЛЯТОР 1: КОРОБА =====
 
+    // ✅ FIX #1: floating-point — безопасное деление с эпсилон
+    function safeDivide(a, b) {
+        return Math.floor(a / b + 1e-9);
+    }
+
     function nBoxes(zw, zh, bw, bh) {
-        return Math.floor(zw / bw) * Math.floor(zh / bh);
+        return safeDivide(zw, bw) * safeDivide(zh, bh);
     }
 
     function points(total, d1, d2) {
@@ -1196,7 +1188,7 @@ var App = (function() {
         }
 
         for (var i = 0; i < 2; i++) {
-            updateBest(nBoxes(PALLET_L, PALLET_W, orientations[i].w, orientations[i].h), { type: 'simple' });
+            updateBest(nBoxes(PALLET_L, PALLET_W, orientations[i].w, orientations[i].h), { type: 'simple', ori: i });
         }
 
         var xPoints = points(PALLET_L, bl, bw);
@@ -1207,7 +1199,7 @@ var App = (function() {
                 for (var j = 0; j < 2; j++) {
                     var count = nBoxes(s, PALLET_W, orientations[i].w, orientations[i].h) +
                                 nBoxes(PALLET_L - s, PALLET_W, orientations[j].w, orientations[j].h);
-                    updateBest(count, { type: 'vert' });
+                    updateBest(count, { type: 'vert', split: s, oriL: i, oriR: j });
                 }
             }
         });
@@ -1217,7 +1209,7 @@ var App = (function() {
                 for (var j = 0; j < 2; j++) {
                     var count = nBoxes(PALLET_L, s, orientations[i].w, orientations[i].h) +
                                 nBoxes(PALLET_L, PALLET_W - s, orientations[j].w, orientations[j].h);
-                    updateBest(count, { type: 'horiz' });
+                    updateBest(count, { type: 'horiz', split: s, oriT: i, oriB: j });
                 }
             }
         });
@@ -1232,7 +1224,7 @@ var App = (function() {
                                            nBoxes(PALLET_L - xs, ys, orientations[j].w, orientations[j].h) +
                                            nBoxes(xs, PALLET_W - ys, orientations[k].w, orientations[k].h) +
                                            nBoxes(PALLET_L - xs, PALLET_W - ys, orientations[l].w, orientations[l].h);
-                                updateBest(count, { type: 'combined' });
+                                updateBest(count, { type: 'combined', xs: xs, ys: ys, ori0: i, ori1: j, ori2: k, ori3: l });
                             }
                         }
                     }
@@ -1249,7 +1241,8 @@ var App = (function() {
 
         var result = {
             total: bestCount,
-            type: typeNames[bestConfig ? bestConfig.type : 'simple']
+            type: typeNames[bestConfig ? bestConfig.type : 'simple'],
+            config: bestConfig
         };
 
         cacheSet(cacheKey, result);
@@ -1288,11 +1281,110 @@ var App = (function() {
         DOM.dims.textContent = 'Коробка ' + bl + ' × ' + bw + ' см · ' + arrangement.type;
         DOM.result.classList.add('show');
 
-        // ✅ FIX: безопасная прокрутка вместо прямого scrollIntoView
+        // ✅ Схема раскладки
+        drawPalletScheme(bl, bw, arrangement.config);
+
         safeScrollTo(DOM.result);
 
         if (!skipHistorySave) {
             saveToHistory('boxes', bl + ' × ' + bw, totalFormatted + ' шт.', { bl: bl, bw: bw });
+        }
+    }
+
+    // ===== СХЕМА РАСКЛАДКИ =====
+
+    function drawPalletScheme(bl, bw, config) {
+        if (!config) {
+            DOM.palletScheme.style.display = 'none';
+            return;
+        }
+
+        DOM.palletScheme.style.display = 'block';
+        var canvas = DOM.schemeCanvas;
+        var ctx = canvas.getContext('2d');
+        var W = canvas.width = 360;
+        var H = canvas.height = 240;
+        var pad = 10;
+        var scaleX = (W - pad * 2) / PALLET_L;
+        var scaleY = (H - pad * 2) / PALLET_W;
+        var scale = Math.min(scaleX, scaleY);
+        var offsetX = (W - PALLET_L * scale) / 2;
+        var offsetY = (H - PALLET_W * scale) / 2;
+
+        var isDark = document.body.classList.contains('dark');
+        var bg = isDark ? '#242440' : '#fff';
+        var border = isDark ? '#3a3a5c' : '#e0e0e0';
+        var boxFill = isDark ? 'rgba(90,159,232,.4)' : 'rgba(74,144,217,.35)';
+        var boxStroke = isDark ? '#5a9fe8' : '#4a90d9';
+
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, W, H);
+
+        // Паллета
+        ctx.strokeStyle = border;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(offsetX, offsetY, PALLET_L * scale, PALLET_W * scale);
+
+        // Отрисовка зон
+        function drawZone(x0, y0, zw, zh, bl2, bw2, label) {
+            var bx = offsetX + x0 * scale;
+            var by = offsetY + y0 * scale;
+            var bwd = zw * scale;
+            var bht = zh * scale;
+
+            // Рамка зоны
+            ctx.strokeStyle = isDark ? 'rgba(255,255,255,.15)' : 'rgba(0,0,0,.08)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+            ctx.strokeRect(bx, by, bwd, bht);
+            ctx.setLineDash([]);
+
+            // Коробки
+            var cols = safeDivide(zw, bl2);
+            var rows = safeDivide(zh, bw2);
+            for (var r = 0; r < rows; r++) {
+                for (var c = 0; c < cols; c++) {
+                    var x = bx + c * bl2 * scale;
+                    var y = by + r * bw2 * scale;
+                    ctx.fillStyle = boxFill;
+                    ctx.fillRect(x, y, bl2 * scale, bw2 * scale);
+                    ctx.strokeStyle = boxStroke;
+                    ctx.lineWidth = 0.5;
+                    ctx.strokeRect(x, y, bl2 * scale, bw2 * scale);
+                }
+            }
+        }
+
+        var orientations = [
+            { w: bl, h: bw },
+            { w: bw, h: bl }
+        ];
+
+        if (config.type === 'simple') {
+            var o = orientations[config.ori];
+            drawZone(0, 0, PALLET_L, PALLET_W, o.w, o.h, '');
+        } else if (config.type === 'vert') {
+            var s = config.split;
+            var oL = orientations[config.oriL];
+            var oR = orientations[config.oriR];
+            drawZone(0, 0, s, PALLET_W, oL.w, oL.h, '');
+            drawZone(s, 0, PALLET_L - s, PALLET_W, oR.w, oR.h, '');
+        } else if (config.type === 'horiz') {
+            var s = config.split;
+            var oT = orientations[config.oriT];
+            var oB = orientations[config.oriB];
+            drawZone(0, 0, PALLET_L, s, oT.w, oT.h, '');
+            drawZone(0, s, PALLET_L, PALLET_W - s, oB.w, oB.h, '');
+        } else if (config.type === 'combined') {
+            var xs = config.xs, ys = config.ys;
+            var o0 = orientations[config.ori0];
+            var o1 = orientations[config.ori1];
+            var o2 = orientations[config.ori2];
+            var o3 = orientations[config.ori3];
+            drawZone(0, 0, xs, ys, o0.w, o0.h, '');
+            drawZone(xs, 0, PALLET_L - xs, ys, o1.w, o1.h, '');
+            drawZone(0, ys, xs, PALLET_W - ys, o2.w, o2.h, '');
+            drawZone(xs, ys, PALLET_L - xs, PALLET_W - ys, o3.w, o3.h, '');
         }
     }
 
@@ -1360,7 +1452,6 @@ var App = (function() {
         var now = new Date();
         now.setHours(0, 0, 0, 0);
 
-        // ✅ Процент остатка (Вариант А): осталось / общий срок × 100
         var expMid = new Date(exp);
         expMid.setHours(0, 0, 0, 0);
 
@@ -1368,7 +1459,6 @@ var App = (function() {
         var diffDays = (expMid - now) / 86400000;
         var daysLeft = Math.round(diffDays);
 
-        // Процент остатка (0–100%, не меньше 0)
         var pctLeft = totalDays > 0 ? Math.round((diffDays / totalDays) * 100) : 0;
         if (pctLeft < 0) pctLeft = 0;
 
@@ -1385,7 +1475,6 @@ var App = (function() {
 
         DOM.shelfResult.classList.add('show');
 
-        // ✅ FIX: безопасная прокрутка
         safeScrollTo(DOM.shelfResult);
 
         if (!skipHistorySave) {
@@ -1412,6 +1501,8 @@ var App = (function() {
         }
     }
 
+    // ✅ FIX #12: Храним только текст + маленький canvas для превью.
+    // Крупный canvas пересоздаётся при клике (модалка / скачивание).
     function generateCode() {
         var text = DOM.codeInput.value.trim();
         var prefix = DOM.prefixVal.value;
@@ -1433,8 +1524,17 @@ var App = (function() {
             return;
         }
 
+        // ✅ FIX #2: лимит QR
+        if (lines.length > QR_LIMIT) {
+            showError('code', 'Максимум ' + QR_LIMIT + ' кодов за раз. У вас: ' + lines.length);
+            DOM.codeResult.classList.remove('show');
+            return;
+        }
+
         DOM.codeGrid.innerHTML = '';
-        var codes = [];
+
+        // ✅ FIX #12: не храним canvas — храним только текст
+        var qrTexts = [];
 
         for (var i = 0; i < lines.length; i++) {
             var codeText = lines[i];
@@ -1442,14 +1542,17 @@ var App = (function() {
                 codeText += prefix;
             }
 
+            // Маленький canvas для превью (3px на модуль)
             var canvas = document.createElement('canvas');
             try {
-                qrcode.render(canvas, codeText, 'M', QR_SCALE);
+                qrcode.render(canvas, codeText, 'M', 3);
             } catch (e) {
                 showError('code', 'Ошибка QR для «' + codeText.substring(0, 30) + '»: ' + e.message);
                 DOM.codeResult.classList.remove('show');
                 return;
             }
+
+            qrTexts.push(codeText);
 
             var codeItem = document.createElement('div');
             codeItem.className = 'code-item';
@@ -1462,31 +1565,28 @@ var App = (function() {
             textEl.textContent = codeText;
             codeItem.appendChild(textEl);
 
-            codeItem.onclick = (function(cd) {
-                return function() { openQRModal(cd); };
-            })({ canvas: canvas, text: codeText });
-
-            codeItem.onkeydown = (function(cd) {
-                return function(e) {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        openQRModal(cd);
-                    }
-                };
-            })({ canvas: canvas, text: codeText });
+            var idx = i;
+            codeItem.onclick = function() { openQRModal(idx, qrTexts); };
+            codeItem.onkeydown = function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openQRModal(idx, qrTexts);
+                }
+            };
 
             DOM.codeGrid.appendChild(codeItem);
-            codes.push({ canvas: canvas, text: codeText });
         }
 
-        DOM.codeResultLabel.textContent = 'QR-коды (' + codes.length + ' шт.)';
+        // ✅ FIX #12: сохраняем только тексты (без canvas)
+        DOM.codeGrid._qrTexts = qrTexts;
+
+        DOM.codeResultLabel.textContent = 'QR-коды (' + qrTexts.length + ' шт.)';
         DOM.codeResult.classList.add('show');
 
-        // ✅ FIX: безопасная прокрутка
         safeScrollTo(DOM.codeResult);
 
         if (!skipHistorySave) {
-            saveToHistory('code', text.substring(0, 50) + (text.length > 50 ? '...' : ''), codes.length + ' шт.', {
+            saveToHistory('code', text.substring(0, 50) + (text.length > 50 ? '...' : ''), qrTexts.length + ' шт.', {
                 text: text,
                 prefix: prefix,
                 usePrefix: usePrefix
@@ -1494,40 +1594,63 @@ var App = (function() {
         }
     }
 
+    // ✅ FIX #13: «Скачать все» — один PNG со всеми QR сеткой
     function downloadAllPNG() {
-        var canvases = DOM.codeGrid.querySelectorAll('canvas');
-        if (!canvases.length) return;
+        var qrTexts = DOM.codeGrid._qrTexts;
+        if (!qrTexts || !qrTexts.length) return;
 
-        var idx = 0;
-        function downloadNext() {
-            if (idx >= canvases.length) return;
-            var canvas = canvases[idx];
-            var link = document.createElement('a');
-            link.href = canvas.toDataURL('image/png');
-            link.download = 'qr_' + (idx + 1) + '.png';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            idx++;
-            if (idx < canvases.length) {
-                setTimeout(downloadNext, DOWNLOAD_DELAY_MS);
-            }
+        // Определяем размеры
+        var cols = Math.min(4, qrTexts.length);
+        var rows = Math.ceil(qrTexts.length / cols);
+        var cellSize = 200;
+        var padding = 20;
+
+        var canvas = document.createElement('canvas');
+        canvas.width = cols * cellSize + (cols + 1) * padding;
+        canvas.height = rows * cellSize + (rows + 1) * padding;
+        var ctx = canvas.getContext('2d');
+
+        // Белый фон
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        for (var i = 0; i < qrTexts.length; i++) {
+            var col = i % cols;
+            var row = Math.floor(i / cols);
+            var x = padding + col * (cellSize + padding);
+            var y = padding + row * (cellSize + padding);
+
+            // Рендерим QR в temp canvas и вставляем
+            var tmp = document.createElement('canvas');
+            qrcode.render(tmp, qrTexts[i], 'M', 1);
+
+            var qrSize = tmp.width;
+            var drawSize = Math.min(cellSize, qrSize);
+            var offset = (cellSize - drawSize) / 2;
+
+            ctx.drawImage(tmp, x + offset, y + offset, drawSize, drawSize);
         }
-        downloadNext();
-        showNotification('Загрузка ' + canvases.length + ' файлов...');
+
+        var link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = 'qr_all.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        showNotification('Скачано: qr_all.png (' + qrTexts.length + ' QR)');
     }
 
     // ===== МОДАЛЬНОЕ ОКНО =====
 
-    function openQRModal(codeData) {
-        currentQRData = codeData;
-        var sourceCanvas = codeData.canvas;
-        DOM.modalCanvas.width = sourceCanvas.width;
-        DOM.modalCanvas.height = sourceCanvas.height;
-        var ctx = DOM.modalCanvas.getContext('2d');
-        ctx.drawImage(sourceCanvas, 0, 0);
+    function openQRModal(idx, qrTexts) {
+        currentQRData = { idx: idx, texts: qrTexts };
+        var text = qrTexts[idx];
 
-        DOM.modalText.textContent = codeData.text;
+        // Рендерим крупно
+        qrcode.render(DOM.modalCanvas, text, 'M', 6);
+
+        DOM.modalText.textContent = text;
         DOM.qrModal.classList.add('show');
         document.body.style.overflow = 'hidden';
     }
@@ -1541,14 +1664,15 @@ var App = (function() {
 
     function copyToClipboard() {
         if (!currentQRData) return;
+        var text = currentQRData.texts[currentQRData.idx];
         if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(currentQRData.text).then(function() {
+            navigator.clipboard.writeText(text).then(function() {
                 showNotification('Скопировано в буфер обмена');
             }).catch(function() {
-                fallbackCopy(currentQRData.text);
+                fallbackCopy(text);
             });
         } else {
-            fallbackCopy(currentQRData.text);
+            fallbackCopy(text);
         }
     }
 
@@ -1570,9 +1694,12 @@ var App = (function() {
 
     function downloadSingleQR() {
         if (!currentQRData) return;
+        var text = currentQRData.texts[currentQRData.idx];
+        var canvas = document.createElement('canvas');
+        qrcode.render(canvas, text, 'M', 10);
         var link = document.createElement('a');
-        link.href = DOM.modalCanvas.toDataURL('image/png');
-        link.download = 'qr_' + new Date().getTime() + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.download = 'qr_' + (currentQRData.idx + 1) + '.png';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -1587,6 +1714,32 @@ var App = (function() {
         setTimeout(function() {
             notif.remove();
         }, 2000);
+    }
+
+    // ===== КОПИРОВАНИЕ РЕЗУЛЬТАТА =====
+
+    // ✅ Копировать результат коробок
+    function copyBoxResult() {
+        var text = 'Короба: ' + DOM.count.textContent + ' шт. / ' + DOM.fill.textContent + ' заполнение';
+        copyText(text);
+    }
+
+    // ✅ Копировать результат срока годности
+    function copyShelfResult() {
+        var text = 'Годен до: ' + DOM.expiryDate.textContent + ' / ' + DOM.daysLeft.textContent;
+        copyText(text);
+    }
+
+    function copyText(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(function() {
+                showNotification('Скопировано');
+            }).catch(function() {
+                fallbackCopy(text);
+            });
+        } else {
+            fallbackCopy(text);
+        }
     }
 
     // ===== ИСТОРИЯ =====
@@ -1620,7 +1773,6 @@ var App = (function() {
         }
     }
 
-    // ✅ FIX #1: рендер через DOM API (без innerHTML с пользовательскими данными)
     function renderHistory(type) {
         try {
             var raw = storageGet('appHistory');
@@ -1697,7 +1849,6 @@ var App = (function() {
         renderHistory(type);
     }
 
-    // ✅ FIX: восстановление из истории — корректное раскрытие + задержка
     function loadFromHistory(type, data) {
         if (!data) return;
         skipHistorySave = true;
@@ -1706,7 +1857,6 @@ var App = (function() {
             DOM.boxL.value = data.bl;
             DOM.boxW.value = data.bw;
             expandSection('section1');
-            // ✅ FIX: увеличенная задержка — ждём завершения анимации раскрытия
             setTimeout(function() {
                 calc();
                 skipHistorySave = false;
@@ -1736,7 +1886,6 @@ var App = (function() {
         }
     }
 
-    // ✅ FIX: expandSection — корректно раскрывает и снимает maxHeight
     function expandSection(sectionId) {
         var section = document.getElementById(sectionId);
         if (!section) return;
@@ -1751,7 +1900,6 @@ var App = (function() {
             sectionStates[sectionId] = true;
             saveSectionStates();
 
-            // ✅ FIX: после анимации снимаем maxHeight
             setTimeout(function() {
                 if (!section.classList.contains('collapsed')) {
                     section.style.maxHeight = 'none';
@@ -1760,9 +1908,11 @@ var App = (function() {
         }
     }
 
+    // ✅ FIX #3: renderHistory рендерит текущую вкладку
     function clearHistory() {
         if (confirm('Вы уверены? Это действие нельзя отменить.')) {
             storageSet('appHistory', JSON.stringify({ boxes: [], shelf: [], code: [] }));
+            // Рендерим все вкладки пустыми
             renderHistory('boxes');
             showNotification('История очищена');
         }
@@ -1823,9 +1973,26 @@ var App = (function() {
         document.addEventListener('input', scheduleSaveFields);
         document.addEventListener('change', scheduleSaveFields);
 
+        // ✅ Горячие клавиши: Ctrl+Enter = рассчитать / Esc = закрыть модалку
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape' && DOM.qrModal && DOM.qrModal.classList.contains('show')) {
                 closeQRModal();
+                return;
+            }
+
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                // Определяем активную секцию и запускаем расчёт
+                if (document.activeElement) {
+                    var el = document.activeElement;
+                    if (el === DOM.boxL || el === DOM.boxW) {
+                        calc();
+                    } else if (el === DOM.shelfLife || el === DOM.mfgDay || el === DOM.mfgMonth || el === DOM.mfgYear) {
+                        calcShelf();
+                    } else if (el === DOM.codeInput || el === DOM.prefixVal) {
+                        generateCode();
+                    }
+                }
             }
         });
 
@@ -1855,6 +2022,8 @@ var App = (function() {
         downloadSingleQR: downloadSingleQR,
         switchHistoryTab: switchHistoryTab,
         clearHistory: clearHistory,
+        copyBoxResult: copyBoxResult,
+        copyShelfResult: copyShelfResult,
         init: init
     };
 })();
